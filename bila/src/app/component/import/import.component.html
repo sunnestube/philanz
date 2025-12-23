@@ -1,0 +1,7 @@
+<div class="drop-area" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+    <p>Ziehe deine Datei hierher oder klicke auf den Button, um eine Datei auszuwählen.</p>
+    <button (click)="fileInput.click()">Datei auswählen</button>
+    <input type="file" #fileInput (change)="onFileChange($event)" style="display: none;"/>
+</div>
+
+

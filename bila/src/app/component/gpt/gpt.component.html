@@ -1,0 +1,28 @@
+<h2>Excel-like Angular App</h2>
+<table>
+    <thead>
+    <tr>
+        <th></th>
+        @for (col of cols; track col) {
+            <th>{{ colToLetter(col) }}</th>
+        }
+    </tr>
+    </thead>
+    <tbody>
+        @for (row of rows; track row) {
+            <tr>
+                <th>{{ row + 1 }}</th>
+                @for (col of cols; track col) {
+                    <td>
+                        <input
+                            [(ngModel)]="data[getKey(col, row)]"
+                            (blur)="updateComputed()"
+                            [value]="getDisplayValue(col, row)"
+                            (focus)="editing = getKey(col, row)"
+                        />
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b3943272-ca01-42b7-82f9-ebadf6b1ed8e" name="Changes" comment="g4" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/bila/package.json" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="37FJrDFnbFe2PuIBZjTZxZ5ZKHQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "B:/git/philanz/angular/src/app/component",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "ts.external.directory.path": "B:\\git\\philanz\\angular\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="B:\git\philanz\angular\src\app\component" />
+      <recent name="B:\git\philanz\angular\src\app\component\home" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="B:\git\philanz" />
+      <recent name="B:\git\philanz\angular\src\app\component" />
+      <recent name="B:\git\philanz\angular\src\app\component\home" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26927.53" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.26927.53" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b3943272-ca01-42b7-82f9-ebadf6b1ed8e" name="Changes" comment="" />
+      <created>1766493083261</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1766493083261</updated>
+      <workItem from="1766493086293" duration="4302000" />
+      <workItem from="1766497527793" duration="5802000" />
+    </task>
+    <task id="LOCAL-00001" summary="init grok">
+      <option name="closed" value="true" />
+      <created>1766498382019</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1766498382019</updated>
+    </task>
+    <task id="LOCAL-00002" summary="init grok">
+      <option name="closed" value="true" />
+      <created>1766499420246</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1766499420246</updated>
+    </task>
+    <task id="LOCAL-00003" summary="2">
+      <option name="closed" value="true" />
+      <created>1766499757976</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1766499757976</updated>
+    </task>
+    <task id="LOCAL-00004" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502285612</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502285612</updated>
+    </task>
+    <task id="LOCAL-00005" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502294221</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502294221</updated>
+    </task>
+    <task id="LOCAL-00006" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502382838</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502382838</updated>
+    </task>
+    <task id="LOCAL-00007" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502488732</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502488732</updated>
+    </task>
+    <task id="LOCAL-00008" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502490188</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502490188</updated>
+    </task>
+    <task id="LOCAL-00009" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502744574</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502744574</updated>
+    </task>
+    <task id="LOCAL-00010" summary="g2">
+      <option name="closed" value="true" />
+      <created>1766502807749</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502807749</updated>
+    </task>
+    <task id="LOCAL-00011" summary="g3">
+      <option name="closed" value="true" />
+      <created>1766502964893</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502964893</updated>
+    </task>
+    <task id="LOCAL-00012" summary="g3">
+      <option name="closed" value="true" />
+      <created>1766502984254</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1766502984254</updated>
+    </task>
+    <task id="LOCAL-00013" summary="g4">
+      <option name="closed" value="true" />
+      <created>1766503071086</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1766503071086</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="init grok" />
+    <MESSAGE value="2" />
+    <MESSAGE value="g2" />
+    <MESSAGE value="g3" />
+    <MESSAGE value="g4" />
+    <option name="LAST_COMMIT_MESSAGE" value="g4" />
+  </component>
+</project>

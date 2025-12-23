@@ -1,0 +1,51 @@
+# .gitlab-ci.yml
+
+image: node:20-alpine
+
+# Cache für schnellere Builds
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+stages:
+  - build
+  - deploy
+
+# Build-Job: Angular App kompilieren
+build:
+  stage: build
+  script:
+    - npm ci
+    # Production Build mit korrektem Base-Href für GitLab Pages
+    - npx ng build --configuration production --base-href /bila/
+  artifacts:
+    paths:
+      - dist/bila/          # Genau hier landet der Output bei deinem Projekt
+    expire_in: 1 week
+  only:
+    - main                  # Ändere zu master, falls du diesen Branch nutzt
+
+# Deploy-Job: Auf GitLab Pages veröffentlichen
+pages:
+  stage: deploy
+  script:
+    - echo "Deploying Angular app to GitLab Pages..."
+    # GitLab Pages erwartet den Inhalt im Ordner "public"
+    - rm -rf public
+    - mv dist/bila public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 month
+  environment:
+    name: production
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/philanz/
+  only:
+    - main
+
+# Optional: Nur bei Änderungen im Branch laufen lassen
+rules:
+  - if: $CI_COMMIT_BRANCH == "main"
+    when: always
+  - when: never

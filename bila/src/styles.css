@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.test-class {
+    background-color: #ff0000; /* Roter Hintergrund zum Testen */
+    color: #ffffff; /* Weißer Text zum Testen */
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

@@ -1,0 +1,52 @@
+<p-toolbar class="bg-gradient-to-r from-indigo-50 via-white to-teal-50 border-b border-gray-200 shadow-md">
+    <div class="flex items-center justify-between w-full px-8 py-4">
+
+        <a routerLink="/" class="flex items-center space-x-3 group">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            </div>
+            <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-teal-600 bg-clip-text text-transparent">
+        {{ title }}
+      </span>
+        </a>
+
+        <div class="flex items-center space-x-1">
+
+            <p-button
+                label="Home"
+                routerLink="/"
+                routerLinkActive="active-nav"
+                [routerLinkActiveOptions]="{ exact: true }"
+                [rounded]="true"
+                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
+                ariaLabel="Home">
+            </p-button>
+
+            <span class="text-gray-300 mx-2">|</span>
+
+            <p-button
+                label="Jahresübersicht"
+                routerLink="/year"
+                routerLinkActive="active-nav"
+                [rounded]="true"
+                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
+                ariaLabel="Jahresübersicht">
+            </p-button>
+
+            <span class="text-gray-300 mx-2">|</span>
+
+
+            <p-button
+                label="Über uns"
+                routerLink="/about"
+                routerLinkActive="active-nav"
+                [rounded]="true"
+                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
+                ariaLabel="Über uns">
+            </p-button>
+
+        </div>
+    </div>
+</p-toolbar>

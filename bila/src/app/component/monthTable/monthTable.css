@@ -1,0 +1,196 @@
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #d1d5db;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    font-size: 9px;
+    height: 11px;
+    vertical-align: middle;
+}
+
+.data-table th {
+    background-color: #f2f2f2;
+    font-weight: 300;
+    height: 100px;
+}
+
+.data-table th > div {
+    rotate: 270deg;
+    rotation-point: left bottom;
+    width: 99px;
+    margin-left: -33px;
+}
+
+.data-table th.index > div {
+    display: none;
+}
+
+.data-table input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 1px 4px;
+    box-sizing: border-box;
+    outline: none;
+    box-shadow: none;
+}
+
+.data-table td:focus-within {
+    outline: 1px solid #3B82F6;
+    outline-offset: -1px;
+}
+
+.data-table input[type="number"]::-webkit-outer-spin-button,
+.data-table input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.data-table input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.data-table .action-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 6px 4px;
+    background: transparent;
+}
+
+.data-table .p-button {
+    font-size: 12px;
+    padding: 4px 10px;
+    height: 28px;
+    border-radius: 4px;
+    line-height: 1;
+    box-shadow: none;
+}
+
+th.date {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+th.select {
+    width: 12px;
+    min-width: 12px;
+    max-width: 12px;
+}
+
+th.text {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+th.number {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+th.none, td.none {
+    display: none;
+}
+
+td.number input {
+    text-align: right;
+}
+
+th.index {
+    width: 20px;
+    min-width: 20px;
+    max-width: 20px;
+}
+
+.data-table th.A {
+    background: #ffc4c4;
+}
+
+.data-table th.A2 {
+    background: #ffa0a0;
+}
+
+.data-table th.E {
+    background: #b8f8b8;
+}
+
+.data-table th.D {
+    background: lightgrey;
+}
+
+.data-table td.index, .data-table th.index {
+    border: 0;
+    text-align: center;
+    background: none;
+    padding: 0;
+}
+
+.data-table td.index > div {
+    text-align: right;
+    padding-right: 3px;
+    font-size: 7px;
+}
+
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: none;
+    padding: 2px;
+}
+
+tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+tr.p td {
+    background: #F1F5F9;
+}
+
+tr.p:nth-child(even) td {
+    background: #E1EAF3;
+}
+
+tr.l td {
+    background: #c2c2ec;
+}
+
+tr.l:nth-child(even) td {
+    background: #c6c6ff;
+}
+
+tr.h td {
+    background: #fff5b6;
+}
+
+tr.h:nth-child(even) td {
+    background: #e6dda4;
+}
+
+tr.a td {
+    background: #ffb78e;
+}
+
+tr.a:nth-child(even) td {
+    background: #fda373;
+}
+
+tr.e td {
+    background: #ffb78e;
+}
+
+tr.e:nth-child(even) td {
+    background: #fda373;
+}
