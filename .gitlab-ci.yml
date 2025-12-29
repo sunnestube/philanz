@@ -1,51 +1,63 @@
 # .gitlab-ci.yml
+# -------------------------------------------------
+# Angular → GitLab Pages (Root‑Domain)
+# -------------------------------------------------
 
 image: node:20-alpine
 
-# Cache für schnellere Builds
+variables:
+  # Pfad zum Angular‑Projekt (hier: "bila")
+  ANGULAR_DIR: "bila"
+  # Ordner, den Angular im dist‑Verzeichnis erzeugt
+  APP_NAME: "bila"
+  # Root‑Pfad für GitLab Pages
+  PAGES_BASE_HREF: "/"
+
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key: "node-modules"
   paths:
-    - node_modules/
+    - $ANGULAR_DIR/node_modules/
 
 stages:
   - build
   - deploy
 
-# Build-Job: Angular App kompilieren
+# -----------------------------------------------------------------
+# Build‑Job – kompiliert die Angular‑App (Production)
+# -----------------------------------------------------------------
 build:
   stage: build
   script:
-    - npm ci
-    # Production Build mit korrektem Base-Href für GitLab Pages
-    - npx ng build --configuration production --base-href /bila/
+    - cd $ANGULAR_DIR
+    - npm ci                                 # braucht package‑lock.json
+    # base‑href = "/" weil wir die Seite direkt unter der Root‑Domain ausliefern
+    - npx ng build --configuration production --base-href "$PAGES_BASE_HREF"
   artifacts:
+    # Wir sichern das komplette dist‑Verzeichnis, damit wir im Deploy‑Job
+    # gezielt den Browser‑Ordner auswählen können.
     paths:
-      - dist/bila/          # Genau hier landet der Output bei deinem Projekt
+      - $ANGULAR_DIR/dist/$APP_NAME/
     expire_in: 1 week
   only:
-    - main                  # Ändere zu master, falls du diesen Branch nutzt
+    - main
 
-# Deploy-Job: Auf GitLab Pages veröffentlichen
+# -----------------------------------------------------------------
+# Deploy‑Job – veröffentlicht die gebauten Dateien auf GitLab Pages
+# -----------------------------------------------------------------
 pages:
   stage: deploy
+  needs: [build]                # Artefakte vom Build‑Job holen
   script:
-    - echo "Deploying Angular app to GitLab Pages..."
-    # GitLab Pages erwartet den Inhalt im Ordner "public"
+    - echo "Deploying Angular app to GitLab Pages (root domain)…"
     - rm -rf public
-    - mv dist/bila public
+    # **Wichtig:** den Inhalt des Browser‑Ordners nach public/ verschieben
+    - mv $ANGULAR_DIR/dist/$APP_NAME/browser public
   artifacts:
     paths:
       - public
     expire_in: 1 month
   environment:
     name: production
-    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/philanz/
+    url: https://philanz-07a616.gitlab.io/
   only:
     - main
-
-# Optional: Nur bei Änderungen im Branch laufen lassen
-rules:
-  - if: $CI_COMMIT_BRANCH == "main"
-    when: always
-  - when: never
