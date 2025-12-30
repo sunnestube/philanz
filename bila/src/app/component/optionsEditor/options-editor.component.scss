@@ -1,0 +1,9 @@
+.p-chip {
+    background: var(--primary-100);
+    color: var(--primary-800);
+}
+
+.dark .p-chip {
+    background: var(--primary-900);
+    color: var(--primary-200);
+}

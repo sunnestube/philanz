@@ -1,0 +1,102 @@
+<p-card header="Options Editor" class="glass-card w-full max-w-2xl mx-auto">
+
+    <p-tabs>
+        <p-tablist>
+            <p-tab value="person">Person</p-tab>
+            <p-tab value="account">Account</p-tab>
+            <p-tab value="default">Default</p-tab>
+        </p-tablist>
+
+        <p-tabpanels>
+            <!-- Person -->
+            <p-tabpanel value="person">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @for (code of editedOptions.person; track code) {
+                        <p-chip [label]="code" (onRemove)="removeCode('person', code)" removable />
+                    } @empty {
+                        <span class="text-surface-500 dark:text-surface-400 italic">Keine Codes vorhanden</span>
+                    }
+                </div>
+
+                <div class="flex gap-2">
+                    <input pInputText
+                           [formControl]="newCodeControl"
+                           placeholder="Neuer Code (z.B. X)"
+                           class="flex-1 p-inputtext-sm"
+                           maxlength="1" />
+                    <p-button label="Hinzufügen"
+                              icon="pi pi-plus"
+                              (onClick)="addCode('person')"
+                              [disabled]="newCodeControl.invalid || (newCodeControl.value ?? '').trim().length !== 1" />
+                </div>
+            </p-tabpanel>
+
+            <!-- Account -->
+            <p-tabpanel value="account">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @for (code of editedOptions.account; track code) {
+                        <p-chip [label]="code" (onRemove)="removeCode('account', code)" removable />
+                    } @empty {
+                        <span class="text-surface-500 dark:text-surface-400 italic">Keine Codes vorhanden</span>
+                    }
+                </div>
+
+                <div class="flex gap-2">
+                    <input pInputText
+                           [formControl]="newCodeControl"
+                           placeholder="Neuer Code (z.B. Z)"
+                           class="flex-1 p-inputtext-sm"
+                           maxlength="1" />
+                    <p-button label="Hinzufügen"
+                              icon="pi pi-plus"
+                              (onClick)="addCode('account')"
+                              [disabled]="newCodeControl.invalid || (newCodeControl.value ?? '').trim().length !== 1" />
+                </div>
+            </p-tabpanel>
+
+            <!-- Default -->
+            <p-tabpanel value="default">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @for (code of editedOptions.default; track code) {
+                        <p-chip [label]="code" (onRemove)="removeCode('default', code)" removable />
+                    } @empty {
+                        <span class="text-surface-500 dark:text-surface-400 italic">Keine Codes vorhanden</span>
+                    }
+                </div>
+
+                <div class="flex gap-2">
+                    <input pInputText
+                           [formControl]="newCodeControl"
+                           placeholder="Neuer Code"
+                           class="flex-1 p-inputtext-sm"
+                           maxlength="1" />
+                    <p-button label="Hinzufügen"
+                              icon="pi pi-plus"
+                              (onClick)="addCode('default')"
+                              [disabled]="newCodeControl.invalid || (newCodeControl.value ?? '').trim().length !== 1" />
+                </div>
+            </p-tabpanel>
+        </p-tabpanels>
+    </p-tabs>
+
+    <div class="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-surface-200 dark:border-surface-700">
+        <p-button label="Auf Default zurücksetzen"
+                  severity="warn"
+                  icon="pi pi-refresh"
+                  (onClick)="resetToDefault()"
+                  class="flex-1" />
+
+        <p-button label="Auf Original zurück"
+                  severity="secondary"
+                  icon="pi pi-undo"
+                  (onClick)="resetToOriginal()"
+                  class="flex-1" />
+
+        <p-button label="Speichern"
+                  icon="pi pi-save"
+                  severity="success"
+                  (onClick)="save()"
+                  class="flex-1" />
+    </div>
+
+</p-card>
