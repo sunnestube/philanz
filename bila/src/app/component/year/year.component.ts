@@ -31,6 +31,12 @@ export class YearComponent {
         this.selectedMonth = month;
     }
 
+    protected save(): void {
+        const csvData = CsvExportService.convertToCSV(this.months, this.months[0].columns);
+        console.log("save", csvData);
+        localStorage.setItem("year", csvData);
+    }
+
     protected exportToCSV(): void {
         console.log("months", this.months);
 
@@ -45,6 +51,7 @@ export class YearComponent {
         link.click();
         document.body.removeChild(link);
     }
+
 
     // columns: MonthColumn[] = [
     //     new MonthColumn("Datum"),

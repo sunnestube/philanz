@@ -1,22 +1,31 @@
 <div class="tab-container">
-    @for (month of months; track month) {
-        <div class="tab-content" [class.active]="selectedMonth === month">
-            <bal-month [month]="month"></bal-month>
-        </div>
-    }
-
-    <div class="tabs">
+    @if (months && selectedMonth) {
         @for (month of months; track month) {
-            <div class="tab-label"
-                 [class]="month.label.background"
-                 [class.active]="selectedMonth === month"
-                 (click)="selectTab(month)">
-                {{ month.label.title }}
+            <div class="tab-content" [class.active]="selectedMonth === month">
+                <bal-month [month]="month"></bal-month>
             </div>
         }
-    </div>
-    <hr>
-    @if (months.length > 0) {
+
+        <div class="tabs">
+            @for (month of months; track month) {
+                <div class="tab-label"
+                     [class]="month.label.background"
+                     [class.active]="selectedMonth === month"
+                     (click)="selectTab(month)">
+                    {{ month.label.title }}
+                </div>
+            }
+        </div>
+        <hr>
+        <p-button
+            label="Speichern"
+            ariaLabel="Speichern"
+            severity="secondary"
+            outlined="true"
+            size="small"
+            (onClick)="save()"
+            styleClass="bg-blue-600 text-white border border-transparent rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
+        </p-button>
         <p-button
             label="Export as CSV"
             ariaLabel="Export as CSV"
@@ -27,8 +36,8 @@
             styleClass="bg-blue-600 text-white border border-transparent rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
         </p-button>
 
-
     }
-
     <bal-import (dataLoaded)="import($event)"></bal-import>
 </div>
+
+

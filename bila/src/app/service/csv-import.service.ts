@@ -38,7 +38,7 @@ export class CsvImportService {
                 const monthColumns = header.map((title) => {
                     const [colTitleSection, colType] = title.split('::');
 
-                    console.log("type", colType);
+                    // console.log("type", colType);
 
                     const [colTitle, colSection] = colTitleSection.split('_');
                     return new MonthColumn(colTitle, colType as CELL_TYPE, colSection as SECTION);

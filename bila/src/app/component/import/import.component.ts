@@ -22,7 +22,16 @@ export class ImportComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.loadTemplate().subscribe(csvData => this.initMonths(csvData));
+        this.load();
+    }
+
+    load(): void {
+        const storageYear: string | null = localStorage.getItem("year");
+        if (storageYear) {
+            this.initMonths(storageYear);
+        } else {
+            this.loadTemplate().subscribe(csvData => this.initMonths(csvData));
+        }
     }
 
     protected onDragOver(event: DragEvent): void {
@@ -65,7 +74,7 @@ export class ImportComponent implements OnInit {
         }
     }
 
-    private initMonths(csvData: string): void {
+    initMonths(csvData: string): void {
         const months: Month[] = CsvImportService.parseCSV(csvData);
         console.log("csv imported months", months);
         this.dataLoaded.emit(months);
