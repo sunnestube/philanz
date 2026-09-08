@@ -1,0 +1,34 @@
+table {
+    border-collapse: collapse;
+    min-width: max-content; /* sehr wichtig bei vielen Spalten! */
+}
+
+th, td {
+    border-right: 1px solid #e2e8f0;
+}
+
+th:last-child,
+td:last-child {
+    border-right: none;
+}
+
+tr:hover td.sticky {
+    background-color: rgb(241 245 249);
+}
+
+.sticky {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: white;
+    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+}
+
+/* Optional: Farbliche Hervorhebung bei sehr großen Beträgen */
+td.text-green-700 {
+    font-weight: 500;
+}
+
+td.text-red-700 {
+    font-weight: 500;
+}
