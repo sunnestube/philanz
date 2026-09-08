@@ -1,3 +1,9 @@
+.table-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
 .formula-bar {
     display: flex;
     align-items: stretch;
@@ -5,6 +11,9 @@
     border-bottom: none;
     background: #f8fafc;
     min-height: 32px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
 }
 .formula-bar.active {
     border-color: #2563eb;
@@ -35,7 +44,8 @@
     color: #0f172a;
 }
 .data-table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 }
