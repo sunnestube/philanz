@@ -1,30 +1,42 @@
-import {Injectable} from "@angular/core";
+import {Injectable} from '@angular/core';
 import {Month} from '../model/Month';
 import {MonthColumn} from '../model/MonthColumn';
+import {SECTION} from '../model/Section';
 
 @Injectable({
-    providedIn: "root",
+    providedIn: 'root'
 })
 export class CsvExportService {
 
     static convertToCSV(months: Month[], columns: MonthColumn[]): string {
-        const rows: string[] = [];
-        const header: string[] = [];
-        columns.forEach(column => {
-            header.push(`${column.title}_${column.section}::${column.type}`);
-        })
-        rows.push(header.join(';'));
-        months.forEach(month => {
-            month.rows.forEach(row => {
-                const cells: string[] = [];
-                row.cells.forEach(cell => {
-                    cells.push(`${cell.value};`);
-                });
-                rows.push(`${cells.join('')}`);
+        const header = columns.map((column) => CsvExportService.headerToken(column)).join(';');
+        const rows: string[] = [header];
+
+        months.forEach((month) => {
+            month.rows.forEach((row) => {
+                const cells = row.cells.map((cell) => CsvExportService.escape(cell.raw ?? cell.value ?? ''));
+                rows.push(cells.join(';'));
             });
         });
-        return rows.join('\n');
+
+        return `\uFEFF${rows.join('\n')}\n`;
     }
 
+    private static headerToken(column: MonthColumn): string {
+        const section = column.section && column.section !== SECTION.DEFAULT
+            ? `_${column.section}`
+            : '';
+        return `${column.title}${section}::${column.type}`;
+    }
 
+    private static escape(value: string): string {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const text = String(value);
+        if (/[;"\n\r]/.test(text)) {
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+        return text;
+    }
 }

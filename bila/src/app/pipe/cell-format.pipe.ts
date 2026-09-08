@@ -7,8 +7,11 @@ import {MonthLabel} from '../model/MonthLabel';
 })
 export class CellFormatPipe implements PipeTransform {
     transform(value: string, cellType: CellType, monthLabel: MonthLabel): string {
-        if (value === null || value === undefined) {
+        if (value === null || value === undefined || value === '') {
             return '';
+        }
+        if (String(value).trim().startsWith('=')) {
+            return value;
         }
         switch (cellType.id) {
             case CELL_TYPE.number:
@@ -21,12 +24,12 @@ export class CellFormatPipe implements PipeTransform {
     }
 
     private transformNumber(value: string): string {
-        const numb = Number(value);
-        if (!isNaN(numb)) {
-            return this.formatNumber(numb, FRACTION_DIGITS.CHF)
-        } else {
-            return "";
+        const normalized = String(value).replace(/['’\s]/g, '').replace(',', '.');
+        const numb = Number(normalized);
+        if (!isNaN(numb) && Number.isFinite(numb)) {
+            return this.formatNumber(numb, FRACTION_DIGITS.CHF);
         }
+        return value;
     }
 
     private formatNumber(numb: number, format: FRACTION_DIGITS): string {
@@ -37,16 +40,11 @@ export class CellFormatPipe implements PipeTransform {
     }
 
     private transformDate(value: string, monthLabel: MonthLabel): string {
-        let output: string = "";
-        const split: string[] = value.split(".");
-        output += this.enterDate(split[0]);
-        output += ". ";
-        output += monthLabel.title;
-        return output;
+        const split: string[] = value.split('.');
+        return `${this.enterDate(split[0])}. ${monthLabel.title}`;
     }
 
     private enterDate(date: string): string {
-        return date.length < 2 ? "0" + date : date;
+        return date.length < 2 ? '0' + date : date;
     }
-
 }

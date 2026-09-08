@@ -16,28 +16,24 @@
                 </div>
             }
         </div>
-        <hr>
-        <p-button
-            label="Speichern"
-            ariaLabel="Speichern"
-            severity="secondary"
-            outlined="true"
-            size="small"
-            (onClick)="save()"
-            styleClass="bg-blue-600 text-white border border-transparent rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-        </p-button>
-        <p-button
-            label="Export as CSV"
-            ariaLabel="Export as CSV"
-            severity="secondary"
-            outlined="true"
-            size="small"
-            (onClick)="exportToCSV()"
-            styleClass="bg-blue-600 text-white border border-transparent rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-        </p-button>
-
+        <div class="year-actions">
+            <p-button
+                label="Speichern"
+                ariaLabel="Speichern"
+                severity="secondary"
+                outlined="true"
+                size="small"
+                (onClick)="save()">
+            </p-button>
+            <p-button
+                label="CSV exportieren"
+                ariaLabel="CSV exportieren"
+                severity="secondary"
+                outlined="true"
+                size="small"
+                (onClick)="exportToCSV()">
+            </p-button>
+        </div>
     }
     <bal-import (dataLoaded)="import($event)"></bal-import>
 </div>
-
-
