@@ -7,24 +7,12 @@ import {MonthRow} from '../../model/MonthRow';
 import {TableNavigationService} from '../../service/tableNavigation.service';
 import {CELL_TYPE} from '../../model/CellType';
 import {FormulaService} from '../../service/formula.service';
-
-interface Options {
-    [key: string]: string[];
-}
-
-const OPTIONS: Options = {
-    person: ['', 'P', 'L', 'H', 'E', 'A'],
-    account: ['', 'B', 'K', 'S', 'R', 'Y', 'T'],
-    default: ['d']
-};
+import {WorkbookService} from '../../service/workbook.service';
 
 @Component({
     selector: 'bal-month-table',
     templateUrl: './monthTable.html',
-    imports: [
-        FormsModule,
-        NewRowButtonsComponent
-    ],
+    imports: [FormsModule, NewRowButtonsComponent],
     styleUrls: ['./monthTable.css']
 })
 export class MonthTable {
@@ -34,21 +22,32 @@ export class MonthTable {
     formulaMode = false;
     draft = '';
     activeAddress = '';
-
     @ViewChild('formulaInput') formulaInput?: ElementRef<HTMLInputElement>;
 
-    constructor(private readonly formulaService: FormulaService) {
+    constructor(
+        private readonly formulaService: FormulaService,
+        private readonly workbook: WorkbookService
+    ) {}
+
+    optionsFor(cell: MonthCell): string[] {
+        this.workbook.revision();
+        if (cell.type.id === CELL_TYPE.select_person) {
+            return this.workbook.persons();
+        }
+        if (cell.type.id === CELL_TYPE.select_account) {
+            return this.workbook.accounts();
+        }
+        return [''];
     }
 
     @Input()
     set month(month: Month) {
         month?.rows.forEach((row) => {
-            row.cells.forEach((cell) => this.onSelectChange(cell, row));
+            row.cells.forEach((cell) => this.applySelectSideEffects(cell, row));
         });
         this._month = month;
         this.formulaService.recalculateAll();
     }
-
     get month(): Month | undefined {
         return this._month;
     }
@@ -56,37 +55,34 @@ export class MonthTable {
     columnLetter(index: number): string {
         return this.formulaService.columnLetter(index);
     }
-
     cellAddress(rowIndex: number, colIndex: number): string {
         return this.formulaService.addressFor(colIndex, rowIndex);
     }
-
     displayValue(cell: MonthCell): string {
         if (cell.error) {
             return cell.error;
         }
         return cell.display || cell.raw || '';
     }
-
     isFormula(cell: MonthCell): boolean {
         return this.formulaService.isFormula(cell.raw);
     }
-
     onSelectChange(cell: MonthCell, row: MonthRow): void {
-        if (cell.type.id.indexOf(CELL_TYPE.select) !== -1) {
-            const opt: string = cell.type.id.split('_')[1] as string;
-            const options: string[] = OPTIONS[opt ? opt : 'default'];
-            if (!options) {
-                return;
-            }
-            if (!options.includes(cell.value)) {
-                cell.value = '';
-            } else if (opt === 'person') {
-                row.color = cell.value.toLowerCase();
-            }
+        this.applySelectSideEffects(cell, row);
+        this.workbook.touch();
+    }
+    private applySelectSideEffects(cell: MonthCell, row: MonthRow): void {
+        if (cell.type.id.indexOf(CELL_TYPE.select) === -1) {
+            return;
+        }
+        const options = this.optionsFor(cell);
+        if (!options.includes(cell.value)) {
+            cell.value = '';
+        }
+        if (cell.type.id === CELL_TYPE.select_person) {
+            row.color = (cell.value || '').toLowerCase();
         }
     }
-
     startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
         this.editingRow = rowIndex;
         this.editingCol = colIndex;
@@ -97,7 +93,6 @@ export class MonthTable {
             queueMicrotask(() => this.focusFormulaBar());
         }
     }
-
     onCellInput(event: Event, cell: MonthCell): void {
         const value = (event.target as HTMLInputElement).value;
         this.draft = value;
@@ -107,7 +102,6 @@ export class MonthTable {
             queueMicrotask(() => this.focusFormulaBar());
         }
     }
-
     onFormulaInput(event: Event, cell: MonthCell | null): void {
         const value = (event.target as HTMLInputElement).value;
         this.draft = value;
@@ -116,18 +110,17 @@ export class MonthTable {
             cell.raw = value;
         }
     }
-
     commitEdit(cell: MonthCell | null): void {
         if (!cell) {
             return;
         }
         cell.raw = this.draft;
         this.formulaService.recalculateAll();
+        this.workbook.touch();
         this.formulaMode = false;
         this.editingRow = null;
         this.editingCol = null;
     }
-
     cancelEdit(cell: MonthCell | null): void {
         if (cell && this.editingRow !== null) {
             this.formulaService.recalculateAll();
@@ -137,7 +130,6 @@ export class MonthTable {
         this.editingCol = null;
         this.draft = '';
     }
-
     onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
         if (this.formulaMode) {
             this.onFormulaKeydown(event, rowIndex, colIndex, cell);
@@ -156,7 +148,6 @@ export class MonthTable {
         }
         this.navigate(event, rowIndex, colIndex);
     }
-
     onFormulaKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
         if (event.key === 'Escape') {
             event.preventDefault();
@@ -184,7 +175,6 @@ export class MonthTable {
             queueMicrotask(() => this.focusFormulaBar());
         }
     }
-
     onCellMouseDown(event: MouseEvent, rowIndex: number, colIndex: number): void {
         if (!this.formulaMode || this.editingRow === null) {
             return;
@@ -196,20 +186,15 @@ export class MonthTable {
         this.insertReference(rowIndex, colIndex);
         queueMicrotask(() => this.focusFormulaBar());
     }
-
     activeCell(): MonthCell | null {
         if (!this.month || this.editingRow === null || this.editingCol === null) {
             return null;
         }
         return this.month.rows[this.editingRow]?.cells[this.editingCol] ?? null;
     }
-
     navigate(event: KeyboardEvent, rowIndex: number, cellIndex: number): void {
         TableNavigationService.navigate(event.key, rowIndex, cellIndex, this.month?.columns?.length);
     }
-
-    protected readonly OPTIONS = OPTIONS;
-
     private insertReference(rowIndex: number, colIndex: number): void {
         const address = this.cellAddress(rowIndex, colIndex);
         const current = this.draft || '=';
@@ -221,7 +206,6 @@ export class MonthTable {
             cell.raw = this.draft;
         }
     }
-
     private shiftAddress(rowIndex: number, colIndex: number, key: string): {row: number; col: number} {
         const lastCol = (this.month?.columns.length ?? 1) - 1;
         const lastRow = (this.month?.rows.length ?? 1) - 1;
@@ -246,7 +230,6 @@ export class MonthTable {
         }
         return {row, col};
     }
-
     private focusFormulaBar(): void {
         this.formulaInput?.nativeElement?.focus();
         const input = this.formulaInput?.nativeElement;
