@@ -2,10 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-.test-class {
-    background-color: #ff0000; /* Roter Hintergrund zum Testen */
-    color: #ffffff; /* Weißer Text zum Testen */
-}
-
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.settings-dialog,
+.settings-dialog.p-dialog,
+.settings-dialog .p-dialog-header,
+.settings-dialog .p-dialog-content,
+.settings-dialog .p-dialog-footer,
+.p-dialog.settings-dialog {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    opacity: 1 !important;
+}
+.p-dialog-mask {
+    background: rgba(15, 23, 42, 0.72) !important;
+    backdrop-filter: none !important;
+}
+@media (prefers-color-scheme: dark) {
+    .settings-dialog,
+    .settings-dialog.p-dialog,
+    .settings-dialog .p-dialog-header,
+    .settings-dialog .p-dialog-content,
+    .settings-dialog .p-dialog-footer,
+    .p-dialog.settings-dialog {
+        background: #0f172a !important;
+        color: #e2e8f0 !important;
+    }
+}

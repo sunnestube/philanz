@@ -1,4 +1,9 @@
-<p-dialog header="Einstellungen" [(visible)]="visible" [modal]="true" [dismissableMask]="true" [style]="{width: 'min(920px, 96vw)'}">
+<p-dialog header="Einstellungen"
+          styleClass="settings-dialog"
+          [(visible)]="visible"
+          [modal]="true"
+          [dismissableMask]="true"
+          [style]="{width: 'min(920px, 96vw)'}">
     <div class="settings-tabs">
         <button type="button" [class.active]="tab === 'person'" (click)="tab = 'person'">Personen (C)</button>
         <button type="button" [class.active]="tab === 'account'" (click)="tab = 'account'">Konten (D)</button>

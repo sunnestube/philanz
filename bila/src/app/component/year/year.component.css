@@ -1,16 +1,15 @@
 .year-shell {
     display: flex;
     align-items: stretch;
-    min-height: calc(100vh - 60px);
+    min-height: 0;
 }
 .year-shell .tab-container {
     flex: 1;
     min-width: 0;
-}
-.tab-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 60px);
+}
+.tab-container {
     background: #f8fafc;
     color: #0f172a;
 }
@@ -18,19 +17,23 @@
     border: 1px solid #cbd5e1;
     padding: 0;
     flex: 1;
-    overflow-y: auto;
+    overflow: auto;
     display: none;
     background: #fff;
+    -webkit-overflow-scrolling: touch;
 }
 .tab-content.active {
     display: block;
 }
 .tabs {
     display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-top: 2px solid #cbd5e1;
-    margin-top: 12px;
+    margin-top: 8px;
     padding: 0 8px;
     background: #e2e8f0;
+    flex-shrink: 0;
 }
 .tab-label {
     padding: 2px 10px;
@@ -40,10 +43,9 @@
     cursor: pointer;
     margin-right: 5px;
     font-size: smaller;
+    flex-shrink: 0;
 }
-.tab-label:hover {
-    background: #d0d0d0;
-}
+.tab-label:hover { background: #d0d0d0; }
 .tab-label.active {
     background: white;
     border-bottom: 2px solid #2563eb;
@@ -53,9 +55,17 @@
     display: flex;
     gap: 8px;
     padding: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
 }
-.red {
-    background: lightcoral;
+.red { background: lightcoral; }
+@media (max-width: 900px) {
+    .year-shell {
+        flex-direction: column;
+    }
+    .tab-content.active {
+        max-height: 58vh;
+    }
 }
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #020617; }
