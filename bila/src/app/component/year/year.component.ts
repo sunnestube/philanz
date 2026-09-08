@@ -1,11 +1,11 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
 import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
-import {CsvExportService} from '../../service/csv-export.service';
-import {FormulaService} from '../../service/formula.service';
+import {WorkbookService} from '../../service/workbook.service';
+import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 
 @Component({
     templateUrl: './year.component.html',
@@ -13,41 +13,34 @@ import {FormulaService} from '../../service/formula.service';
         FormsModule,
         MonthComponent,
         ImportComponent,
-        Button
+        Button,
+        SaldoPanelComponent
     ],
     styleUrls: ['./year.component.css']
 })
 export class YearComponent {
-
-    protected months: Month[] = [];
-    protected selectedMonth: Month = this.months[0];
-
-    constructor(private readonly formulaService: FormulaService) {
-    }
+    readonly workbook = inject(WorkbookService);
 
     protected import(months: Month[]): void {
-        this.months = months;
-        this.selectedMonth = this.months[0];
-        this.formulaService.setMonths(this.months);
+        this.workbook.setMonths(months);
     }
 
     protected selectTab(month: Month): void {
-        this.selectedMonth = month;
+        this.workbook.selectMonth(month);
     }
 
     protected save(): void {
-        if (!this.months.length) {
-            return;
+        const csvData = this.workbook.toCsv();
+        if (csvData) {
+            localStorage.setItem('year', csvData);
         }
-        const csvData = CsvExportService.convertToCSV(this.months, this.months[0].columns);
-        localStorage.setItem('year', csvData);
     }
 
     protected exportToCSV(): void {
-        if (!this.months.length) {
+        const csvData = this.workbook.toCsv();
+        if (!csvData) {
             return;
         }
-        const csvData = CsvExportService.convertToCSV(this.months, this.months[0].columns);
         const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;'});
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
