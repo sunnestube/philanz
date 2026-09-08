@@ -1,0 +1,74 @@
+<p-dialog header="Einstellungen" [(visible)]="visible" [modal]="true" [dismissableMask]="true" [style]="{width: 'min(920px, 96vw)'}">
+    <div class="settings-tabs">
+        <button type="button" [class.active]="tab === 'person'" (click)="tab = 'person'">Personen (C)</button>
+        <button type="button" [class.active]="tab === 'account'" (click)="tab = 'account'">Konten (D)</button>
+        <button type="button" [class.active]="tab === 'columns'" (click)="tab = 'columns'">Spalten</button>
+    </div>
+    @if (tab === 'person') {
+        <p class="hint">Codes in Spalte Person. Bestimmt Farbe und Saldo-Gruppe.</p>
+        <div class="chips">
+            @for (code of workbook.personCodes(); track code) {
+                <span class="chip person-{{code.toLowerCase()}}">
+                    {{ code }}
+                    <button type="button" (click)="removePerson(code)" aria-label="Person entfernen">×</button>
+                </span>
+            }
+        </div>
+        <div class="add-row">
+            <input [(ngModel)]="newPerson" maxlength="2" placeholder="z.B. M" (keydown.enter)="addPerson()"/>
+            <p-button label="Hinzufügen" size="small" (onClick)="addPerson()"/>
+        </div>
+    }
+    @if (tab === 'account') {
+        <p class="hint">Codes in Spalte Konto. Zusammen mit Person ergibt sich P B, P T, …</p>
+        <div class="chips">
+            @for (code of workbook.accountCodes(); track code) {
+                <span class="chip">
+                    {{ code }}
+                    <button type="button" (click)="removeAccount(code)" aria-label="Konto entfernen">×</button>
+                </span>
+            }
+        </div>
+        <div class="add-row">
+            <input [(ngModel)]="newAccount" maxlength="2" placeholder="z.B. X" (keydown.enter)="addAccount()"/>
+            <p-button label="Hinzufügen" size="small" (onClick)="addAccount()"/>
+        </div>
+    }
+    @if (tab === 'columns') {
+        <p class="hint">Spalten hinzufügen, umbenennen oder entfernen. Month/Line bleiben geschützt.</p>
+        <table class="col-table">
+            <thead>
+            <tr><th>Titel</th><th>Typ</th><th>Bereich</th><th></th></tr>
+            </thead>
+            <tbody>
+                @for (column of columns(); track $index) {
+                    <tr>
+                        <td>
+                            <input [ngModel]="column.title" (ngModelChange)="renameColumn($index, $event)" [disabled]="workbook.isLockedColumn($index)"/>
+                        </td>
+                        <td>
+                            <select [ngModel]="column.type" (ngModelChange)="changeType($index, $event)" [disabled]="workbook.isLockedColumn($index)">
+                                @for (type of types; track type.id) {
+                                    <option [value]="type.id">{{ type.label }}</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <select [ngModel]="column.section" (ngModelChange)="changeSection($index, $event)" [disabled]="workbook.isLockedColumn($index)">
+                                @for (section of sections; track section.id) {
+                                    <option [value]="section.id">{{ section.label }}</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            @if (!workbook.isLockedColumn($index)) {
+                                <button type="button" class="danger" (click)="removeColumn($index)">Entfernen</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p-button label="Spalte hinzufügen" icon="pi pi-plus" size="small" (onClick)="addColumn()"/>
+    }
+</p-dialog>
