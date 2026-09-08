@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "angular",
-  "installCommand": "npm ci --prefix bila",
-  "buildCommand": "npm run build --prefix bila",
+  "installCommand": "cd bila && npm ci",
+  "buildCommand": "cd bila && npm run build",
   "outputDirectory": "bila/dist/bila/browser",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
