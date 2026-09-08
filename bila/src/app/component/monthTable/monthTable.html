@@ -45,8 +45,7 @@
                                         id="cell_{{rowIndex}}_{{colIndex}}"
                                         tabindex="0"
                                         [ngModelOptions]="{standalone: true}">
-                                    @for (
-                                        option of cell.type.id.split('_')[1] ? OPTIONS[cell.type.id.split('_')[1]] : OPTIONS['default']; track $index) {
+                                    @for (option of optionsFor(cell); track option) {
                                         <option [value]="option">
                                             {{ option }}
                                         </option>
