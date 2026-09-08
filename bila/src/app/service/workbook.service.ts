@@ -71,37 +71,50 @@ export class WorkbookService {
         this.touch();
     }
 
-    addColumn(column: MonthColumn = new MonthColumn('Neu', CELL_TYPE.number, SECTION.AUSGANG)): void {
+    addColumn(
+        column: MonthColumn = new MonthColumn('Neu', CELL_TYPE.number, SECTION.AUSGANG),
+        atIndex?: number
+    ): void {
         const months = this.months();
+        const target = atIndex === undefined ? (months[0]?.columns.length ?? 0) : atIndex;
+        if (target < 0) {
+            return;
+        }
+        this.formulaService.shiftAfterColumnInserted(target);
         months.forEach((month) => {
-            month.columns.push(column);
+            const copy = new MonthColumn(column.title, column.type, column.section);
+            const index = Math.min(target, month.columns.length);
+            month.columns.splice(index, 0, copy);
             month.rows.forEach((row, rowIndex) => {
-                row.cells.push(new MonthCell(
+                row.cells.splice(index, 0, new MonthCell(
                     rowIndex,
-                    month.columns.length - 1,
-                    column.title,
-                    new CellType(column.type),
+                    index,
+                    copy.title,
+                    new CellType(copy.type),
                     ''
                 ));
             });
         });
-        this.months.set([...months]);
-        this.formulaService.setMonths(this.months());
-        this.touch();
+        this.reindexCells(months);
+        this.publish(months);
+    }
+
+    insertColumn(index: number): void {
+        this.addColumn(new MonthColumn('Neu', CELL_TYPE.number, SECTION.AUSGANG), index);
     }
 
     removeColumn(index: number): void {
         if (this.isLockedColumn(index)) {
             return;
         }
+        this.formulaService.shiftAfterColumnRemoved(index);
         const months = this.months();
         months.forEach((month) => {
             month.columns.splice(index, 1);
             month.rows.forEach((row) => row.cells.splice(index, 1));
         });
-        this.months.set([...months]);
-        this.formulaService.setMonths(this.months());
-        this.touch();
+        this.reindexCells(months);
+        this.publish(months);
     }
 
     updateColumn(index: number, patch: Partial<{title: string; type: CELL_TYPE; section: SECTION}>): void {
@@ -132,9 +145,40 @@ export class WorkbookService {
                 cell.type = new CellType(column.type);
             });
         });
-        this.months.set([...months]);
-        this.formulaService.setMonths(this.months());
-        this.touch();
+        this.publish(months);
+    }
+
+    renameCode(kind: 'person' | 'account', from: string, to: string): void {
+        const next = to.trim().toUpperCase();
+        const prev = from.trim().toUpperCase();
+        if (!next || next === prev) {
+            return;
+        }
+        if (kind === 'person') {
+            this.persons.set(this.normalizeCodes(
+                this.persons().map((code) => code === prev ? next : code)
+            ));
+        } else {
+            this.accounts.set(this.normalizeCodes(
+                this.accounts().map((code) => code === prev ? next : code)
+            ));
+        }
+        const type = kind === 'person' ? CELL_TYPE.select_person : CELL_TYPE.select_account;
+        this.months().forEach((month) => {
+            month.rows.forEach((row) => {
+                row.cells.forEach((cell) => {
+                    if (cell.type.id === type && (cell.raw || '').trim().toUpperCase() === prev) {
+                        cell.raw = next;
+                    }
+                });
+                if (kind === 'person') {
+                    const person = row.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+                    row.color = (person?.raw || '').toLowerCase();
+                }
+            });
+        });
+        this.persistSettings();
+        this.publish(this.months());
     }
 
     isLockedColumn(index: number): boolean {
@@ -214,6 +258,24 @@ export class WorkbookService {
             item.balance = item.income - item.expenses;
         });
         return [...map.values()];
+    }
+
+    private publish(months: Month[]): void {
+        this.months.set([...months]);
+        this.formulaService.setMonths(this.months());
+        this.touch();
+    }
+
+    private reindexCells(months: Month[]): void {
+        months.forEach((month) => {
+            month.rows.forEach((row, rowIndex) => {
+                row.cells.forEach((cell, colIndex) => {
+                    cell.rowIndex = rowIndex;
+                    cell.columnIndex = colIndex;
+                    cell.columnTitle = month.columns[colIndex]?.title ?? cell.columnTitle;
+                });
+            });
+        });
     }
 
     private normalizeCodes(codes: string[]): string[] {
