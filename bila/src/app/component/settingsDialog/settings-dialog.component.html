@@ -1,9 +1,12 @@
 <p-dialog header="Einstellungen"
           styleClass="settings-dialog"
+          maskStyleClass="settings-mask"
+          appendTo="body"
           [(visible)]="visible"
           [modal]="true"
           [dismissableMask]="true"
-          [style]="{width: 'min(920px, 96vw)'}">
+          [closable]="true"
+          [style]="{width: 'min(920px, 96vw)', background: 'var(--settings-bg, #0f172a)'}">
     <div class="settings-tabs">
         <button type="button" [class.active]="tab === 'person'" (click)="tab = 'person'">Personen (C)</button>
         <button type="button" [class.active]="tab === 'account'" (click)="tab = 'account'">Konten (D)</button>

@@ -1,11 +1,16 @@
 .year-shell {
     display: flex;
+    flex-direction: column;
     align-items: stretch;
     min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 .year-shell .tab-container {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
+    width: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -21,9 +26,12 @@
     display: none;
     background: #fff;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    max-width: 100%;
 }
 .tab-content.active {
     display: block;
+    max-height: 58vh;
 }
 .tabs {
     display: flex;
@@ -59,14 +67,18 @@
     flex-shrink: 0;
 }
 .red { background: lightcoral; }
-@media (max-width: 900px) {
+
+@media (min-width: 1100px) {
     .year-shell {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: stretch;
+        overflow: visible;
     }
     .tab-content.active {
-        max-height: 58vh;
+        max-height: none;
     }
 }
+
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #020617; }
     .tab-container { background: #020617; color: #e2e8f0; }
