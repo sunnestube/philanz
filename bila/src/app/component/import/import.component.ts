@@ -1,9 +1,9 @@
 import {Component, ElementRef, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {CsvImportService} from '../../service/csv-import.service';
 import {Month} from '../../model/Month';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
+import {WorkbookService} from '../../service/workbook.service';
 
 @Component({
     selector: 'bal-import',
@@ -18,7 +18,7 @@ export class ImportComponent implements OnInit {
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
     @Output() dataLoaded: EventEmitter<Month[]> = new EventEmitter<Month[]>();
 
-    constructor(private http: HttpClient) {
+    constructor(private http: HttpClient, private workbook: WorkbookService) {
     }
 
     ngOnInit(): void {
@@ -26,11 +26,11 @@ export class ImportComponent implements OnInit {
     }
 
     load(): void {
-        const storageYear: string | null = localStorage.getItem("year");
+        const storageYear: string | null = localStorage.getItem('year');
         if (storageYear) {
             this.initMonths(storageYear);
         } else {
-            this.loadTemplate().subscribe(csvData => this.initMonths(csvData));
+            this.loadTemplate().subscribe((csvData) => this.initMonths(csvData));
         }
     }
 
@@ -47,11 +47,8 @@ export class ImportComponent implements OnInit {
     protected onDrop(event: DragEvent): void {
         event.preventDefault();
         event.stopPropagation();
-        if (event.dataTransfer && event.dataTransfer.files) {
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                this.handleFiles(files);
-            }
+        if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+            this.handleFiles(event.dataTransfer.files);
         }
     }
 
@@ -75,13 +72,17 @@ export class ImportComponent implements OnInit {
     }
 
     initMonths(csvData: string): void {
-        const months: Month[] = CsvImportService.parseCSV(csvData);
-        console.log("csv imported months", months);
+        const months: Month[] = this.workbook.applyCsv(csvData);
         this.dataLoaded.emit(months);
+    }
+
+    loadExample(): void {
+        this.http.get('assets/example.csv', {responseType: 'text'}).subscribe((csvData) => {
+            this.initMonths(csvData);
+        });
     }
 
     private loadTemplate(): Observable<string> {
         return this.http.get('assets/empty.csv', {responseType: 'text'});
     }
-
 }
