@@ -5,6 +5,7 @@ import {Month} from '../../model/Month';
 import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
 import {CsvExportService} from '../../service/csv-export.service';
+import {FormulaService} from '../../service/formula.service';
 
 @Component({
     templateUrl: './year.component.html',
@@ -21,10 +22,13 @@ export class YearComponent {
     protected months: Month[] = [];
     protected selectedMonth: Month = this.months[0];
 
+    constructor(private readonly formulaService: FormulaService) {
+    }
+
     protected import(months: Month[]): void {
-        console.log("import", months);
         this.months = months;
         this.selectedMonth = this.months[0];
+        this.formulaService.setMonths(this.months);
     }
 
     protected selectTab(month: Month): void {
@@ -32,52 +36,27 @@ export class YearComponent {
     }
 
     protected save(): void {
+        if (!this.months.length) {
+            return;
+        }
         const csvData = CsvExportService.convertToCSV(this.months, this.months[0].columns);
-        console.log("save", csvData);
-        localStorage.setItem("year", csvData);
+        localStorage.setItem('year', csvData);
     }
 
     protected exportToCSV(): void {
-        console.log("months", this.months);
-
+        if (!this.months.length) {
+            return;
+        }
         const csvData = CsvExportService.convertToCSV(this.months, this.months[0].columns);
         const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;'});
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'data.csv');
+        link.setAttribute('download', 'jahr.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
-
-
-    // columns: MonthColumn[] = [
-    //     new MonthColumn("Datum"),
-    //     new MonthColumn("Text"),
-    //     new MonthColumn("A 1", "number"),
-    //     new MonthColumn("A 2", "number"),
-    //     new MonthColumn("A 3", "number")
-    // ];
-
-    // months: Month[] = [
-    //     this.createMonth(MonthKey.JAN),
-    //     this.createMonth(MonthKey.FEB),
-    //     this.createMonth(MonthKey.MÄR),
-    //     this.createMonth(MonthKey.APR),
-    //     this.createMonth(MonthKey.MAI),
-    //     this.createMonth(MonthKey.JUN),
-    //     this.createMonth(MonthKey.JUL),
-    //     this.createMonth(MonthKey.AUG),
-    //     this.createMonth(MonthKey.SEP),
-    //     this.createMonth(MonthKey.OKT),
-    //     this.createMonth(MonthKey.NOV),
-    //     this.createMonth(MonthKey.DEZ)
-    // ];
-
-    // private createMonth(key: MonthKey): Month {
-    //     return new Month(new MonthLabel(key), this.columns);
-    // }
-
 }

@@ -1,32 +1,28 @@
 import {CellType} from './CellType';
-import {CellFormatPipe} from '../pipe/cell-format.pipe';
-import {MonthKey, MonthLabel} from './MonthLabel';
 
 export class MonthCell {
     rowIndex: number;
     columnIndex: number;
     columnTitle: string;
     type: CellType;
-    value: string;
-
-    private cellFormatPipe: CellFormatPipe = new CellFormatPipe();
+    raw: string;
+    display: string = '';
+    error: string | null = null;
 
     constructor(rowIndex: number, columnIndex: number, columnTitle: string, type: CellType, value: string) {
         this.rowIndex = rowIndex;
         this.columnIndex = columnIndex;
         this.columnTitle = columnTitle;
         this.type = type;
-
-        this.value = this.formatValue(value, type, new MonthLabel(MonthKey.JAN)) ;
+        this.raw = value ?? '';
+        this.display = this.raw;
     }
 
-    formatValue(value: string, cellType: CellType, monthLabel: MonthLabel): string {
-        if(value){
-            return this.cellFormatPipe.transform(value, cellType, monthLabel);
-        }else{
-            return "";
-        }
-
+    get value(): string {
+        return this.raw;
     }
 
+    set value(next: string) {
+        this.raw = next ?? '';
+    }
 }
