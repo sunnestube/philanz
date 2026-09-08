@@ -60,6 +60,45 @@ export class FormulaService {
         return letters;
     }
 
+    shiftAfterColumnRemoved(removedIndex: number): void {
+        this.rewriteFormulaRefs((col) => {
+            if (col === removedIndex) {
+                return null;
+            }
+            return col > removedIndex ? col - 1 : col;
+        });
+    }
+
+    shiftAfterColumnInserted(insertedIndex: number): void {
+        this.rewriteFormulaRefs((col) => col >= insertedIndex ? col + 1 : col);
+    }
+
+    rewriteFormulaRefs(mapColumn: (col: number) => number | null): void {
+        const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?([A-Za-z]+)(\d+)/g;
+        for (const month of this.months) {
+            for (const row of month.rows) {
+                for (const cell of row.cells) {
+                    const raw = cell.raw ?? '';
+                    if (!raw.trim().startsWith('=')) {
+                        continue;
+                    }
+                    cell.raw = raw.replace(pattern, (full, monthName, letters, digits) => {
+                        const col = this.letterToIndex(String(letters).toUpperCase());
+                        const nextCol = mapColumn(col);
+                        if (nextCol === null) {
+                            return '#BEZUG!';
+                        }
+                        if (nextCol === col) {
+                            return full;
+                        }
+                        const next = this.columnLetter(nextCol) + digits;
+                        return monthName ? `${monthName}!${next}` : next;
+                    });
+                }
+            }
+        }
+    }
+
     parseAddress(token: string, fallbackMonth: string): CellAddress | null {
         const match = token.trim().match(/^(?:([A-Za-zÄÖÜäöü]{3})!)?([A-Za-z]+)(\d+)$/);
         if (!match) {
