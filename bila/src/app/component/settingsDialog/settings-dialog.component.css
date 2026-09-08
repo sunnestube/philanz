@@ -1,0 +1,16 @@
+.settings-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.settings-tabs button { border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.settings-tabs button.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.hint { color: #64748b; font-size: 13px; margin: 0 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; background: #e2e8f0; }
+.chip button { border: 0; background: transparent; cursor: pointer; }
+.chip.person-p { background: #dbeafe; }
+.chip.person-l { background: #c7d2fe; }
+.chip.person-h { background: #fef08a; }
+.chip.person-a, .chip.person-e { background: #fdba74; }
+.add-row { display: flex; gap: 8px; }
+.add-row input, .col-table input, .col-table select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; }
+.col-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.col-table th, .col-table td { border-bottom: 1px solid #e2e8f0; padding: 6px; text-align: left; }
+.danger { border: 0; background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 4px 8px; cursor: pointer; }

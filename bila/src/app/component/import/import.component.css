@@ -5,11 +5,24 @@
   text-align: center;
   transition: background-color 0.3s;
 }
-
-.drop-area:hover {
-  background-color: #f0f8ff;
+.drop-area:hover { background-color: #f0f8ff; }
+.drop-area.drag-over { background-color: #e0e0e0; }
+.import-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
-
-.drop-area.drag-over {
-  background-color: #e0e0e0;
+.import-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+.import-actions button.example { background: #0f766e; }
+@media (prefers-color-scheme: dark) {
+  .drop-area { border-color: #38bdf8; color: #e2e8f0; }
+  .drop-area:hover { background-color: #0f172a; }
 }
