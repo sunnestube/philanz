@@ -8,5 +8,11 @@ export const routes: Routes = [
     {path: '', component: HomeComponent},
     {path: 'gpt', component: GptComponent},
     {path: 'year', component: YearComponent},
+    {
+        path: 'biltanz',
+        loadComponent: () =>
+            import('./features/biltanz/pages/biltanz-page/biltanz-page.component')
+                .then((m) => m.BiltanzPageComponent)
+    },
     {path: 'about', component: AboutComponent}
 ];
