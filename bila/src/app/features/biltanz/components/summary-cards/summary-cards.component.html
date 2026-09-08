@@ -1,0 +1,41 @@
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-slate-600 font-medium">Gesamteinnahmen</h3>
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-green-600">
+            {{ formatCurrency(yearlyTotals().income) }}
+        </p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-slate-600 font-medium">Gesamtausgaben</h3>
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold text-red-600">
+            {{ formatCurrency(yearlyTotals().expenses) }}
+        </p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-slate-600 font-medium">Bilanz</h3>
+            <svg class="w-6 h-6" [class]="getBalanceClass(yearlyTotals().balance)" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <p class="text-3xl font-bold" [class]="getBalanceClass(yearlyTotals().balance)">
+            {{ formatCurrency(yearlyTotals().balance) }}
+        </p>
+    </div>
+</div>

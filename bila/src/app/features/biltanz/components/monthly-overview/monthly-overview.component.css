@@ -1,0 +1,17 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    th,
+    td {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
