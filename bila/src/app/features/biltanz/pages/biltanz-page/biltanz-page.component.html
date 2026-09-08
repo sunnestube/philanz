@@ -1,0 +1,33 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+        <bal-budget-header
+            [availableYears]="availableYears()"
+            [selectedYear]="selectedYear()"
+            [error]="error()"
+            (fileUploaded)="handleFileSelected($event)"
+            (yearSelected)="selectYear($event)"
+        />
+
+        @if (currentYearData(); as months) {
+            <bal-monthly-detail-table
+                [months]="months"
+                [year]="selectedYear()"
+                [expenseCategories]="expenseCategories"
+                [incomeCategories]="incomeCategories"
+            />
+
+            <bal-summary-cards [yearlyTotals]="yearlyTotals()"/>
+
+            <bal-yearly-comparison-chart [months]="months"/>
+
+            <bal-monthly-overview
+                [months]="months"
+                [year]="selectedYear()"
+            />
+        }
+
+        @if (!currentYearData() && availableYears().length === 0) {
+            <bal-empty-state/>
+        }
+    </div>
+</div>
