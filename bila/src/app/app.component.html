@@ -1,5 +1,10 @@
-<bal-toolbar [title]="title"></bal-toolbar>
-
-
-
-<router-outlet/>
+<div class="app-shell">
+    <bal-toolbar [title]="title"></bal-toolbar>
+    <main class="app-main">
+        <router-outlet/>
+    </main>
+    <footer class="app-footer">
+        <span>Philanz</span>
+        <span class="app-version">v{{ version }}</span>
+    </footer>
+</div>

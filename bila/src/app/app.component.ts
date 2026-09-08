@@ -1,6 +1,7 @@
 import {Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {ToolbarComponent} from './component/toolbar/toolbar.component';
+import {APP_VERSION} from './version';
 
 @Component({
     selector: 'bal-root',
@@ -10,4 +11,5 @@ import {ToolbarComponent} from './component/toolbar/toolbar.component';
 })
 export class AppComponent {
     title = '';
+    readonly version = APP_VERSION;
 }
