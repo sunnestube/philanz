@@ -1,7 +1,8 @@
 <div class="drop-area" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
-    <p>Ziehe deine Datei hierher oder klicke auf den Button, um eine Datei auszuwählen.</p>
-    <button (click)="fileInput.click()">Datei auswählen</button>
-    <input type="file" #fileInput (change)="onFileChange($event)" style="display: none;"/>
+    <p>CSV hierher ziehen oder Datei wählen. Formeln (=A1+B2) bleiben erhalten.</p>
+    <div class="import-actions">
+        <button type="button" (click)="fileInput.click()">Datei auswählen</button>
+        <button type="button" class="example" (click)="loadExample()">Beispiel-CSV laden</button>
+    </div>
+    <input type="file" #fileInput accept=".csv,text/csv" (change)="onFileChange($event)" style="display: none;"/>
 </div>
-
-

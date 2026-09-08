@@ -1,7 +1,5 @@
 <p-toolbar class="bg-gradient-to-r from-indigo-50 via-white to-teal-50 border-b border-gray-200 shadow-md">
     <div class="flex items-center justify-between w-full px-8 py-4">
-
-        <!-- Logo + Titel links -->
         <a routerLink="/" class="flex items-center space-x-3 group">
             <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -12,62 +10,16 @@
         {{ title }}
       </span>
         </a>
-
-        <!-- Navigation + Einstellungen-Button rechts -->
         <div class="flex items-center space-x-1">
-
-            <p-button
-                label="Home"
-                routerLink="/"
-                routerLinkActive="active-nav"
-                [routerLinkActiveOptions]="{ exact: true }"
-                [rounded]="true"
-                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
-                ariaLabel="Home">
-            </p-button>
-
+            <p-button label="Home" routerLink="/" routerLinkActive="active-nav" [routerLinkActiveOptions]="{ exact: true }" [rounded]="true" styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3" ariaLabel="Home"></p-button>
             <span class="text-gray-300 mx-2">|</span>
-
-            <p-button
-                label="Jahresübersicht"
-                routerLink="/year"
-                routerLinkActive="active-nav"
-                [rounded]="true"
-                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
-                ariaLabel="Jahresübersicht">
-            </p-button>
-
+            <p-button label="Jahresübersicht" routerLink="/year" routerLinkActive="active-nav" [rounded]="true" styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3" ariaLabel="Jahresübersicht"></p-button>
             <span class="text-gray-300 mx-2">|</span>
-
-            <p-button
-                label="Biltanz"
-                routerLink="/biltanz"
-                routerLinkActive="active-nav"
-                [rounded]="true"
-                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
-                ariaLabel="Biltanz">
-            </p-button>
-
+            <p-button label="Biltanz" routerLink="/biltanz" routerLinkActive="active-nav" [rounded]="true" styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3" ariaLabel="Biltanz"></p-button>
             <span class="text-gray-300 mx-2">|</span>
-
-            <p-button
-                label="Über uns"
-                routerLink="/about"
-                routerLinkActive="active-nav"
-                [rounded]="true"
-                styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3"
-                ariaLabel="Über uns">
-            </p-button>
-
-            <!-- Einstellungen-Button (Zahnrad) -->
-            <p-button
-                icon="pi pi-cog"
-                (onClick)="openSettings()"
-                [rounded]="true"
-                styleClass="p-button-text p-button-rounded text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 p-3 ml-4"
-                ariaLabel="Einstellungen">
-            </p-button>
-
+            <p-button label="Über uns" routerLink="/about" routerLinkActive="active-nav" [rounded]="true" styleClass="p-button-text p-button-rounded font-medium text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all duration-200 px-6 py-3" ariaLabel="Über uns"></p-button>
+            <p-button icon="pi pi-cog" (onClick)="openSettings()" [rounded]="true" styleClass="p-button-text p-button-rounded text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 p-3 ml-4" ariaLabel="Einstellungen"></p-button>
         </div>
     </div>
 </p-toolbar>
+<bal-settings-dialog/>
