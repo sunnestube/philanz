@@ -14,9 +14,10 @@ export class SaldoPanelComponent {
     readonly monthRows = computed(() => this.workbook.comboSaldos('month'));
     readonly yearRows = computed(() => this.workbook.comboSaldos('year'));
     readonly persons = computed(() => this.workbook.personCodes());
+    readonly accounts = computed(() => this.workbook.accountCodes());
 
-    rowsFor(person: string, rows: ComboSaldo[]): ComboSaldo[] {
-        return rows.filter((row) => row.person === person);
+    cell(person: string, account: string, rows: ComboSaldo[]): number {
+        return rows.find((row) => row.person === person && row.account === account)?.balance ?? 0;
     }
 
     format(value: number): string {

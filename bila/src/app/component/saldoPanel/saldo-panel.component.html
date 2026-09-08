@@ -1,34 +1,64 @@
 <aside class="saldo-panel">
     <h2>Saldo</h2>
-    <p class="sub">Person × Konto aus Spalte C/D</p>
+    <p class="sub">Person × Konto aus C/D</p>
     <h3>{{ monthLabel() || 'Monat' }}</h3>
-    @for (person of persons(); track person) {
-        <section class="person-block person-{{person.toLowerCase()}}">
-            <header>
-                <span>{{ person }}</span>
-                <strong [class.neg]="personTotal(person, monthRows()) < 0">{{ format(personTotal(person, monthRows())) }}</strong>
-            </header>
-            @for (row of rowsFor(person, monthRows()); track row.account) {
-                <div class="combo">
-                    <span class="code">{{ person }} {{ row.account }}</span>
-                    <span class="amt" [class.neg]="row.balance < 0">{{ format(row.balance) }}</span>
-                </div>
-            }
-        </section>
-    }
+    <div class="saldo-scroll">
+        <table class="saldo-grid">
+            <thead>
+            <tr>
+                <th></th>
+                @for (account of accounts(); track account) {
+                    <th>{{ account }}</th>
+                }
+                <th>Σ</th>
+            </tr>
+            </thead>
+            <tbody>
+                @for (person of persons(); track person) {
+                    <tr class="person-{{person.toLowerCase()}}">
+                        <th>{{ person }}</th>
+                        @for (account of accounts(); track account) {
+                            <td [class.neg]="cell(person, account, monthRows()) < 0"
+                                [class.zero]="cell(person, account, monthRows()) === 0">
+                                {{ format(cell(person, account, monthRows())) }}
+                            </td>
+                        }
+                        <td class="total" [class.neg]="personTotal(person, monthRows()) < 0">
+                            {{ format(personTotal(person, monthRows())) }}
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
     <h3>Jahr</h3>
-    @for (person of persons(); track person) {
-        <section class="person-block person-{{person.toLowerCase()}} compact">
-            <header>
-                <span>{{ person }}</span>
-                <strong [class.neg]="personTotal(person, yearRows()) < 0">{{ format(personTotal(person, yearRows())) }}</strong>
-            </header>
-            @for (row of rowsFor(person, yearRows()); track row.account) {
-                <div class="combo">
-                    <span class="code">{{ person }} {{ row.account }}</span>
-                    <span class="amt" [class.neg]="row.balance < 0">{{ format(row.balance) }}</span>
-                </div>
-            }
-        </section>
-    }
+    <div class="saldo-scroll">
+        <table class="saldo-grid">
+            <thead>
+            <tr>
+                <th></th>
+                @for (account of accounts(); track account) {
+                    <th>{{ account }}</th>
+                }
+                <th>Σ</th>
+            </tr>
+            </thead>
+            <tbody>
+                @for (person of persons(); track person) {
+                    <tr class="person-{{person.toLowerCase()}}">
+                        <th>{{ person }}</th>
+                        @for (account of accounts(); track account) {
+                            <td [class.neg]="cell(person, account, yearRows()) < 0"
+                                [class.zero]="cell(person, account, yearRows()) === 0">
+                                {{ format(cell(person, account, yearRows())) }}
+                            </td>
+                        }
+                        <td class="total" [class.neg]="personTotal(person, yearRows()) < 0">
+                            {{ format(personTotal(person, yearRows())) }}
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </aside>
