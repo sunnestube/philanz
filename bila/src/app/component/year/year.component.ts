@@ -6,6 +6,7 @@ import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
 import {WorkbookService} from '../../service/workbook.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
+import {HttpClient} from '@angular/common/http';
 
 @Component({
     templateUrl: './year.component.html',
@@ -20,6 +21,7 @@ import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 })
 export class YearComponent {
     readonly workbook = inject(WorkbookService);
+    private readonly http = inject(HttpClient);
 
     protected import(months: Month[]): void {
         this.workbook.setMonths(months);
@@ -34,6 +36,12 @@ export class YearComponent {
         if (csvData) {
             localStorage.setItem('year', csvData);
         }
+    }
+
+    protected loadExample(): void {
+        this.http.get('assets/example.csv', {responseType: 'text'}).subscribe((csvData) => {
+            this.workbook.applyCsv(csvData);
+        });
     }
 
     protected exportToCSV(): void {

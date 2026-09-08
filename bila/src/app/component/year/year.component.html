@@ -20,6 +20,7 @@
             <div class="year-actions">
                 <p-button label="Speichern" size="small" (onClick)="save()"/>
                 <p-button label="CSV exportieren" size="small" (onClick)="exportToCSV()"/>
+                <p-button label="Beispiel-CSV laden" size="small" (onClick)="loadExample()"/>
             </div>
         }
         <bal-import (dataLoaded)="import($event)"></bal-import>
