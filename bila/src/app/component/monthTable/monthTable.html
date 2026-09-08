@@ -1,10 +1,27 @@
 @if (month) {
+    <div class="formula-bar" [class.active]="formulaMode">
+        <div class="formula-address" title="Zellenadresse">
+            {{ activeAddress || '—' }}
+        </div>
+        <div class="formula-fx">fx</div>
+        <input
+            #formulaInput
+            class="formula-input"
+            type="text"
+            [value]="draft"
+            [placeholder]="formulaMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – mit = beginnt eine Formel'"
+            (input)="onFormulaInput($event, activeCell())"
+            (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+            (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
+        />
+    </div>
     <table class="data-table">
         <thead>
         <tr>
             @if (month) {
                 @for (column of month.columns; track $index) {
-                    <th class="{{column.type.split('_')[0]}} {{column.section}}" title="{{ column.type }}">
+                    <th class="{{column.type.split('_')[0]}} {{column.section}}"
+                        title="{{ columnLetter($index) }} · {{ column.type }}">
                         <div>{{ column.title }}</div>
                     </th>
                 }
@@ -16,8 +33,12 @@
             @for (row of month.rows; let rowIndex = $index; track $index) {
                 <tr [class]="row.color">
                     @for (cell of row.cells; let colIndex = $index; track $index) {
-                        <td [class]="cell.type.id.split('_')[0]">
-                            @if (cell.type.id.indexOf("select") !== -1) {
+                        <td [class]="cell.type.id.split('_')[0]"
+                            [class.formula]="isFormula(cell)"
+                            [class.editing]="editingRow === rowIndex && editingCol === colIndex"
+                            [class.ref-target]="formulaMode && !(editingRow === rowIndex && editingCol === colIndex)"
+                            (mousedown)="onCellMouseDown($event, rowIndex, colIndex)">
+                            @if (cell.type.id.indexOf('select') !== -1) {
                                 <select [(ngModel)]="cell.value"
                                         (change)="onSelectChange(cell, row)"
                                         (keyup)="navigate($event, rowIndex, colIndex)"
@@ -25,26 +46,26 @@
                                         tabindex="0"
                                         [ngModelOptions]="{standalone: true}">
                                     @for (
-                                        option of cell.type.id.split('_')[1] ? OPTIONS[cell.type.id.split('_')[1]] : OPTIONS["default"]; track $index) {
+                                        option of cell.type.id.split('_')[1] ? OPTIONS[cell.type.id.split('_')[1]] : OPTIONS['default']; track $index) {
                                         <option [value]="option">
                                             {{ option }}
                                         </option>
                                     }
                                 </select>
-
-
                             } @else {
-                                @if (cell.type.id === "index") {
+                                @if (cell.type.id === 'index') {
                                     <div>{{ cell.value }}</div>
                                 } @else {
                                     <input
                                         id="cell_{{rowIndex}}_{{colIndex}}"
                                         tabindex="0"
-                                        (keyup)="navigate($event, rowIndex, colIndex)"
-                                        title="{{ cell.type.id }}"
-                                        [(ngModel)]="cell.value"
-                                        [ngModelOptions]="{ updateOn: 'blur' }"
-                                        [value]="cell.value | cellFormat:cell.type:month.label">
+                                        title="{{ isFormula(cell) ? cell.raw : cell.type.id }}"
+                                        [value]="editingRow === rowIndex && editingCol === colIndex ? draft : displayValue(cell)"
+                                        (focus)="startEdit(rowIndex, colIndex, cell)"
+                                        (input)="onCellInput($event, cell)"
+                                        (blur)="!formulaMode && commitEdit(cell)"
+                                        (keydown)="onKeydown($event, rowIndex, colIndex, cell)"
+                                    />
                                 }
                             }
                         </td>
