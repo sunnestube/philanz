@@ -14,3 +14,20 @@
 .col-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
 .col-table th, .col-table td { border-bottom: 1px solid #e2e8f0; padding: 6px; text-align: left; }
 .danger { border: 0; background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+.chip input { width: 2.2rem; border: 0; background: transparent; font-weight: 700; text-transform: uppercase; }
+.col-actions { display: flex; gap: 6px; }
+.col-actions button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+@media (prefers-color-scheme: dark) {
+    .settings-tabs button { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+    .settings-tabs button.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .hint { color: #94a3b8; }
+    .chip { background: #1e293b; color: #e2e8f0; }
+    .chip.person-p { background: #1e3a5f; }
+    .chip.person-l { background: #312e81; }
+    .chip.person-h { background: #713f12; }
+    .chip.person-a, .chip.person-e { background: #7c2d12; }
+    .chip input, .add-row input, .col-table input, .col-table select { color: #e2e8f0; background: #0f172a; border-color: #334155; }
+    .col-table th, .col-table td { border-color: #334155; }
+    .col-actions button { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+    .danger { background: #7f1d1d; color: #fecaca; }
+}

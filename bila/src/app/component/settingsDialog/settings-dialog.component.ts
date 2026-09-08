@@ -87,8 +87,20 @@ export class SettingsDialogComponent {
         });
     }
 
+    renamePerson(from: string, to: string): void {
+        this.workbook.renameCode('person', from, to);
+    }
+
+    renameAccount(from: string, to: string): void {
+        this.workbook.renameCode('account', from, to);
+    }
+
     addColumn(): void {
         this.workbook.addColumn();
+    }
+
+    insertColumn(index: number): void {
+        this.workbook.insertColumn(index);
     }
 
     removeColumn(index: number): void {
