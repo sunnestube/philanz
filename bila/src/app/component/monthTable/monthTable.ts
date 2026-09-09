@@ -1,4 +1,5 @@
 import {Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
+import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
 import {MonthCell} from '../../model/MonthCell';
@@ -23,6 +24,7 @@ export class MonthTable {
     draft = '';
     activeAddress = '';
     panning = false;
+    private ignoreFormulaBlur = false;
     private panX = 0;
     private panY = 0;
     private panLeft = 0;
@@ -148,19 +150,19 @@ export class MonthTable {
 
     saldoCombos(): SaldoCombo[] {
         this.workbook.revision();
-        return this.workbook.saldoCombos();
+        return this.workbook.visibleSaldoCombos();
     }
 
     saldoTitle(combo: SaldoCombo): string {
-        return `${combo.person} ${combo.account}`;
+        return this.workbook.saldoTitleFor(combo);
     }
 
     saldoTotalTitle(): string {
-        return 'Total';
+        return this.workbook.saldoTotalTitle();
     }
 
     saldoTotalVisible(): boolean {
-        return true;
+        return this.workbook.saldoTotalVisible();
     }
 
     runningRows(): Array<Record<string, number>> {
@@ -230,7 +232,10 @@ export class MonthTable {
             return 0;
         }
         const combos = this.saldoCombos().length;
-        return combos ? combos + 1 : 0;
+        if (!combos) {
+            return 0;
+        }
+        return combos + (this.saldoTotalVisible() ? 1 : 0);
     }
 
     onPanStart(event: PointerEvent): void {
@@ -243,6 +248,14 @@ export class MonthTable {
         }
         const el = this.scroller?.nativeElement;
         if (!el) {
+            return;
+        }
+        const rect = el.getBoundingClientRect();
+        if (event.clientX >= rect.left + el.clientWidth - 14 || event.clientY >= rect.top + el.clientHeight - 14) {
+            return;
+        }
+        const allowPan = event.pointerType === 'touch' || event.button === 1 || event.altKey;
+        if (!allowPan) {
             return;
         }
         this.panning = true;
@@ -273,7 +286,11 @@ export class MonthTable {
     }
 
     columnLetter(index: number): string {
-        return this.formulaService.columnLetter(index);
+        const visible = this.formulaService.visibleIndex(index, this.month?.columns);
+        if (visible === null) {
+            return '';
+        }
+        return this.formulaService.columnLetter(visible);
     }
     cellAddress(rowIndex: number, colIndex: number): string {
         return this.formulaService.addressFor(colIndex, rowIndex);
@@ -282,7 +299,11 @@ export class MonthTable {
         if (cell.error) {
             return cell.error;
         }
-        return cell.display || cell.raw || '';
+        const value = cell.display || cell.raw || '';
+        if (cell.type.id === CELL_TYPE.date && value && !value.trim().startsWith('=')) {
+            return CellFormatPipe.formatDate(value, this.month?.label.title ?? '');
+        }
+        return value;
     }
     isFormula(cell: MonthCell): boolean {
         return this.formulaService.isFormula(cell.raw);
@@ -304,6 +325,10 @@ export class MonthTable {
         }
     }
     startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (this.refPickMode && (this.editingRow !== rowIndex || this.editingCol !== colIndex)) {
+            queueMicrotask(() => this.focusFormulaBar());
+            return;
+        }
         this.editingRow = rowIndex;
         this.editingCol = colIndex;
         this.draft = cell.raw ?? '';
@@ -450,11 +475,16 @@ export class MonthTable {
             return;
         }
         event.preventDefault();
+        event.stopPropagation();
+        this.ignoreFormulaBlur = true;
         this.insertReference(rowIndex, colIndex);
-        queueMicrotask(() => this.focusFormulaBar());
+        queueMicrotask(() => {
+            this.focusFormulaBar();
+            this.ignoreFormulaBlur = false;
+        });
     }
     onFormulaBlur(_event: FocusEvent): void {
-        if (this.refPickMode) {
+        if (this.ignoreFormulaBlur || this.refPickMode) {
             queueMicrotask(() => this.focusFormulaBar());
             return;
         }
