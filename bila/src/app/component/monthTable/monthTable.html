@@ -1,5 +1,5 @@
 @if (month) {
-    <div class="formula-bar" [class.active]="formulaMode">
+    <div class="formula-bar" [class.active]="formulaMode || refPickMode">
         <div class="formula-address" title="Zellenadresse">
             {{ activeAddress || '—' }}
         </div>
@@ -9,13 +9,13 @@
             class="formula-input"
             type="text"
             [value]="draft"
-            [placeholder]="formulaMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – mit = beginnt eine Formel'"
-            (focus)="formulaMode = true"
+            [placeholder]="refPickMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – F2 oder hier klicken für Bezüge'"
+            (focus)="enterRefPick()"
             (input)="onFormulaInput($event, activeCell())"
             (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-            (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
+            (blur)="leaveRefPick(); activeCell() && commitEdit(activeCell())"
         />
     </div>
     <div class="table-scroll"
@@ -71,7 +71,7 @@
                         <td [class]="cell.type.id.split('_')[0]"
                             [class.formula]="isFormula(cell)"
                             [class.editing]="editingRow === rowIndex && editingCol === colIndex"
-                            [class.ref-target]="formulaMode && !(editingRow === rowIndex && editingCol === colIndex)"
+                            [class.ref-target]="refPickMode && !(editingRow === rowIndex && editingCol === colIndex)"
                             (mousedown)="onCellMouseDown($event, rowIndex, colIndex)">
                             @if (cell.type.id.indexOf('select') !== -1) {
                                 <select [(ngModel)]="cell.value"
@@ -97,7 +97,7 @@
                                         [value]="editingRow === rowIndex && editingCol === colIndex ? draft : displayValue(cell)"
                                         (focus)="startEdit(rowIndex, colIndex, cell)"
                                         (input)="onCellInput($event, cell)"
-                                        (blur)="!formulaMode && commitEdit(cell)"
+                                        (blur)="!refPickMode && commitEdit(cell)"
                                         (keydown)="onKeydown($event, rowIndex, colIndex, cell)"
                                         (copy)="onCopy($event, rowIndex, colIndex, cell)"
                                         (paste)="onPaste($event, rowIndex, colIndex, cell)"
@@ -113,8 +113,7 @@
                                 [class.up]="saldoDelta(rowIndex, combo.key) > 0"
                                 [class.down]="saldoDelta(rowIndex, combo.key) < 0"
                                 [class.neg]="saldoAt(rowIndex, combo.key) < 0"
-                                [class.zero]="saldoAt(rowIndex, combo.key) === 0"
-                                [class.hit]="isSaldoHit(rowIndex, combo)">
+                                [class.zero]="saldoAt(rowIndex, combo.key) === 0">
                                 {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
                             </td>
                         }
