@@ -53,11 +53,11 @@ export class YearComponent implements OnInit {
     }
 
     protected openCsv(): void {
-        this.workbook.setView('csv' as YearView);
+        this.workbook.setView('csv');
     }
 
     protected isCsv(): boolean {
-        return (this.workbook.view() as string) === 'csv';
+        return this.workbook.view() === 'csv';
     }
 
     protected save(): void {
