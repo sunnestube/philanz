@@ -18,13 +18,28 @@
             }
             @if (isCsv()) {
                 <div class="tab-content extra active csv-tab">
-                    <h2>CSV</h2>
-                    <p>Import und Export. Formeln und Start-Saldi bleiben erhalten.</p>
-                    <div class="csv-actions">
-                        <p-button label="Speichern" size="small" (onClick)="save()"/>
-                        <p-button label="CSV exportieren" size="small" (onClick)="exportToCSV()"/>
+                    <h2>Daten sichern</h2>
+                    <p>Formeln, Personen, Konten und Start-Saldi bleiben erhalten.</p>
+                    <div class="csv-cards">
+                        <article class="csv-card">
+                            <h3>Im Browser speichern</h3>
+                            <p>Schreibt die Jahresübersicht auf diesem Gerät. Beim nächsten Öffnen wird dieser Stand geladen.</p>
+                            <button type="button" class="csv-btn" (click)="save()">Speichern</button>
+                            @if (saveMessage) {
+                                <span class="csv-status">{{ saveMessage }}</span>
+                            }
+                        </article>
+                        <article class="csv-card">
+                            <h3>CSV-Datei exportieren</h3>
+                            <p>Download als <code>jahr.csv</code> zum Archivieren oder Weitergeben.</p>
+                            <button type="button" class="csv-btn secondary" (click)="exportToCSV()">CSV exportieren</button>
+                        </article>
                     </div>
-                    <bal-import (dataLoaded)="import($event)"></bal-import>
+                    <article class="csv-card import-card">
+                        <h3>CSV importieren</h3>
+                        <p>Datei ziehen oder Beispiel laden. Ersetzt die aktuelle Ansicht.</p>
+                        <bal-import (dataLoaded)="import($event)"></bal-import>
+                    </article>
                 </div>
             }
             @if (workbook.view() === 'month' && workbook.selectedMonth(); as month) {

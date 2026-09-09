@@ -23,7 +23,7 @@
                 (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
                 (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
                 (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (blur)="leaveRefPick(); activeCell() && commitEdit(activeCell())"
+                (blur)="onFormulaBlur($event)"
             />
         </div>
     </div>
@@ -45,7 +45,7 @@
                     <th class="number S person-{{combo.person.toLowerCase()}} letter-cell"
                         [class.saldo-start]="first"></th>
                 }
-                @if (saldoCombos().length) {
+                @if (workbook.saldoTotalVisible() && saldoCombos().length) {
                     <th class="number S total-col letter-cell"></th>
                 }
             }
@@ -61,13 +61,13 @@
                 @for (combo of saldoCombos(); track combo.key; let first = $first) {
                     <th class="number S person-{{combo.person.toLowerCase()}}"
                         [class.saldo-start]="first"
-                        title="Saldo {{ combo.person }} {{ combo.account }}">
-                        <div>{{ combo.person }} {{ combo.account }}</div>
+                        title="Saldo {{ saldoTitle(combo) }}">
+                        <div>{{ saldoTitle(combo) }}</div>
                     </th>
                 }
-                @if (saldoCombos().length) {
-                    <th class="number S total-col" title="Saldo Total">
-                        <div>Total</div>
+                @if (workbook.saldoTotalVisible() && saldoCombos().length) {
+                    <th class="number S total-col" title="Saldo {{ workbook.saldoTotalTitle() }}">
+                        <div>{{ workbook.saldoTotalTitle() }}</div>
                     </th>
                 }
             }
@@ -127,7 +127,7 @@
                                 {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
                             </td>
                         }
-                        @if (saldoCombos().length) {
+                        @if (workbook.saldoTotalVisible() && saldoCombos().length) {
                             <td class="number S total-col"
                                 [class.up]="saldoTotalDelta(rowIndex) > 0"
                                 [class.down]="saldoTotalDelta(rowIndex) < 0"
