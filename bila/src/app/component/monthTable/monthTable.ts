@@ -24,6 +24,7 @@ export class MonthTable implements OnDestroy {
     draft = '';
     activeAddress = '';
     panning = false;
+    private editOriginal = '';
     private ignoreFormulaBlur = false;
     private panCandidate = false;
     private panPointer = 0;
@@ -39,6 +40,16 @@ export class MonthTable implements OnDestroy {
     private resizeBase = 0;
     private readonly onWindowPanMove = (event: PointerEvent) => this.onPanMove(event);
     private readonly onWindowPanEnd = () => this.onPanEnd();
+    private readonly onWindowEscape = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        if (!this.formulaMode && !this.refPickMode && this.editingRow === null) {
+            return;
+        }
+        event.preventDefault();
+        this.zone.run(() => this.exitFormula());
+    };
 
     @HostBinding('style.--title-h.px')
     get titleRowPx(): number {
@@ -65,6 +76,7 @@ export class MonthTable implements OnDestroy {
             document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
             document.addEventListener('pointerup', this.onWindowPanEnd);
             document.addEventListener('pointercancel', this.onWindowPanEnd);
+            document.addEventListener('keydown', this.onWindowEscape);
         });
     }
 
@@ -72,6 +84,7 @@ export class MonthTable implements OnDestroy {
         document.removeEventListener('pointermove', this.onWindowPanMove);
         document.removeEventListener('pointerup', this.onWindowPanEnd);
         document.removeEventListener('pointercancel', this.onWindowPanEnd);
+        document.removeEventListener('keydown', this.onWindowEscape);
         if (this.panFrame) {
             cancelAnimationFrame(this.panFrame);
         }
@@ -308,7 +321,7 @@ export class MonthTable implements OnDestroy {
             return person ? `Total ${this.workbook.personLabel(person)}` : 'Total';
         }
         if (column.type === CELL_TYPE.select_person) {
-            return person ? this.workbook.personLabel(person) : '';
+            return person ?? '';
         }
         if (column.type !== CELL_TYPE.number) {
             return '';
@@ -355,16 +368,6 @@ export class MonthTable implements OnDestroy {
             const value = this.footerSaldo(person, combo.key);
             return sum + (value ?? 0);
         }, 0);
-    }
-
-    optionLabel(cell: MonthCell, option: string): string {
-        if (cell.type.id === CELL_TYPE.select_person) {
-            return this.workbook.optionLabel('person', option);
-        }
-        if (cell.type.id === CELL_TYPE.select_account) {
-            return this.workbook.optionLabel('account', option);
-        }
-        return option;
     }
 
     onHeaderResizeStart(event: PointerEvent): void {
@@ -555,6 +558,7 @@ export class MonthTable implements OnDestroy {
         }
         this.editingRow = rowIndex;
         this.editingCol = colIndex;
+        this.editOriginal = cell.raw ?? '';
         this.draft = cell.raw ?? '';
         this.activeAddress = this.cellAddress(rowIndex, colIndex);
         this.formulaMode = this.formulaService.isFormula(this.draft);
@@ -591,14 +595,29 @@ export class MonthTable implements OnDestroy {
         this.editingCol = null;
     }
     cancelEdit(cell: MonthCell | null): void {
-        if (cell && this.editingRow !== null) {
-            this.formulaService.recalculateAll();
+        if (cell) {
+            cell.raw = this.editOriginal;
         }
+        this.exitFormula();
+    }
+
+    exitFormula(): void {
+        const cell = this.activeCell();
+        if (cell) {
+            cell.raw = this.editOriginal;
+        }
+        this.ignoreFormulaBlur = true;
         this.formulaMode = false;
         this.refPickMode = false;
         this.editingRow = null;
         this.editingCol = null;
         this.draft = '';
+        this.formulaInput?.nativeElement?.blur();
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+        queueMicrotask(() => {
+            this.ignoreFormulaBlur = false;
+        });
     }
     onCopy(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
         const raw = (this.editingRow === rowIndex && this.editingCol === colIndex ? this.draft : cell.raw) || '';
@@ -612,9 +631,15 @@ export class MonthTable implements OnDestroy {
     onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
         event.preventDefault();
         const clip = event.clipboardData?.getData('text/plain') ?? '';
+        const grid = this.parseClipboardGrid(clip);
+        if (grid.length > 1 || (grid[0]?.length ?? 0) > 1) {
+            this.pasteGrid(grid, rowIndex, colIndex);
+            return;
+        }
         const next = this.formulaService.pasteFormula(colIndex, rowIndex, clip);
         this.draft = next;
         cell.raw = next;
+        this.editOriginal = next;
         this.formulaMode = this.formulaService.isFormula(next);
         this.editingRow = rowIndex;
         this.editingCol = colIndex;
@@ -627,6 +652,11 @@ export class MonthTable implements OnDestroy {
         }
     }
     onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.exitFormula();
+            return;
+        }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
             const raw = (this.editingRow === rowIndex && this.editingCol === colIndex ? this.draft : cell.raw) || '';
             this.formulaService.copyFormula(raw, colIndex, rowIndex);
@@ -667,7 +697,7 @@ export class MonthTable implements OnDestroy {
         const title = this.month?.label.title ?? '';
         if (event.key === 'Escape') {
             event.preventDefault();
-            this.cancelEdit(cell);
+            this.exitFormula();
             return;
         }
         if (event.key === 'Enter') {
@@ -767,6 +797,68 @@ export class MonthTable implements OnDestroy {
         }
         return {row, col};
     }
+    private parseClipboardGrid(text: string): string[][] {
+        const normalized = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const lines = normalized.split('\n');
+        while (lines.length && lines[lines.length - 1] === '') {
+            lines.pop();
+        }
+        if (!lines.length) {
+            return [['']];
+        }
+        return lines.map((line) => line.split('\t'));
+    }
+
+    private pasteGrid(grid: string[][], startRow: number, startCol: number): void {
+        const month = this.month;
+        if (!month) {
+            return;
+        }
+        grid.forEach((line, rowOffset) => {
+            const rowIndex = startRow + rowOffset;
+            while (month.rows.length <= rowIndex) {
+                this.appendEmptyRow(month);
+            }
+            const row = month.rows[rowIndex];
+            line.forEach((value, colOffset) => {
+                const colIndex = startCol + colOffset;
+                const target = row.cells[colIndex];
+                if (!target) {
+                    return;
+                }
+                if (target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
+                    return;
+                }
+                target.raw = value;
+                if (target.type.id.indexOf('select') !== -1) {
+                    target.value = value.trim().toUpperCase();
+                    this.applySelectSideEffects(target, row);
+                }
+            });
+        });
+        this.formulaMode = false;
+        this.refPickMode = false;
+        this.editingRow = null;
+        this.editingCol = null;
+        this.draft = '';
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+    }
+
+    private appendEmptyRow(month: Month): void {
+        const rowIndex = month.rows.length;
+        const row = new MonthRow(rowIndex, month.columns);
+        row.cells.forEach((cell) => {
+            if (cell.type.id === CELL_TYPE.none) {
+                cell.raw = month.label.title;
+            }
+            if (cell.type.id === CELL_TYPE.index) {
+                cell.raw = String(rowIndex);
+            }
+        });
+        month.rows.push(row);
+    }
+
     private focusFormulaBar(): void {
         this.formulaInput?.nativeElement?.focus();
         const input = this.formulaInput?.nativeElement;
