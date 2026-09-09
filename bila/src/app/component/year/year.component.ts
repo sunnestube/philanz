@@ -3,6 +3,8 @@ import {FormsModule} from '@angular/forms';
 import {HttpClient} from '@angular/common/http';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
+import {MonthRow} from '../../model/MonthRow';
+import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
 import {WorkbookService, YearView} from '../../service/workbook.service';
@@ -11,6 +13,8 @@ import {StartTabComponent} from '../startTab/start-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
+
+const MIN_ROWS = 36;
 
 @Component({
     templateUrl: './year.component.html',
@@ -32,21 +36,26 @@ export class YearComponent implements OnInit {
     private readonly http = inject(HttpClient);
 
     ngOnInit(): void {
+        this.ensureSaldoColumns();
         if (this.workbook.months().length) {
+            this.fillRows();
             return;
         }
         const stored = localStorage.getItem('year');
         if (stored) {
             this.workbook.applyCsv(stored);
+            this.fillRows();
             return;
         }
         this.http.get('assets/empty.csv', {responseType: 'text'}).subscribe((csvData) => {
             this.workbook.applyCsv(csvData);
+            this.fillRows();
         });
     }
 
     protected import(months: Month[]): void {
         this.workbook.setMonths(months);
+        this.fillRows();
     }
 
     protected selectTab(month: Month): void {
@@ -88,5 +97,30 @@ export class YearComponent implements OnInit {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+    }
+
+    private ensureSaldoColumns(): void {
+        if (!this.workbook.saldoColumnsOpen()) {
+            this.workbook.toggleSaldoColumns();
+        }
+    }
+
+    private fillRows(min = MIN_ROWS): void {
+        this.workbook.months().forEach((month) => {
+            while (month.rows.length < min) {
+                const rowIndex = month.rows.length;
+                const row = new MonthRow(rowIndex, month.columns);
+                row.cells.forEach((cell) => {
+                    if (cell.type.id === CELL_TYPE.none) {
+                        cell.raw = month.label.title;
+                    }
+                    if (cell.type.id === CELL_TYPE.index) {
+                        cell.raw = String(rowIndex);
+                    }
+                });
+                month.rows.push(row);
+            }
+        });
+        this.workbook.touch();
     }
 }
