@@ -29,15 +29,15 @@
                         <tr class="person-{{person.toLowerCase()}}">
                             <th>{{ person }}</th>
                             @for (col of data.columns; track col.title) {
-                                <td>{{ format(block.byPerson[person][col.title] ?? 0) }}</td>
+                                <td>{{ format(block.byPerson[person][col.title]) }}</td>
                             }
-                            <td class="total">{{ format(block.personTotal[person] ?? 0) }}</td>
+                            <td class="total">{{ format(block.personTotal[person]) }}</td>
                         </tr>
                     }
                     <tr class="sum">
                         <th>Σ</th>
                         @for (col of data.columns; track col.title) {
-                            <td class="total">{{ format(block.byColumn[col.title] ?? 0) }}</td>
+                            <td class="total">{{ format(block.byColumn[col.title]) }}</td>
                         }
                         <td class="total">{{ format(block.total) }}</td>
                     </tr>
@@ -60,7 +60,7 @@
                     <tr>
                         <th>{{ row.label }}</th>
                         @for (col of data.columns; track col.title) {
-                            <td>{{ format(row.byColumn[col.title] ?? 0) }}</td>
+                            <td>{{ format(row.byColumn[col.title]) }}</td>
                         }
                         <td class="total">{{ format(row.total) }}</td>
                     </tr>
