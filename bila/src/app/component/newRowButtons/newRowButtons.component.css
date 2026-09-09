@@ -1,78 +1,10 @@
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-/* Zellen-Inhalt (Input) – ohne Border/Schatten, kompakt */
-.data-table input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    padding: 4px 6px;
-    box-sizing: border-box;
-    font-size: 12px;
-    line-height: 1.25;
-    outline: none;
-    box-shadow: none; /* keine Schatten */
-}
-
-/* Fokus: dezente, klare 1px-Markierung der aktiven Zelle – ohne Schatten */
-.data-table td:focus-within {
-    outline: 1px solid #3B82F6;   /* primary */
-    outline-offset: -1px;         /* Linie liegt innerhalb der Zelle */
-}
-
-/* Number-Spinner (Pfeile) entfernen – WebKit/Chromium */
-.data-table input[type="number"]::-webkit-outer-spin-button,
-.data-table input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Number-Spinner entfernen – Firefox */
-.data-table input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-}
-
-/* Optional: dezente Zebra-Streifen ohne Hover-Effekt */
-.data-table tbody tr:nth-child(even) {
-    background-color: #fafafa;
-}
-
-/* Button-Leiste unter der Tabelle – bleibt dezent, ohne Einfluss auf Inputs */
-.data-table .action-bar {
+.row-actions {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    gap: 8px;
-    padding: 10px 6px 4px;
-    background: transparent;
+    gap: 6px;
 }
-
-/* Kompakte PrimeNG-Buttons passend zur Tabellen-Typo */
-.data-table .p-button {
-    font-size: 12px;
-    padding: 4px 10px;
-    height: 28px;
-    border-radius: 4px;
-    line-height: 1;
-    box-shadow: none; /* keine Button-Schatten */
-}
-
-th.date{
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
-}
-th.text{
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-}
-th.number{
-    width: 70px;
-    min-width: 70px;
-    max-width: 70px;
+:host ::ng-deep .p-button {
+    font-size: 11px;
+    padding: 3px 8px;
+    height: 26px;
 }

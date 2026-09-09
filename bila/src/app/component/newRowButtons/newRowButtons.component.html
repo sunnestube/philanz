@@ -1,19 +1,18 @@
-@if (month) {
-    <!-- bal-new-row-buttons.component.html -->
-    <div class="flex justify-end items-center gap-3 mt-3">
+@if (month || workbookHasMonth()) {
+    <div class="row-actions">
         <p-button
-            label="Neue Zeile"
+            label="+ Zeile"
             icon="pi pi-plus"
             severity="success"
             size="small"
             ariaLabel="Neue Zeile hinzufügen"
-            (onClick)="addRow(month.rows.length)">
+            (onClick)="addRow()">
         </p-button>
         <p-button
-            label="20 Zeilen"
+            label="+ 20"
             icon="pi pi-plus-circle"
             severity="info"
-            outlined="true"
+            [outlined]="true"
             size="small"
             ariaLabel="Zwanzig Zeilen hinzufügen"
             (onClick)="addRows(20)">

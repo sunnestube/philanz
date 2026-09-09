@@ -1,5 +1,5 @@
 import {Component, inject, Input} from '@angular/core';
-import {RouterLink, RouterLinkActive} from '@angular/router';
+import {Router, RouterLink, RouterLinkActive} from '@angular/router';
 import {ToolbarModule} from 'primeng/toolbar';
 import {ButtonModule} from 'primeng/button';
 import {WorkbookService} from '../../service/workbook.service';
@@ -20,9 +20,14 @@ import {SettingsDialogComponent} from '../settingsDialog/settings-dialog.compone
 })
 export class ToolbarComponent {
     @Input() title: string = 'Bilanz';
-    private readonly workbook = inject(WorkbookService);
+    readonly workbook = inject(WorkbookService);
+    private readonly router = inject(Router);
 
     openSettings(): void {
         this.workbook.openSettings();
+    }
+
+    onYear(): boolean {
+        return this.router.url.startsWith('/year');
     }
 }

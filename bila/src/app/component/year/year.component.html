@@ -1,17 +1,4 @@
 <div class="year-shell" [class.panel-open]="workbook.saldoPanelOpen()">
-    <div class="year-toolbar">
-        <button type="button"
-                [class.on]="workbook.saldoColumnsOpen()"
-                (click)="workbook.toggleSaldoColumns()">
-            Saldo-Spalten {{ workbook.saldoColumnsOpen() ? 'aus' : 'ein' }}
-        </button>
-        <button type="button"
-                [class.on]="workbook.saldoPanelOpen()"
-                (click)="workbook.toggleSaldoPanel()">
-            Saldo-Box {{ workbook.saldoPanelOpen() ? 'aus' : 'ein' }}
-        </button>
-    </div>
-
     <div class="year-body">
         <div class="tab-container">
             @if (workbook.view() === 'start') {
@@ -78,5 +65,8 @@
         <div class="tab-label csv-tab-label"
              [class.active]="isCsv()"
              (click)="openCsv()">CSV</div>
+        <div class="tab-row-actions">
+            <bal-new-row-buttons [month]="workbook.selectedMonth() ?? undefined"/>
+        </div>
     </div>
 </div>
