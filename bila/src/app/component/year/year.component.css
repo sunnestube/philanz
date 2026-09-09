@@ -7,27 +7,6 @@
     overflow: hidden;
     background: #f8fafc;
 }
-.year-toolbar {
-    display: flex;
-    gap: 8px;
-    padding: 6px 10px;
-    flex-shrink: 0;
-    background: #e2e8f0;
-    border-bottom: 1px solid #cbd5e1;
-}
-.year-toolbar button {
-    border: 1px solid #94a3b8;
-    background: #fff;
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
-    cursor: pointer;
-}
-.year-toolbar button.on {
-    background: #1d4ed8;
-    color: #fff;
-    border-color: #1d4ed8;
-}
 .year-body {
     flex: 1 1 auto;
     min-height: 0;
@@ -47,7 +26,7 @@
     display: none;
     flex: 1 1 auto;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     background: #ececec;
     border: 0;
 }
@@ -56,18 +35,27 @@
     flex-direction: column;
     max-height: none;
 }
-.tab-content.extra { padding: 12px; }
+.tab-content.extra { padding: 12px; overflow: hidden; }
+.tab-content.csv-tab { overflow: auto; }
 .month-content { padding: 0; }
 .csv-tab h2 { margin: 0 0 6px; color: #111; }
 .csv-tab p { margin: 0 0 10px; color: #475569; }
 .csv-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 .tabs {
     display: flex;
+    align-items: center;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-top: 2px solid #cbd5e1;
     padding: 0 8px;
     background: #e2e8f0;
+    flex-shrink: 0;
+}
+.tab-row-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    padding: 4px 0 4px 12px;
     flex-shrink: 0;
 }
 .tab-label {
@@ -99,9 +87,6 @@
 
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #2b2b2b; }
-    .year-toolbar { background: #3a3a3a; border-color: #5b5b5b; }
-    .year-toolbar button { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
-    .year-toolbar button.on { background: #2563eb; color: #fff; }
     .tab-content { background: #ececec; }
     .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }

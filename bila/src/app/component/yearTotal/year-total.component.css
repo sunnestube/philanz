@@ -16,13 +16,19 @@ p { margin: 0 0 12px; color: #475569; font-size: 13px; }
     min-width: 140px;
 }
 .card span { display: block; font-size: 11px; color: #64748b; }
-.card strong { font-size: 16px; }
+.card strong { font-size: 16px; font-weight: 500; }
 h3 { margin: 16px 0 6px; font-size: 14px; }
 .total-scroll {
     flex: 1;
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: none;
+    cursor: grab;
+}
+.total-scroll.dragging {
+    cursor: grabbing;
+    user-select: none;
 }
 table {
     border-collapse: collapse;
@@ -34,7 +40,7 @@ table {
 }
 th, td { border: 1px solid #cbd5e1; padding: 3px 6px; text-align: right; white-space: nowrap; }
 tbody th, thead th:first-child { text-align: left; }
-.total, .sum td { font-weight: 700; }
+.total, .sum td { font-weight: 400; }
 tr.person-p td, tr.person-p th { background: #dbeafe; }
 tr.person-l td, tr.person-l th { background: #e0e7ff; }
 tr.person-h td, tr.person-h th { background: #fef3c7; }
