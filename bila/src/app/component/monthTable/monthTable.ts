@@ -263,7 +263,40 @@ export class MonthTable {
         this.editingCol = null;
         this.draft = '';
     }
+    onCopy(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        const raw = (this.editingRow === rowIndex && this.editingCol === colIndex ? this.draft : cell.raw) || '';
+        const text = this.formulaService.copyFormula(raw, colIndex, rowIndex);
+        event.preventDefault();
+        event.clipboardData?.setData('text/plain', text);
+        if (!event.clipboardData) {
+            void navigator.clipboard.writeText(text);
+        }
+    }
+    onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        event.preventDefault();
+        const clip = event.clipboardData?.getData('text/plain') ?? '';
+        const next = this.formulaService.pasteFormula(colIndex, rowIndex, clip);
+        this.draft = next;
+        cell.raw = next;
+        this.formulaMode = this.formulaService.isFormula(next);
+        this.editingRow = rowIndex;
+        this.editingCol = colIndex;
+        this.activeAddress = this.cellAddress(rowIndex, colIndex);
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+        if (this.formulaMode) {
+            queueMicrotask(() => this.focusFormulaBar());
+        }
+    }
     onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
+            const raw = (this.editingRow === rowIndex && this.editingCol === colIndex ? this.draft : cell.raw) || '';
+            this.formulaService.copyFormula(raw, colIndex, rowIndex);
+            return;
+        }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+            return;
+        }
         if (this.formulaMode) {
             this.onFormulaKeydown(event, rowIndex, colIndex, cell);
             return;
@@ -282,6 +315,9 @@ export class MonthTable {
         this.navigate(event, rowIndex, colIndex);
     }
     onFormulaKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'c' || event.key.toLowerCase() === 'v')) {
+            return;
+        }
         const title = this.month?.label.title ?? '';
         if (event.key === 'Escape') {
             event.preventDefault();
@@ -338,7 +374,7 @@ export class MonthTable {
     private insertReference(rowIndex: number, colIndex: number): void {
         const address = this.cellAddress(rowIndex, colIndex);
         const current = this.draft || '=';
-        const withoutTrailingRef = current.replace(/([A-Za-z\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc]{3}!)?[A-Za-z]+\d+$/, '');
+        const withoutTrailingRef = current.replace(/(?:[A-Za-z\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc]{3}!)?\$?[A-Za-z]+\$?\d+$/, '');
         const needsOperator = /[+\-*/\u00d7\u00f7(]$/.test(withoutTrailingRef.trim()) || withoutTrailingRef.trim() === '=';
         this.draft = needsOperator ? `${withoutTrailingRef}${address}` : `${withoutTrailingRef}+${address}`;
         const cell = this.activeCell();
@@ -351,7 +387,7 @@ export class MonthTable {
         const lastRow = (this.month?.rows.length ?? 1) - 1;
         let row = rowIndex;
         let col = colIndex;
-        const trailing = this.draft.match(/([A-Za-z\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc]{3}!)?[A-Za-z]+\d+$/);
+        const trailing = this.draft.match(/(?:[A-Za-z\u00c4\u00d6\u00dc\u00e4\u00f6\u00fc]{3}!)?\$?[A-Za-z]+\$?\d+$/);
         if (trailing) {
             const parsed = this.formulaService.parseAddress(trailing[0], this.month?.label.title ?? '');
             if (parsed) {
