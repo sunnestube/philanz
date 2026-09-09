@@ -28,7 +28,12 @@ export interface SaldoCombo {
     key: string;
 }
 
-export type YearView = 'month' | 'start' | 'total' | 'graf';
+export type YearView = 'month' | 'start' | 'total' | 'graf' | 'csv';
+
+export interface SaldoColumnPref {
+    visible: boolean;
+    title: string;
+}
 
 export interface ExpenseColumn {
     title: string;
@@ -73,8 +78,10 @@ export class WorkbookService {
     readonly settingsOpen = signal(false);
     readonly revision = signal(0);
     readonly view = signal<YearView>('month');
-    readonly saldoColumnsOpen = signal(false);
+    readonly saldoColumnsOpen = signal(true);
     readonly saldoPanelOpen = signal(false);
+    readonly saldoTotalPref = signal<SaldoColumnPref>({visible: true, title: 'Total'});
+    readonly saldoColumnPrefs = signal<Record<string, SaldoColumnPref>>({});
     readonly openingBalances = signal<Record<string, number>>({});
     readonly persons = signal<string[]>(['', 'P', 'L', 'H', 'E', 'A']);
     readonly accounts = signal<string[]>(['', 'B', 'K', 'S', 'R', 'Y', 'T']);
@@ -123,6 +130,47 @@ export class WorkbookService {
     toggleSaldoPanel(): void {
         this.saldoPanelOpen.update((value) => !value);
         this.persistSettings();
+    }
+
+    visibleSaldoCombos(): SaldoCombo[] {
+        const prefs = this.saldoColumnPrefs();
+        return this.saldoCombos().filter((combo) => prefs[combo.key]?.visible !== false);
+    }
+
+    saldoTitleFor(combo: SaldoCombo): string {
+        return this.saldoColumnPrefs()[combo.key]?.title || `${combo.person} ${combo.account}`;
+    }
+
+    saldoTotalTitle(): string {
+        return this.saldoTotalPref().title || 'Total';
+    }
+
+    saldoTotalVisible(): boolean {
+        return this.saldoTotalPref().visible !== false;
+    }
+
+    setSaldoColumnPref(key: string, patch: Partial<SaldoColumnPref>): void {
+        const current = this.saldoColumnPrefs();
+        const fallback = current[key] ?? {visible: true, title: key.replace('|', ' ')};
+        this.saldoColumnPrefs.set({
+            ...current,
+            [key]: {
+                visible: patch.visible ?? fallback.visible,
+                title: patch.title ?? fallback.title
+            }
+        });
+        this.persistSettings();
+        this.touch();
+    }
+
+    setSaldoTotalPref(patch: Partial<SaldoColumnPref>): void {
+        const current = this.saldoTotalPref();
+        this.saldoTotalPref.set({
+            visible: patch.visible ?? current.visible,
+            title: patch.title ?? current.title
+        });
+        this.persistSettings();
+        this.touch();
     }
 
     touch(): void {
@@ -278,6 +326,19 @@ export class WorkbookService {
             }
         });
         this.openingBalances.set(opening);
+        const prefs = {...this.saldoColumnPrefs()};
+        Object.keys(prefs).forEach((key) => {
+            const [person, account] = key.split('|');
+            if (kind === 'person' && person === prev) {
+                prefs[`${next}|${account}`] = prefs[key];
+                delete prefs[key];
+            }
+            if (kind === 'account' && account === prev) {
+                prefs[`${person}|${next}`] = prefs[key];
+                delete prefs[key];
+            }
+        });
+        this.saldoColumnPrefs.set(prefs);
         const type = kind === 'person' ? CELL_TYPE.select_person : CELL_TYPE.select_account;
         this.months().forEach((month) => {
             month.rows.forEach((row) => {
@@ -581,7 +642,9 @@ export class WorkbookService {
             account: this.accounts(),
             opening: this.openingBalances(),
             saldoColumnsOpen: this.saldoColumnsOpen(),
-            saldoPanelOpen: this.saldoPanelOpen()
+            saldoPanelOpen: this.saldoPanelOpen(),
+            saldoColumnPrefs: this.saldoColumnPrefs(),
+            saldoTotalPref: this.saldoTotalPref()
         }));
     }
 
@@ -595,6 +658,8 @@ export class WorkbookService {
                 opening?: Record<string, number>;
                 saldoColumnsOpen?: boolean;
                 saldoPanelOpen?: boolean;
+                saldoColumnPrefs?: Record<string, SaldoColumnPref>;
+                saldoTotalPref?: SaldoColumnPref;
             };
             if (Array.isArray(parsed.person)) {
                 this.persons.set(this.normalizeCodes(parsed.person));
@@ -610,6 +675,15 @@ export class WorkbookService {
             }
             if (typeof parsed.saldoPanelOpen === 'boolean') {
                 this.saldoPanelOpen.set(parsed.saldoPanelOpen);
+            }
+            if (parsed.saldoColumnPrefs && typeof parsed.saldoColumnPrefs === 'object') {
+                this.saldoColumnPrefs.set(parsed.saldoColumnPrefs);
+            }
+            if (parsed.saldoTotalPref && typeof parsed.saldoTotalPref === 'object') {
+                this.saldoTotalPref.set({
+                    visible: parsed.saldoTotalPref.visible !== false,
+                    title: parsed.saldoTotalPref.title || 'Total'
+                });
             }
         } catch {
             return;
