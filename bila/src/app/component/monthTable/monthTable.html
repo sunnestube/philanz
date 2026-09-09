@@ -45,7 +45,7 @@
                     <th class="number S person-{{combo.person.toLowerCase()}} letter-cell"
                         [class.saldo-start]="first"></th>
                 }
-                @if (workbook.saldoTotalVisible() && saldoCombos().length) {
+                @if (saldoTotalVisible() && saldoCombos().length) {
                     <th class="number S total-col letter-cell"></th>
                 }
             }
@@ -65,9 +65,9 @@
                         <div>{{ saldoTitle(combo) }}</div>
                     </th>
                 }
-                @if (workbook.saldoTotalVisible() && saldoCombos().length) {
-                    <th class="number S total-col" title="Saldo {{ workbook.saldoTotalTitle() }}">
-                        <div>{{ workbook.saldoTotalTitle() }}</div>
+                @if (saldoTotalVisible() && saldoCombos().length) {
+                    <th class="number S total-col" title="Saldo {{ saldoTotalTitle() }}">
+                        <div>{{ saldoTotalTitle() }}</div>
                     </th>
                 }
             }
@@ -127,7 +127,7 @@
                                 {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
                             </td>
                         }
-                        @if (workbook.saldoTotalVisible() && saldoCombos().length) {
+                        @if (saldoTotalVisible() && saldoCombos().length) {
                             <td class="number S total-col"
                                 [class.up]="saldoTotalDelta(rowIndex) > 0"
                                 [class.down]="saldoTotalDelta(rowIndex) < 0"
