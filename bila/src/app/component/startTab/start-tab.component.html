@@ -7,7 +7,7 @@
             <tr>
                 <th></th>
                 @for (account of workbook.accountCodes(); track account) {
-                    <th>{{ account }}</th>
+                    <th title="{{ account }}">{{ workbook.accountLabel(account) }}</th>
                 }
                 <th>Σ</th>
             </tr>
@@ -15,7 +15,7 @@
             <tbody>
                 @for (person of workbook.personCodes(); track person) {
                     <tr class="person-{{person.toLowerCase()}}">
-                        <th>{{ person }}</th>
+                        <th title="{{ person }}">{{ workbook.personLabel(person) }}</th>
                         @for (account of workbook.accountCodes(); track account) {
                             <td>
                                 <input type="text"

@@ -19,14 +19,26 @@ p { margin: 0 0 12px; color: #475569; font-size: 13px; }
 .card strong { font-size: 16px; font-weight: 500; }
 h3 { margin: 16px 0 6px; font-size: 14px; }
 .total-scroll {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     overflow-x: scroll;
     overflow-y: auto;
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
-    touch-action: none;
+    touch-action: pan-x pan-y;
     cursor: grab;
+}
+.total-scroll::-webkit-scrollbar {
+    height: 14px;
+    width: 14px;
+}
+.total-scroll::-webkit-scrollbar-track {
+    background: #cbd5e1;
+}
+.total-scroll::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 8px;
+    border: 2px solid #cbd5e1;
 }
 .total-scroll.dragging {
     cursor: grabbing;

@@ -38,6 +38,14 @@
     max-height: none;
 }
 .tab-content.extra { padding: 12px; overflow: auto; }
+.tab-content.extra.fill-pane {
+    overflow: hidden;
+    min-height: 0;
+}
+.tab-content.extra.fill-pane > * {
+    flex: 1 1 auto;
+    min-height: 0;
+}
 .tab-content.csv-tab {
     overflow: auto;
     background: #e8eef5;
