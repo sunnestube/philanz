@@ -151,6 +151,18 @@ export class MonthTable {
         return this.workbook.saldoCombos();
     }
 
+    saldoTitle(combo: SaldoCombo): string {
+        return `${combo.person} ${combo.account}`;
+    }
+
+    saldoTotalTitle(): string {
+        return 'Total';
+    }
+
+    saldoTotalVisible(): boolean {
+        return true;
+    }
+
     runningRows(): Array<Record<string, number>> {
         const rev = this.workbook.revision();
         const title = this.month?.label.title ?? '';
@@ -440,6 +452,16 @@ export class MonthTable {
         event.preventDefault();
         this.insertReference(rowIndex, colIndex);
         queueMicrotask(() => this.focusFormulaBar());
+    }
+    onFormulaBlur(_event: FocusEvent): void {
+        if (this.refPickMode) {
+            queueMicrotask(() => this.focusFormulaBar());
+            return;
+        }
+        const cell = this.activeCell();
+        if (cell) {
+            this.commitEdit(cell);
+        }
     }
     activeCell(): MonthCell | null {
         if (!this.month || this.editingRow === null || this.editingCol === null) {
