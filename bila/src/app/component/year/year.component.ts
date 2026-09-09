@@ -6,6 +6,9 @@ import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
 import {WorkbookService} from '../../service/workbook.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
+import {StartTabComponent} from '../startTab/start-tab.component';
+import {YearTotalComponent} from '../yearTotal/year-total.component';
+import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {HttpClient} from '@angular/common/http';
 
 @Component({
@@ -15,7 +18,10 @@ import {HttpClient} from '@angular/common/http';
         MonthComponent,
         ImportComponent,
         Button,
-        SaldoPanelComponent
+        SaldoPanelComponent,
+        StartTabComponent,
+        YearTotalComponent,
+        YearGrafComponent
     ],
     styleUrls: ['./year.component.css']
 })
@@ -29,6 +35,11 @@ export class YearComponent {
 
     protected selectTab(month: Month): void {
         this.workbook.selectMonth(month);
+        this.workbook.setView('month');
+    }
+
+    protected openView(view: 'start' | 'total' | 'graf'): void {
+        this.workbook.setView(view);
     }
 
     protected save(): void {

@@ -31,7 +31,11 @@
 }
 .tab-content.active {
     display: block;
-    max-height: 58vh;
+    max-height: 62vh;
+}
+.tab-content.extra {
+    padding: 12px;
+    overflow: auto;
 }
 .tabs {
     display: flex;
@@ -59,6 +63,9 @@
     border-bottom: 2px solid #2563eb;
     font-weight: bold;
 }
+.tab-label.start-tab { background: #fde68a; }
+.tab-label.total-tab { background: #bbf7d0; }
+.tab-label.graf-tab { background: #bfdbfe; }
 .year-actions {
     display: flex;
     gap: 8px;
@@ -69,7 +76,7 @@
 .red { background: lightcoral; }
 
 @media (min-width: 1100px) {
-    .year-shell {
+    .year-shell:not(.panel-collapsed) {
         flex-direction: row;
         align-items: stretch;
         overflow: visible;
@@ -80,12 +87,15 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .year-shell { background: #020617; }
-    .tab-container { background: #020617; color: #e2e8f0; }
-    .tab-content { border-color: #334155; background: #0f172a; }
-    .tabs { background: #0b1220; border-top-color: #334155; }
-    .tab-label { background: #1e293b; color: #cbd5e1; border-color: #334155; }
-    .tab-label:hover { background: #334155; color: #f8fafc; }
-    .tab-label.active { background: #0f172a; color: #f8fafc; border-bottom-color: #38bdf8; }
+    .year-shell { background: #2b2b2b; }
+    .tab-container { background: #2b2b2b; color: #f4f4f5; }
+    .tab-content { border-color: #5b5b5b; background: #ececec; color: #111; }
+    .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
+    .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
+    .tab-label:hover { background: #5b5b5b; color: #fff; }
+    .tab-label.active { background: #ececec; color: #111; border-bottom-color: #2563eb; }
+    .tab-label.start-tab { background: #a16207; color: #fffbeb; }
+    .tab-label.total-tab { background: #166534; color: #dcfce7; }
+    .tab-label.graf-tab { background: #1d4ed8; color: #dbeafe; }
     .red { background: #7f1d1d; color: #fecaca; }
 }

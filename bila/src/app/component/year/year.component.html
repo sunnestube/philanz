@@ -1,31 +1,65 @@
-<div class="year-shell">
+<div class="year-shell" [class.panel-collapsed]="!workbook.saldoPanelOpen()">
     <div class="tab-container">
-        @if (workbook.months().length && workbook.selectedMonth()) {
-            @for (month of workbook.months(); track month) {
-                <div class="tab-content" [class.active]="workbook.selectedMonth() === month">
-                    <bal-month [month]="month"></bal-month>
+        @if (workbook.months().length) {
+            @if (workbook.view() === 'start') {
+                <div class="tab-content extra active">
+                    <bal-start-tab/>
                 </div>
+            }
+            @if (workbook.view() === 'total') {
+                <div class="tab-content extra active">
+                    <bal-year-total/>
+                </div>
+            }
+            @if (workbook.view() === 'graf') {
+                <div class="tab-content extra active">
+                    <bal-year-graf/>
+                </div>
+            }
+            @if (workbook.view() === 'month' && workbook.selectedMonth()) {
+                @for (month of workbook.months(); track month) {
+                    <div class="tab-content" [class.active]="workbook.selectedMonth() === month">
+                        <bal-month [month]="month"></bal-month>
+                    </div>
+                }
             }
 
             <div class="tabs">
+                <div class="tab-label start-tab"
+                     [class.active]="workbook.view() === 'start'"
+                     (click)="openView('start')">Start</div>
                 @for (month of workbook.months(); track month) {
                     <div class="tab-label"
                          [class]="month.label.background"
-                         [class.active]="workbook.selectedMonth() === month"
+                         [class.active]="workbook.view() === 'month' && workbook.selectedMonth() === month"
                          (click)="selectTab(month)">
                         {{ month.label.title }}
                     </div>
                 }
+                <div class="tab-label total-tab"
+                     [class.active]="workbook.view() === 'total'"
+                     (click)="openView('total')">Total</div>
+                <div class="tab-label graf-tab"
+                     [class.active]="workbook.view() === 'graf'"
+                     (click)="openView('graf')">Graf</div>
             </div>
             <div class="year-actions">
                 <p-button label="Speichern" size="small" (onClick)="save()"/>
                 <p-button label="CSV exportieren" size="small" (onClick)="exportToCSV()"/>
                 <p-button label="Beispiel-CSV laden" size="small" (onClick)="loadExample()"/>
+                <p-button [label]="workbook.saldoColumnsOpen() ? 'Saldo-Spalten aus' : 'Saldo-Spalten ein'"
+                          size="small"
+                          [outlined]="true"
+                          (onClick)="workbook.toggleSaldoColumns()"/>
+                <p-button [label]="workbook.saldoPanelOpen() ? 'Saldo-Box aus' : 'Saldo-Box ein'"
+                          size="small"
+                          [outlined]="true"
+                          (onClick)="workbook.toggleSaldoPanel()"/>
             </div>
         }
         <bal-import (dataLoaded)="import($event)"></bal-import>
     </div>
-    @if (workbook.months().length) {
+    @if (workbook.months().length && workbook.saldoPanelOpen()) {
         <bal-saldo-panel/>
     }
 </div>
