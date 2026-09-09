@@ -1,7 +1,13 @@
-.year-total { color: #111; }
+.year-total {
+    color: #111;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
 h2 { margin: 0 0 6px; }
 p { margin: 0 0 12px; color: #475569; font-size: 13px; }
-.cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
 .card {
     background: #fff;
     border: 1px solid #cbd5e1;
@@ -12,8 +18,20 @@ p { margin: 0 0 12px; color: #475569; font-size: 13px; }
 .card span { display: block; font-size: 11px; color: #64748b; }
 .card strong { font-size: 16px; }
 h3 { margin: 16px 0 6px; font-size: 14px; }
-.table-wrap { overflow: auto; margin-bottom: 8px; }
-table { border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+.total-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+table {
+    border-collapse: collapse;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 8px;
+}
 th, td { border: 1px solid #cbd5e1; padding: 3px 6px; text-align: right; white-space: nowrap; }
 tbody th, thead th:first-child { text-align: left; }
 .total, .sum td { font-weight: 700; }

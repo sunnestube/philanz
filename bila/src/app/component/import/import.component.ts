@@ -1,8 +1,7 @@
-import {Component, ElementRef, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
 import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
 import {WorkbookService} from '../../service/workbook.service';
 
 @Component({
@@ -13,25 +12,12 @@ import {WorkbookService} from '../../service/workbook.service';
     ],
     styleUrls: ['./import.component.css']
 })
-export class ImportComponent implements OnInit {
+export class ImportComponent {
 
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
     @Output() dataLoaded: EventEmitter<Month[]> = new EventEmitter<Month[]>();
 
     constructor(private http: HttpClient, private workbook: WorkbookService) {
-    }
-
-    ngOnInit(): void {
-        this.load();
-    }
-
-    load(): void {
-        const storageYear: string | null = localStorage.getItem('year');
-        if (storageYear) {
-            this.initMonths(storageYear);
-        } else {
-            this.loadTemplate().subscribe((csvData) => this.initMonths(csvData));
-        }
     }
 
     protected onDragOver(event: DragEvent): void {
@@ -80,9 +66,5 @@ export class ImportComponent implements OnInit {
         this.http.get('assets/example.csv', {responseType: 'text'}).subscribe((csvData) => {
             this.initMonths(csvData);
         });
-    }
-
-    private loadTemplate(): Observable<string> {
-        return this.http.get('assets/empty.csv', {responseType: 'text'});
     }
 }

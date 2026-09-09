@@ -8,10 +8,9 @@
         <div class="card"><span>Ø Monat</span><strong>{{ format(data.monthAvg) }}</strong></div>
         <div class="card"><span>Ø Tag</span><strong>{{ format(data.dayAvg) }}</strong></div>
     </div>
-
-    @for (block of data.months; track block.title) {
-        <h3>{{ block.title }}</h3>
-        <div class="table-wrap">
+    <div class="total-scroll">
+        @for (block of data.months; track block.title) {
+            <h3>{{ block.title }}</h3>
             <table>
                 <thead>
                 <tr>
@@ -41,11 +40,8 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
-    }
-
-    <h3>Jahr / Ø Monat / Ø Tag</h3>
-    <div class="table-wrap">
+        }
+        <h3>Jahr / Ø Monat / Ø Tag</h3>
         <table>
             <thead>
             <tr>
