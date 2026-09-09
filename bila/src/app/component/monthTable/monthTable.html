@@ -4,19 +4,28 @@
             {{ activeAddress || '—' }}
         </div>
         <div class="formula-fx">fx</div>
-        <input
-            #formulaInput
-            class="formula-input"
-            type="text"
-            [value]="draft"
-            [placeholder]="refPickMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – F2 oder hier klicken für Bezüge'"
-            (focus)="enterRefPick()"
-            (input)="onFormulaInput($event, activeCell())"
-            (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-            (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-            (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-            (blur)="leaveRefPick(); activeCell() && commitEdit(activeCell())"
-        />
+        <div class="formula-input-wrap" [class.colorize]="showRefColors()">
+            @if (showRefColors()) {
+                <div class="formula-color-layer" aria-hidden="true">
+                    @for (tok of formulaTokens(); track $index) {
+                        <span [class]="tok.color === null ? 'tok-plain' : 'tok-' + tok.color">{{ tok.text }}</span>
+                    }
+                </div>
+            }
+            <input
+                #formulaInput
+                class="formula-input"
+                type="text"
+                [value]="draft"
+                [placeholder]="refPickMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – F2 oder hier klicken für Bezüge'"
+                (focus)="enterRefPick()"
+                (input)="onFormulaInput($event, activeCell())"
+                (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+                (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+                (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+                (blur)="leaveRefPick(); activeCell() && commitEdit(activeCell())"
+            />
+        </div>
     </div>
     <div class="table-scroll"
          #scroller
@@ -72,6 +81,7 @@
                             [class.formula]="isFormula(cell)"
                             [class.editing]="editingRow === rowIndex && editingCol === colIndex"
                             [class.ref-target]="refPickMode && !(editingRow === rowIndex && editingCol === colIndex)"
+                            [attr.data-ref]="refColorAt(rowIndex, colIndex)"
                             (mousedown)="onCellMouseDown($event, rowIndex, colIndex)">
                             @if (cell.type.id.indexOf('select') !== -1) {
                                 <select [(ngModel)]="cell.value"
