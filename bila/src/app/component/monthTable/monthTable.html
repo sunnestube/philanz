@@ -14,9 +14,6 @@
             (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
         />
-        <button type="button" class="saldo-toggle" (click)="workbook.toggleSaldoColumns()">
-            {{ workbook.saldoColumnsOpen() ? 'Saldo ◀' : 'Saldo ▶' }}
-        </button>
     </div>
     <div class="table-scroll"
          #scroller
@@ -25,26 +22,24 @@
     <table class="data-table">
         <thead>
         <tr>
-            @if (month) {
-                @for (column of month.columns; track $index) {
-                    <th class="{{column.type.split('_')[0]}} {{column.section}}"
-                        title="{{ columnLetter($index) }} · {{ column.type }}">
-                        <div>{{ column.title }}</div>
+            @for (column of month.columns; track $index) {
+                <th class="{{column.type.split('_')[0]}} {{column.section}}"
+                    title="{{ columnLetter($index) }} · {{ column.type }}">
+                    <div>{{ column.title }}</div>
+                </th>
+            }
+            @if (workbook.saldoColumnsOpen()) {
+                @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                    <th class="number S person-{{combo.person.toLowerCase()}}"
+                        [class.saldo-start]="first"
+                        title="Saldo {{ combo.person }} {{ combo.account }}">
+                        <div>{{ combo.person }} {{ combo.account }}</div>
                     </th>
                 }
-                @if (workbook.saldoColumnsOpen()) {
-                    @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                        <th class="number S person-{{combo.person.toLowerCase()}}"
-                            [class.saldo-start]="first"
-                            title="Saldo {{ combo.person }} {{ combo.account }}">
-                            <div>{{ combo.person }} {{ combo.account }}</div>
-                        </th>
-                    }
-                    @if (saldoCombos().length) {
-                        <th class="number S total-col" title="Saldo Total">
-                            <div>Total</div>
-                        </th>
-                    }
+                @if (saldoCombos().length) {
+                    <th class="number S total-col" title="Saldo Total">
+                        <div>Total</div>
+                    </th>
                 }
             }
         </tr>
@@ -62,7 +57,7 @@
                                 <select [(ngModel)]="cell.value"
                                         (change)="onSelectChange(cell, row)"
                                         (keyup)="navigate($event, rowIndex, colIndex)"
-                                        id="cell_{{rowIndex}}_{{colIndex}}"
+                                        [id]="cellId(rowIndex, colIndex)"
                                         tabindex="0"
                                         [ngModelOptions]="{standalone: true}">
                                     @for (option of optionsFor(cell); track option) {
@@ -76,7 +71,7 @@
                                     <div>{{ cell.value }}</div>
                                 } @else {
                                     <input
-                                        id="cell_{{rowIndex}}_{{colIndex}}"
+                                        [id]="cellId(rowIndex, colIndex)"
                                         tabindex="0"
                                         title="{{ isFormula(cell) ? cell.raw : cell.type.id }}"
                                         [value]="editingRow === rowIndex && editingCol === colIndex ? draft : displayValue(cell)"
@@ -113,11 +108,27 @@
                     }
                 </tr>
             }
-        <tr>
-            <td [attr.colspan]="month.columns.length + extraColCount()">
-                <bal-new-row-buttons [month]="month"></bal-new-row-buttons>
-            </td>
-        </tr>
+            <tr class="add-row">
+                <td [attr.colspan]="month.columns.length + extraColCount()">
+                    <bal-new-row-buttons [month]="month"></bal-new-row-buttons>
+                </td>
+            </tr>
+            @for (filler of fillerRows(); track $index) {
+                <tr class="filler">
+                    @for (column of month.columns; track $index) {
+                        <td [class]="column.type.split('_')[0]"></td>
+                    }
+                    @if (workbook.saldoColumnsOpen()) {
+                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                            <td class="number S" [class.saldo-start]="first"></td>
+                        }
+                        @if (saldoCombos().length) {
+                            <td class="number S total-col"></td>
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
     </table>
     </div>
 }
