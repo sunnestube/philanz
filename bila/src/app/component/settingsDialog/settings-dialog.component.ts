@@ -34,7 +34,9 @@ export class SettingsDialogComponent {
     ];
 
     newPerson = '';
+    newPersonName = '';
     newAccount = '';
+    newAccountName = '';
     tab: 'person' | 'account' | 'columns' | 'saldo' = 'person';
 
     get visible(): boolean {
@@ -58,7 +60,11 @@ export class SettingsDialogComponent {
             person: [...this.workbook.persons(), code],
             account: this.workbook.accounts()
         });
+        if (this.newPersonName.trim()) {
+            this.workbook.setCodeName('person', code, this.newPersonName);
+        }
         this.newPerson = '';
+        this.newPersonName = '';
     }
 
     removePerson(code: string): void {
@@ -77,7 +83,11 @@ export class SettingsDialogComponent {
             person: this.workbook.persons(),
             account: [...this.workbook.accounts(), code]
         });
+        if (this.newAccountName.trim()) {
+            this.workbook.setCodeName('account', code, this.newAccountName);
+        }
         this.newAccount = '';
+        this.newAccountName = '';
     }
 
     removeAccount(code: string): void {
@@ -93,6 +103,14 @@ export class SettingsDialogComponent {
 
     renameAccount(from: string, to: string): void {
         this.workbook.renameCode('account', from, to);
+    }
+
+    renamePersonName(code: string, name: string): void {
+        this.workbook.setCodeName('person', code, name);
+    }
+
+    renameAccountName(code: string, name: string): void {
+        this.workbook.setCodeName('account', code, name);
     }
 
     addColumn(): void {

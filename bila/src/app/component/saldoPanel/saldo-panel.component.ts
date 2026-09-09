@@ -8,7 +8,7 @@ import {WorkbookService, ComboSaldo} from '../../service/workbook.service';
     styleUrl: './saldo-panel.component.css'
 })
 export class SaldoPanelComponent {
-    private readonly workbook = inject(WorkbookService);
+    readonly workbook = inject(WorkbookService);
 
     readonly monthLabel = computed(() => this.workbook.selectedMonth()?.label.title ?? '');
     readonly monthRows = computed(() => this.workbook.comboSaldos('month'));
