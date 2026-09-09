@@ -8,7 +8,15 @@ export interface CellAddress {
     monthTitle: string | null;
     col: number;
     row: number;
+    colAbs: boolean;
+    rowAbs: boolean;
     token: string;
+}
+
+export interface FormulaClipboard {
+    raw: string;
+    col: number;
+    row: number;
 }
 
 @Injectable({
@@ -16,6 +24,7 @@ export interface CellAddress {
 })
 export class FormulaService {
     months: Month[] = [];
+    clipboard: FormulaClipboard | null = null;
 
     setMonths(months: Month[]): void {
         this.months = months;
@@ -61,7 +70,10 @@ export class FormulaService {
     }
 
     shiftAfterColumnRemoved(removedIndex: number): void {
-        this.rewriteFormulaRefs((col) => {
+        this.rewriteFormulaRefs((col, colAbs) => {
+            if (colAbs) {
+                return col;
+            }
             if (col === removedIndex) {
                 return null;
             }
@@ -70,11 +82,16 @@ export class FormulaService {
     }
 
     shiftAfterColumnInserted(insertedIndex: number): void {
-        this.rewriteFormulaRefs((col) => col >= insertedIndex ? col + 1 : col);
+        this.rewriteFormulaRefs((col, colAbs) => {
+            if (colAbs) {
+                return col;
+            }
+            return col >= insertedIndex ? col + 1 : col;
+        });
     }
 
-    rewriteFormulaRefs(mapColumn: (col: number) => number | null): void {
-        const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?([A-Za-z]+)(\d+)/g;
+    rewriteFormulaRefs(mapColumn: (col: number, colAbs: boolean) => number | null): void {
+        const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?(\$)?([A-Za-z]+)(\$)?(\d+)/g;
         for (const month of this.months) {
             for (const row of month.rows) {
                 for (const cell of row.cells) {
@@ -82,16 +99,14 @@ export class FormulaService {
                     if (!raw.trim().startsWith('=')) {
                         continue;
                     }
-                    cell.raw = raw.replace(pattern, (full, monthName, letters, digits) => {
+                    cell.raw = raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
                         const col = this.letterToIndex(String(letters).toUpperCase());
-                        const nextCol = mapColumn(col);
+                        const colAbs = !!colDollar;
+                        const nextCol = mapColumn(col, colAbs);
                         if (nextCol === null) {
                             return '#BEZUG!';
                         }
-                        if (nextCol === col) {
-                            return full;
-                        }
-                        const next = this.columnLetter(nextCol) + digits;
+                        const next = `${colDollar ?? ''}${this.columnLetter(nextCol)}${rowDollar ?? ''}${digits}`;
                         return monthName ? `${monthName}!${next}` : next;
                     });
                 }
@@ -100,24 +115,67 @@ export class FormulaService {
     }
 
     parseAddress(token: string, fallbackMonth: string): CellAddress | null {
-        const match = token.trim().match(/^(?:([A-Za-zÄÖÜäöü]{3})!)?([A-Za-z]+)(\d+)$/);
+        const match = token.trim().match(/^(?:([A-Za-zÄÖÜäöü]{3})!)?(\$)?([A-Za-z]+)(\$)?(\d+)$/);
         if (!match) {
             return null;
         }
         const monthTitle = match[1] ? this.normalizeMonthTitle(match[1]) : fallbackMonth;
-        const col = this.letterToIndex(match[2].toUpperCase());
-        const row = Number(match[3]) - 1;
+        const colAbs = !!match[2];
+        const letters = match[3].toUpperCase();
+        const rowAbs = !!match[4];
+        const col = this.letterToIndex(letters);
+        const row = Number(match[5]) - 1;
         if (col < 0 || row < 0) {
             return null;
         }
+        const local = `${colAbs ? '$' : ''}${letters}${rowAbs ? '$' : ''}${match[5]}`;
         return {
             monthTitle,
             col,
             row,
+            colAbs,
+            rowAbs,
             token: monthTitle && monthTitle !== fallbackMonth
-                ? `${monthTitle}!${match[2].toUpperCase()}${match[3]}`
-                : `${match[2].toUpperCase()}${match[3]}`
+                ? `${monthTitle}!${local}`
+                : local
         };
+    }
+
+    copyFormula(raw: string, col: number, row: number): string {
+        const text = raw ?? '';
+        this.clipboard = {raw: text, col, row};
+        return text;
+    }
+
+    pasteFormula(targetCol: number, targetRow: number, clipboardText?: string): string {
+        const text = (clipboardText ?? this.clipboard?.raw ?? '').trim();
+        if (!text) {
+            return '';
+        }
+        const source = this.clipboard && (!clipboardText || this.sameFormula(clipboardText, this.clipboard.raw))
+            ? this.clipboard
+            : null;
+        if (!this.isFormula(text) || !source) {
+            return text;
+        }
+        return this.adjustFormula(text, source.col, source.row, targetCol, targetRow);
+    }
+
+    adjustFormula(raw: string, fromCol: number, fromRow: number, toCol: number, toRow: number): string {
+        const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?(\$)?([A-Za-z]+)(\$)?(\d+)/g;
+        return raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
+            const colAbs = !!colDollar;
+            const rowAbs = !!rowDollar;
+            const col = this.letterToIndex(String(letters).toUpperCase());
+            const row = Number(digits) - 1;
+            const nextCol = colAbs ? col : col + (toCol - fromCol);
+            const nextRow = rowAbs ? row : row + (toRow - fromRow);
+            if (nextCol < 0 || nextRow < 0) {
+                return '#BEZUG!';
+            }
+            const local = `${colAbs ? '$' : ''}${this.columnLetter(nextCol)}${rowAbs ? '$' : ''}${nextRow + 1}`;
+            return monthName ? `${monthName}!${local}` : local;
+        });
     }
 
     evaluateCell(month: Month, cell: MonthCell, visiting: Set<string>): number | string {
@@ -134,6 +192,11 @@ export class FormulaService {
 
         const raw = (cell.raw ?? cell.value ?? '').trim();
         if (!this.isFormula(raw)) {
+            if (!raw) {
+                cell.display = '';
+                cell.error = null;
+                return 0;
+            }
             const asNumber = this.toNumber(raw);
             if (asNumber !== null && this.isNumericType(cell)) {
                 cell.display = this.formatNumber(asNumber);
@@ -230,14 +293,27 @@ export class FormulaService {
             }
             const target = this.findCell(address);
             if (!target) {
-                throw new Error('#BEZUG!');
+                const monthExists = this.months.some((item) =>
+                    item.label.title === address.monthTitle
+                    || item.label.title.toLowerCase() === address.monthTitle?.toLowerCase()
+                );
+                if (!monthExists) {
+                    throw new Error('#BEZUG!');
+                }
+                return 0;
             }
             const resolved = this.evaluateCell(target.month, target.cell, visiting);
             if (typeof resolved === 'number') {
                 return resolved;
             }
+            if (resolved === '' || resolved === null || resolved === undefined) {
+                return 0;
+            }
             const numeric = this.toNumber(String(resolved));
             if (numeric === null) {
+                if (!String(resolved).trim()) {
+                    return 0;
+                }
                 throw new Error('#WERT!');
             }
             return numeric;
@@ -252,7 +328,7 @@ export class FormulaService {
     private tokenize(source: string): string[] {
         const tokens: string[] = [];
         const input = source.replace(/\s+/g, '');
-        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?[A-Za-z]+\d+|\d+(?:['’]\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
+        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+|\d+(?:['’]\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
         let match: RegExpExecArray | null;
         let cursor = 0;
         while ((match = pattern.exec(input)) !== null) {
@@ -307,6 +383,10 @@ export class FormulaService {
 
     private isNumberToken(token: string): boolean {
         return this.toNumber(token) !== null;
+    }
+
+    private sameFormula(a: string, b: string): boolean {
+        return a.replace(/^\s+|\s+$/g, '') === b.replace(/^\s+|\s+$/g, '');
     }
 
     toNumber(value: string): number | null {
