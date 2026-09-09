@@ -166,17 +166,19 @@
 .data-table thead tr.title-row th > div {
     position: absolute;
     left: 50%;
-    bottom: 6px;
-    top: auto;
-    transform: translateX(-50%) rotate(270deg);
-    transform-origin: center bottom;
-    white-space: nowrap;
-    width: calc(var(--title-h, 84px) - 10px);
+    bottom: 1px;
+    top: 8px;
+    width: 14px;
+    margin: 0 0 0 -7px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    transform-origin: center center;
     text-align: left;
     font-size: 10px;
-    line-height: 1.15;
+    line-height: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .row-resizer {
     position: absolute;
