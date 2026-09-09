@@ -1,4 +1,4 @@
-import {Component, ElementRef, Input, NgZone, OnDestroy, ViewChild} from '@angular/core';
+import {Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
@@ -34,8 +34,21 @@ export class MonthTable implements OnDestroy {
     private panMoveY = 0;
     private panLeft = 0;
     private panTop = 0;
+    private resizeKind: 'header' | 'text' | null = null;
+    private resizeStart = 0;
+    private resizeBase = 0;
     private readonly onWindowPanMove = (event: PointerEvent) => this.onPanMove(event);
     private readonly onWindowPanEnd = () => this.onPanEnd();
+
+    @HostBinding('style.--title-h.px')
+    get titleRowPx(): number {
+        return this.workbook.headerRowHeight();
+    }
+
+    @HostBinding('style.--text-w.px')
+    get textColPx(): number {
+        return this.workbook.textColWidth();
+    }
     private cachedRev = -1;
     private cachedTitle = '';
     private cachedRunning: Array<Record<string, number>> = [];
@@ -266,7 +279,7 @@ export class MonthTable implements OnDestroy {
         return [
             ...this.workbook.personCodes().map((person) => ({
                 person,
-                label: `Total ${person}`,
+                label: `Total ${this.workbook.personLabel(person)}`,
                 color: person.toLowerCase()
             })),
             {person: null, label: 'Total', color: 'grand'}
@@ -292,10 +305,10 @@ export class MonthTable implements OnDestroy {
             return '';
         }
         if (colIndex === this.footerLabelCol()) {
-            return person ? `Total ${person}` : 'Total';
+            return person ? `Total ${this.workbook.personLabel(person)}` : 'Total';
         }
         if (column.type === CELL_TYPE.select_person) {
-            return person ?? '';
+            return person ? this.workbook.personLabel(person) : '';
         }
         if (column.type !== CELL_TYPE.number) {
             return '';
@@ -344,6 +357,34 @@ export class MonthTable implements OnDestroy {
         }, 0);
     }
 
+    optionLabel(cell: MonthCell, option: string): string {
+        if (cell.type.id === CELL_TYPE.select_person) {
+            return this.workbook.optionLabel('person', option);
+        }
+        if (cell.type.id === CELL_TYPE.select_account) {
+            return this.workbook.optionLabel('account', option);
+        }
+        return option;
+    }
+
+    onHeaderResizeStart(event: PointerEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.resizeKind = 'header';
+        this.resizeStart = event.clientY;
+        this.resizeBase = this.workbook.headerRowHeight();
+        (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
+    }
+
+    onTextResizeStart(event: PointerEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.resizeKind = 'text';
+        this.resizeStart = event.clientX;
+        this.resizeBase = this.workbook.textColWidth();
+        (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
+    }
+
     onPanStart(event: PointerEvent): void {
         if (this.refPickMode || this.formulaMode) {
             return;
@@ -352,7 +393,7 @@ export class MonthTable implements OnDestroy {
             return;
         }
         const target = event.target as HTMLElement;
-        if (target.closest('button, textarea, a')) {
+        if (target.closest('button, textarea, a, .row-resizer, .col-resizer')) {
             return;
         }
         const el = this.scroller?.nativeElement;
@@ -401,6 +442,21 @@ export class MonthTable implements OnDestroy {
     }
 
     onPanMove(event: PointerEvent): void {
+        if (this.resizeKind) {
+            event.preventDefault();
+            const kind = this.resizeKind;
+            const next = kind === 'header'
+                ? this.resizeBase + (event.clientY - this.resizeStart)
+                : this.resizeBase + (event.clientX - this.resizeStart);
+            this.zone.run(() => {
+                if (kind === 'header') {
+                    this.workbook.setHeaderRowHeight(next, false);
+                } else {
+                    this.workbook.setTextColWidth(next, false);
+                }
+            });
+            return;
+        }
         if (!this.panCandidate && !this.panning) {
             return;
         }
@@ -437,6 +493,11 @@ export class MonthTable implements OnDestroy {
     }
 
     onPanEnd(): void {
+        if (this.resizeKind) {
+            this.workbook.setHeaderRowHeight(this.workbook.headerRowHeight());
+            this.workbook.setTextColWidth(this.workbook.textColWidth());
+            this.resizeKind = null;
+        }
         const el = this.scroller?.nativeElement;
         el?.classList.remove('dragging');
         this.panCandidate = false;
