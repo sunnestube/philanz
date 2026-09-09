@@ -11,6 +11,7 @@
         <button type="button" [class.active]="tab === 'person'" (click)="tab = 'person'">Personen (C)</button>
         <button type="button" [class.active]="tab === 'account'" (click)="tab = 'account'">Konten (D)</button>
         <button type="button" [class.active]="tab === 'columns'" (click)="tab = 'columns'">Spalten</button>
+        <button type="button" [class.active]="tab === 'saldo'" (click)="tab = 'saldo'">Saldo</button>
     </div>
     @if (tab === 'person') {
         <p class="hint">Codes in Spalte Person. Bestimmt Farbe und Saldo-Gruppe.</p>
@@ -43,7 +44,7 @@
         </div>
     }
     @if (tab === 'columns') {
-        <p class="hint">Spalten hinzufügen, umbenennen oder entfernen. Month/Line bleiben geschützt. Formeln (=AE2) werden mitverschoben.</p>
+        <p class="hint">Spalten hinzufügen, umbenennen oder entfernen. Month/Line bleiben geschützt. Formeln (=A1) starten bei Datum = A und werden mitverschoben.</p>
         <table class="col-table">
             <thead>
             <tr><th>Titel</th><th>Typ</th><th>Bereich</th><th></th></tr>
@@ -79,5 +80,41 @@
             </tbody>
         </table>
         <p-button label="Spalte hinzufügen" icon="pi pi-plus" size="small" (onClick)="addColumn()"/>
+    }
+    @if (tab === 'saldo') {
+        <p class="hint">Virtuelle Saldospalten einblenden, ausblenden und umbenennen. Die Werte bleiben berechnet.</p>
+        <table class="col-table">
+            <thead>
+            <tr><th>Anzeigen</th><th>Titel</th><th>Gruppe</th></tr>
+            </thead>
+            <tbody>
+                @for (combo of workbook.saldoCombos(); track combo.key) {
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   [checked]="prefVisible(combo.key)"
+                                   (change)="toggleCombo(combo.key, $any($event.target).checked)"/>
+                        </td>
+                        <td>
+                            <input [ngModel]="prefTitle(combo.key, combo.person + ' ' + combo.account)"
+                                   (ngModelChange)="renameCombo(combo.key, $event)"/>
+                        </td>
+                        <td>{{ combo.person }} {{ combo.account }}</td>
+                    </tr>
+                }
+                <tr>
+                    <td>
+                        <input type="checkbox"
+                               [checked]="workbook.saldoTotalPref().visible"
+                               (change)="workbook.setSaldoTotalPref({visible: $any($event.target).checked})"/>
+                    </td>
+                    <td>
+                        <input [ngModel]="workbook.saldoTotalPref().title"
+                               (ngModelChange)="workbook.setSaldoTotalPref({title: $event})"/>
+                    </td>
+                    <td>Total</td>
+                </tr>
+            </tbody>
+        </table>
     }
 </p-dialog>
