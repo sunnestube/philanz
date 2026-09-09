@@ -1,0 +1,73 @@
+@if (report(); as data) {
+<section class="year-total">
+    <h2>Total</h2>
+    <p>Ausgaben pro Monat, Person und Spalte. Jahrestotal plus Monats- und Tagesdurchschnitt.</p>
+    <div class="cards">
+        <div class="card"><span>Jahr Ausgaben</span><strong>{{ format(data.yearExpense) }}</strong></div>
+        <div class="card"><span>Jahr Einnahmen</span><strong>{{ format(data.yearIncome) }}</strong></div>
+        <div class="card"><span>Ø Monat</span><strong>{{ format(data.monthAvg) }}</strong></div>
+        <div class="card"><span>Ø Tag</span><strong>{{ format(data.dayAvg) }}</strong></div>
+    </div>
+
+    @for (block of data.months; track block.title) {
+        <h3>{{ block.title }}</h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Person</th>
+                    @for (col of data.columns; track col.title) {
+                        <th>{{ col.title }}</th>
+                    }
+                    <th>Σ</th>
+                </tr>
+                </thead>
+                <tbody>
+                    @for (person of data.persons; track person) {
+                        <tr class="person-{{person.toLowerCase()}}">
+                            <th>{{ person }}</th>
+                            @for (col of data.columns; track col.title) {
+                                <td>{{ format(block.byPerson[person][col.title] ?? 0) }}</td>
+                            }
+                            <td class="total">{{ format(block.personTotal[person] ?? 0) }}</td>
+                        </tr>
+                    }
+                    <tr class="sum">
+                        <th>Σ</th>
+                        @for (col of data.columns; track col.title) {
+                            <td class="total">{{ format(block.byColumn[col.title] ?? 0) }}</td>
+                        }
+                        <td class="total">{{ format(block.total) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <h3>Jahr / Ø Monat / Ø Tag</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th></th>
+                @for (col of data.columns; track col.title) {
+                    <th>{{ col.title }}</th>
+                }
+                <th>Σ</th>
+            </tr>
+            </thead>
+            <tbody>
+                @for (row of data.summaryRows; track row.label) {
+                    <tr>
+                        <th>{{ row.label }}</th>
+                        @for (col of data.columns; track col.title) {
+                            <td>{{ format(row.byColumn[col.title] ?? 0) }}</td>
+                        }
+                        <td class="total">{{ format(row.total) }}</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+}

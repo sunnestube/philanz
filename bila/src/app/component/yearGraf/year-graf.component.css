@@ -1,0 +1,24 @@
+.year-graf { color: #111; }
+h2 { margin: 0 0 6px; }
+p { margin: 0 0 12px; color: #475569; font-size: 13px; }
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+@media (min-width: 900px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .wide { grid-column: 1 / -1; }
+}
+figure {
+    margin: 0;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px;
+    height: 280px;
+}
+.wide { height: 320px; }
+figcaption { font-size: 12px; margin-bottom: 4px; color: #334155; }
+:host ::ng-deep .p-chart,
+:host ::ng-deep canvas { height: calc(100% - 20px) !important; }

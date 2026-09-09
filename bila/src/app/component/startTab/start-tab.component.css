@@ -1,0 +1,24 @@
+.start-tab { color: #111; }
+h2 { margin: 0 0 6px; font-size: 18px; }
+p { margin: 0 0 12px; color: #475569; font-size: 13px; }
+.start-scroll { overflow: auto; }
+.start-grid { border-collapse: collapse; min-width: 480px; }
+.start-grid th, .start-grid td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 6px;
+    text-align: right;
+}
+.start-grid tbody th, .start-grid thead th:first-child { text-align: left; }
+.start-grid input {
+    width: 88px;
+    border: 0;
+    background: transparent;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.total { font-weight: 700; }
+tr.person-p td, tr.person-p th { background: #dbeafe; }
+tr.person-l td, tr.person-l th { background: #e0e7ff; }
+tr.person-h td, tr.person-h th { background: #fef3c7; }
+tr.person-a td, tr.person-a th,
+tr.person-e td, tr.person-e th { background: #ffedd5; }

@@ -1,0 +1,43 @@
+<section class="start-tab">
+    <h2>Start — Saldi Vorjahr</h2>
+    <p>Anfangssaldi pro Person und Konto. Sie fliessen in die laufenden Saldo-Spalten und ins Jahrestotal.</p>
+    <div class="start-scroll">
+        <table class="start-grid">
+            <thead>
+            <tr>
+                <th></th>
+                @for (account of workbook.accountCodes(); track account) {
+                    <th>{{ account }}</th>
+                }
+                <th>Σ</th>
+            </tr>
+            </thead>
+            <tbody>
+                @for (person of workbook.personCodes(); track person) {
+                    <tr class="person-{{person.toLowerCase()}}">
+                        <th>{{ person }}</th>
+                        @for (account of workbook.accountCodes(); track account) {
+                            <td>
+                                <input type="text"
+                                       inputmode="decimal"
+                                       [value]="display(person, account)"
+                                       (change)="onChange(person, account, $event)"
+                                       aria-label="Start {{ person }} {{ account }}"/>
+                            </td>
+                        }
+                        <td class="total">{{ format(workbook.openingPersonTotal(person)) }}</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+            <tr>
+                <th>Σ</th>
+                @for (account of workbook.accountCodes(); track account) {
+                    <td class="total">{{ format(workbook.openingAccountTotal(account)) }}</td>
+                }
+                <td class="total">{{ format(workbook.openingGrandTotal()) }}</td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+</section>

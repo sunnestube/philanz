@@ -1,0 +1,20 @@
+@if (charts(); as data) {
+<section class="year-graf">
+    <h2>Graf</h2>
+    <p>Ausgaben und Einnahmen im Vergleich — untereinander (Monate) und miteinander (Personen / Kategorien).</p>
+    <div class="grid">
+        <figure>
+            <figcaption>Ausgaben pro Person und Monat</figcaption>
+            <p-chart type="bar" [data]="data.personStack" [options]="options"/>
+        </figure>
+        <figure>
+            <figcaption>Ausgaben nach Kategorie</figcaption>
+            <p-chart type="bar" [data]="data.categoryStack" [options]="options"/>
+        </figure>
+        <figure class="wide">
+            <figcaption>Einnahmen vs. Ausgaben</figcaption>
+            <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
+        </figure>
+    </div>
+</section>
+}
