@@ -1,15 +1,15 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {HttpClient} from '@angular/common/http';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
 import {ImportComponent} from '../import/import.component';
 import {Button} from 'primeng/button';
-import {WorkbookService} from '../../service/workbook.service';
+import {WorkbookService, YearView} from '../../service/workbook.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
-import {HttpClient} from '@angular/common/http';
 
 @Component({
     templateUrl: './year.component.html',
@@ -25,9 +25,19 @@ import {HttpClient} from '@angular/common/http';
     ],
     styleUrls: ['./year.component.css']
 })
-export class YearComponent {
+export class YearComponent implements OnInit {
     readonly workbook = inject(WorkbookService);
     private readonly http = inject(HttpClient);
+
+    ngOnInit(): void {
+        if (this.workbook.months().length) {
+            return;
+        }
+        const stored = localStorage.getItem('year');
+        if (stored) {
+            this.workbook.applyCsv(stored);
+        }
+    }
 
     protected import(months: Month[]): void {
         this.workbook.setMonths(months);
@@ -42,17 +52,15 @@ export class YearComponent {
         this.workbook.setView(view);
     }
 
+    protected openCsv(): void {
+        this.workbook.setView('csv' as YearView);
+    }
+
     protected save(): void {
         const csvData = this.workbook.toCsv();
         if (csvData) {
             localStorage.setItem('year', csvData);
         }
-    }
-
-    protected loadExample(): void {
-        this.http.get('assets/example.csv', {responseType: 'text'}).subscribe((csvData) => {
-            this.workbook.applyCsv(csvData);
-        });
     }
 
     protected exportToCSV(): void {

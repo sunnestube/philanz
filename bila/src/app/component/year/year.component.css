@@ -1,57 +1,80 @@
 .year-shell {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    height: calc(100vh - 128px);
     min-height: 0;
     width: 100%;
-    max-width: 100%;
     overflow: hidden;
+    background: #f8fafc;
 }
-.year-shell .tab-container {
+.year-toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 6px 10px;
+    flex-shrink: 0;
+    background: #e2e8f0;
+    border-bottom: 1px solid #cbd5e1;
+}
+.year-toolbar button {
+    border: 1px solid #94a3b8;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.year-toolbar button.on {
+    background: #1d4ed8;
+    color: #fff;
+    border-color: #1d4ed8;
+}
+.year-body {
     flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 .tab-container {
-    background: #f8fafc;
-    color: #0f172a;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 .tab-content {
-    border: 1px solid #cbd5e1;
-    padding: 0;
-    flex: 1;
-    overflow: auto;
     display: none;
-    background: #fff;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
-    max-width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    background: #ececec;
+    border: 0;
 }
 .tab-content.active {
-    display: block;
-    max-height: 62vh;
+    display: flex;
+    flex-direction: column;
+    max-height: none;
 }
-.tab-content.extra {
-    padding: 12px;
-    overflow: auto;
-}
+.tab-content.extra { padding: 12px; }
+.month-content { padding: 0; }
+.csv-tab h2 { margin: 0 0 6px; color: #111; }
+.csv-tab p { margin: 0 0 10px; color: #475569; }
+.csv-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 .tabs {
     display: flex;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-top: 2px solid #cbd5e1;
-    margin-top: 8px;
     padding: 0 8px;
     background: #e2e8f0;
     flex-shrink: 0;
 }
 .tab-label {
-    padding: 2px 10px;
+    padding: 6px 12px;
     background: #e7e7e7;
     border: 1px solid #cbd5e1;
-    border-top: none;
+    border-bottom: none;
     cursor: pointer;
     margin-right: 5px;
     font-size: smaller;
@@ -60,42 +83,30 @@
 .tab-label:hover { background: #d0d0d0; }
 .tab-label.active {
     background: white;
-    border-bottom: 2px solid #2563eb;
+    border-top: 2px solid #2563eb;
     font-weight: bold;
 }
 .tab-label.start-tab { background: #fde68a; }
 .tab-label.total-tab { background: #bbf7d0; }
 .tab-label.graf-tab { background: #bfdbfe; }
-.year-actions {
-    display: flex;
-    gap: 8px;
-    padding: 8px;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-}
-.red { background: lightcoral; }
+.tab-label.csv-tab-label { background: #e2e8f0; }
 
 @media (min-width: 1100px) {
-    .year-shell:not(.panel-collapsed) {
+    .year-shell.panel-open .year-body {
         flex-direction: row;
-        align-items: stretch;
-        overflow: visible;
-    }
-    .tab-content.active {
-        max-height: none;
     }
 }
 
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #2b2b2b; }
-    .tab-container { background: #2b2b2b; color: #f4f4f5; }
-    .tab-content { border-color: #5b5b5b; background: #ececec; color: #111; }
+    .year-toolbar { background: #3a3a3a; border-color: #5b5b5b; }
+    .year-toolbar button { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
+    .year-toolbar button.on { background: #2563eb; color: #fff; }
+    .tab-content { background: #ececec; }
     .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
-    .tab-label:hover { background: #5b5b5b; color: #fff; }
-    .tab-label.active { background: #ececec; color: #111; border-bottom-color: #2563eb; }
+    .tab-label.active { background: #ececec; color: #111; }
     .tab-label.start-tab { background: #a16207; color: #fffbeb; }
     .tab-label.total-tab { background: #166534; color: #dcfce7; }
     .tab-label.graf-tab { background: #1d4ed8; color: #dbeafe; }
-    .red { background: #7f1d1d; color: #fecaca; }
 }

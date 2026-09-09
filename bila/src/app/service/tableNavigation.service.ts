@@ -1,48 +1,50 @@
-import {Injectable} from "@angular/core";
-import {Month} from '../model/Month';
-import {MonthColumn} from '../model/MonthColumn';
-import {MonthKey, MonthLabel} from '../model/MonthLabel';
-import {MonthCell} from '../model/MonthCell';
-import {MonthRow} from '../model/MonthRow';
-import {CELL_TYPE, CellType} from '../model/CellType';
-import {SECTION} from '../model/Section';
+import {Injectable} from '@angular/core';
 
 @Injectable({
-    providedIn: "root",
+    providedIn: 'root'
 })
 export class TableNavigationService {
 
-    static navigate(key: string, rowIndex: number, colIndex: number, lastCol: number = colIndex): void {
-        //console.log("key", key, rowIndex, colIndex, lastCol);
+    static cellId(monthTitle: string, rowIndex: number, colIndex: number): string {
+        return `cell_${TableNavigationService.monthKey(monthTitle)}_${rowIndex}_${colIndex}`;
+    }
+
+    static monthKey(monthTitle: string): string {
+        return (monthTitle || 'mon').replace(/[^A-Za-z0-9ÄÖÜäöü]/g, '');
+    }
+
+    static navigate(
+        key: string,
+        rowIndex: number,
+        colIndex: number,
+        lastCol: number = colIndex,
+        monthTitle: string = ''
+    ): void {
         switch (key) {
             case 'ArrowRight':
-                TableNavigationService.setFocus(rowIndex, colIndex + 1);
+                TableNavigationService.setFocus(monthTitle, rowIndex, colIndex + 1);
                 break;
             case 'ArrowLeft':
-                TableNavigationService.setFocus(rowIndex, colIndex - 1);
+                TableNavigationService.setFocus(monthTitle, rowIndex, colIndex - 1);
                 break;
             case 'ArrowDown':
             case 'Enter':
-                TableNavigationService.setFocus(rowIndex + 1, colIndex);
+                TableNavigationService.setFocus(monthTitle, rowIndex + 1, colIndex);
                 break;
             case 'ArrowUp':
-                TableNavigationService.setFocus(rowIndex - 1, colIndex);
+                TableNavigationService.setFocus(monthTitle, rowIndex - 1, colIndex);
                 break;
             case 'Home':
-                TableNavigationService.setFocus(rowIndex, 2);
+                TableNavigationService.setFocus(monthTitle, rowIndex, 2);
                 break;
             case 'End':
-                TableNavigationService.setFocus(rowIndex, lastCol - 1);
-                break;
-            case 'Del':
-                console.log("inhalt löschen nicht implementiert");
+                TableNavigationService.setFocus(monthTitle, rowIndex, lastCol - 1);
                 break;
         }
     }
 
-    private static setFocus(row: number, col: number) {
-        const cell = document.getElementById(`cell_${row}_${col}`)
-        console.log("cell", `cell_${row}_${col}`, cell)
+    private static setFocus(monthTitle: string, row: number, col: number): void {
+        const cell = document.getElementById(TableNavigationService.cellId(monthTitle, row, col));
         if (cell) {
             cell.focus();
         }
