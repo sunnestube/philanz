@@ -1,12 +1,18 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
 .table-scroll {
-    overflow-x: auto;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
     max-width: 100%;
     width: 100%;
     cursor: grab;
-    max-height: 62vh;
 }
 .table-scroll.dragging {
     cursor: grabbing;
@@ -19,6 +25,7 @@
     border-bottom: none;
     background: #f8fafc;
     min-height: 32px;
+    flex-shrink: 0;
     position: sticky;
     left: 0;
     z-index: 2;
@@ -52,18 +59,10 @@
     color: #0f172a;
     min-width: 0;
 }
-.saldo-toggle {
-    border: 0;
-    border-left: 1px solid #d1d5db;
-    background: #e2e8f0;
-    padding: 0 10px;
-    font-size: 11px;
-    cursor: pointer;
-    white-space: nowrap;
-}
 .data-table {
     width: max-content;
     min-width: 100%;
+    min-height: 100%;
     border-collapse: collapse;
     table-layout: fixed;
     background: #fff;
@@ -75,7 +74,7 @@
     padding: 0;
     text-align: left;
     font-size: 9px;
-    height: 11px;
+    height: 18px;
     vertical-align: middle;
 }
 .data-table th {
@@ -163,6 +162,8 @@ tr.a td,
 tr.e td { background: #ffb78e; }
 tr.a:nth-child(even) td,
 tr.e:nth-child(even) td { background: #fda373; }
+tr.filler td { background: #fff; height: 18px; }
+tr.add-row td { background: #f8fafc; }
 
 th.S,
 td.S {
@@ -202,7 +203,6 @@ td.S.total-col { background: #dcfce7; font-weight: 700; }
     .formula-address { background: #c7d2fe; color: #1e1b4b; border-color: #a3a3a3; }
     .formula-fx { color: #444; border-color: #a3a3a3; }
     .formula-input { color: #111; }
-    .saldo-toggle { background: #c4c4c4; border-left-color: #a3a3a3; color: #111; }
     .data-table { background: #f3f3f3; color: #111; }
     .data-table th,
     .data-table td { border-color: #b0b0b0; color: #111; }
@@ -224,6 +224,7 @@ td.S.total-col { background: #dcfce7; font-weight: 700; }
     tr.e td { background: #ffedd5; }
     tr.a:nth-child(even) td,
     tr.e:nth-child(even) td { background: #fdba74; }
+    tr.filler td { background: #f3f3f3; }
     .data-table td:focus-within,
     .data-table td.editing { outline-color: #2563eb; }
     td.S.zero { color: #57534e; }
