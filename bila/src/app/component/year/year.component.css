@@ -40,13 +40,40 @@
 .tab-content.extra { padding: 12px; overflow: hidden; }
 .tab-content.csv-tab {
     overflow: auto;
-    background: #ececec;
-    color: #111;
+    background: #e8eef5;
+    color: #0f172a;
 }
 .month-content { padding: 0; }
-.csv-tab h2 { margin: 0 0 6px; color: #111; }
+.csv-tab h2 { margin: 0 0 6px; color: #0f172a; }
 .csv-tab p { margin: 0 0 10px; color: #334155; }
-.csv-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+.csv-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.csv-card {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 14px;
+}
+.csv-card h3 { margin: 0 0 6px; font-size: 15px; color: #0f172a; }
+.csv-card p { margin: 0 0 12px; color: #475569; }
+.csv-card code { background: #e2e8f0; padding: 1px 4px; border-radius: 4px; color: #0f172a; }
+.csv-btn {
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    background: #1d4ed8;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 600;
+}
+.csv-btn.secondary { background: #0f766e; color: #ffffff; }
+.csv-status { display: block; margin-top: 8px; color: #166534; font-size: 13px; }
+.import-card { grid-column: 1 / -1; }
 .tabs {
     display: flex;
     align-items: center;
@@ -96,8 +123,9 @@
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #2b2b2b; color: #111; }
     .tab-content { background: #ececec; color: #111; }
-    .tab-content.csv-tab { background: #ececec; color: #111; }
-    .csv-tab h2, .csv-tab p { color: #111; }
+    .tab-content.csv-tab { background: #dbe4ee; color: #0f172a; }
+    .csv-tab h2, .csv-tab p, .csv-card, .csv-card h3, .csv-card p { color: #0f172a; }
+    .csv-card { background: #ffffff; }
     .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
     .tab-label.active { background: #ececec; color: #111; }
