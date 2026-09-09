@@ -10,12 +10,16 @@
     overflow-x: scroll;
     overflow-y: auto;
     scrollbar-gutter: stable;
-    scrollbar-width: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
+    overscroll-behavior: contain;
+    overflow-anchor: none;
     max-width: 100%;
     width: 100%;
-    cursor: default;
+    cursor: grab;
+}
+.table-scroll :is(input, select) {
+    cursor: text;
 }
 .table-scroll::-webkit-scrollbar {
     height: 14px;
@@ -32,6 +36,10 @@
 .table-scroll.dragging {
     cursor: grabbing;
     user-select: none;
+    touch-action: none;
+}
+.table-scroll.dragging :is(input, select) {
+    pointer-events: none;
 }
 .formula-bar {
     display: flex;
@@ -291,6 +299,32 @@ td.S.person-e { background: #ffedd5; }
 .data-table thead th.S.total-col,
 th.S.total-col { background: #86efac !important; }
 td.S.total-col { background: #dcfce7; font-weight: 400; }
+.data-table tr.foot-spacer td {
+    border: 0;
+    background: transparent;
+    height: 0;
+    padding: 0;
+}
+.data-table tfoot td {
+    position: sticky;
+    bottom: var(--foot-y, 0px);
+    z-index: 6;
+    height: 20px;
+    max-height: 20px;
+    font-weight: 600;
+    background: #e2e8f0;
+    color: #0f172a;
+    padding: 0 4px;
+    box-shadow: 0 -1px 0 #94a3b8;
+}
+.data-table tfoot tr.p td:not(.S) { background: #dbeafe; }
+.data-table tfoot tr.l td:not(.S) { background: #e0e7ff; }
+.data-table tfoot tr.h td:not(.S) { background: #fef3c7; }
+.data-table tfoot tr.a td:not(.S),
+.data-table tfoot tr.e td:not(.S) { background: #ffedd5; }
+.data-table tfoot tr.grand td:not(.S) { background: #94a3b8; }
+.data-table tfoot td.number { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table tfoot td.text { font-weight: 700; }
 
 @media (prefers-color-scheme: dark) {
     .formula-bar { background: #d4d4d4; border-color: #a3a3a3; }
@@ -342,6 +376,8 @@ td.S.total-col { background: #dcfce7; font-weight: 400; }
     th.S.person-e { background: #fdba74 !important; }
     .data-table thead th.S.total-col,
     th.S.total-col { background: #86efac !important; }
+    .data-table tfoot td { background: #cbd5e1; color: #0f172a; }
+    .data-table tfoot tr.grand td:not(.S) { background: #94a3b8; }
     .table-scroll::-webkit-scrollbar-track { background: #94a3b8; }
     .table-scroll::-webkit-scrollbar-thumb { background: #475569; border-color: #94a3b8; }
 }
