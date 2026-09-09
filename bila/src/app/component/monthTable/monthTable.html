@@ -14,8 +14,14 @@
             (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
         />
+        <button type="button" class="saldo-toggle" (click)="workbook.toggleSaldoColumns()">
+            {{ workbook.saldoColumnsOpen() ? 'Saldo ◀' : 'Saldo ▶' }}
+        </button>
     </div>
-    <div class="table-scroll">
+    <div class="table-scroll"
+         #scroller
+         [class.dragging]="panning"
+         (pointerdown)="onPanStart($event)">
     <table class="data-table">
         <thead>
         <tr>
@@ -26,17 +32,19 @@
                         <div>{{ column.title }}</div>
                     </th>
                 }
-                @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                    <th class="number S person-{{combo.person.toLowerCase()}}"
-                        [class.saldo-start]="first"
-                        title="Saldo {{ combo.person }} {{ combo.account }}">
-                        <div>{{ combo.person }} {{ combo.account }}</div>
-                    </th>
-                }
-                @if (saldoCombos().length) {
-                    <th class="number S total-col" title="Saldo Total">
-                        <div>Total</div>
-                    </th>
+                @if (workbook.saldoColumnsOpen()) {
+                    @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                        <th class="number S person-{{combo.person.toLowerCase()}}"
+                            [class.saldo-start]="first"
+                            title="Saldo {{ combo.person }} {{ combo.account }}">
+                            <div>{{ combo.person }} {{ combo.account }}</div>
+                        </th>
+                    }
+                    @if (saldoCombos().length) {
+                        <th class="number S total-col" title="Saldo Total">
+                            <div>Total</div>
+                        </th>
+                    }
                 }
             }
         </tr>
@@ -81,21 +89,27 @@
                             }
                         </td>
                     }
-                    @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                        <td class="number S person-{{combo.person.toLowerCase()}}"
-                            [class.saldo-start]="first"
-                            [class.neg]="saldoAt(rowIndex, combo.key) < 0"
-                            [class.zero]="saldoAt(rowIndex, combo.key) === 0"
-                            [class.hit]="isSaldoHit(rowIndex, combo)">
-                            {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
-                        </td>
-                    }
-                    @if (saldoCombos().length) {
-                        <td class="number S total-col"
-                            [class.neg]="saldoTotal(rowIndex) < 0"
-                            [class.zero]="saldoTotal(rowIndex) === 0">
-                            {{ formatSaldo(saldoTotal(rowIndex)) }}
-                        </td>
+                    @if (workbook.saldoColumnsOpen()) {
+                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                            <td class="number S person-{{combo.person.toLowerCase()}}"
+                                [class.saldo-start]="first"
+                                [class.up]="saldoDelta(rowIndex, combo.key) > 0"
+                                [class.down]="saldoDelta(rowIndex, combo.key) < 0"
+                                [class.neg]="saldoAt(rowIndex, combo.key) < 0"
+                                [class.zero]="saldoAt(rowIndex, combo.key) === 0"
+                                [class.hit]="isSaldoHit(rowIndex, combo)">
+                                {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
+                            </td>
+                        }
+                        @if (saldoCombos().length) {
+                            <td class="number S total-col"
+                                [class.up]="saldoTotalDelta(rowIndex) > 0"
+                                [class.down]="saldoTotalDelta(rowIndex) < 0"
+                                [class.neg]="saldoTotal(rowIndex) < 0"
+                                [class.zero]="saldoTotal(rowIndex) === 0">
+                                {{ formatSaldo(saldoTotal(rowIndex)) }}
+                            </td>
+                        }
                     }
                 </tr>
             }
