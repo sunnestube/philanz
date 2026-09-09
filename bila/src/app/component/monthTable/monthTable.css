@@ -7,12 +7,27 @@
 .table-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    overflow: auto;
+    overflow-x: scroll;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto;
     -webkit-overflow-scrolling: touch;
-    touch-action: none;
+    touch-action: pan-x pan-y;
     max-width: 100%;
     width: 100%;
-    cursor: grab;
+    cursor: default;
+}
+.table-scroll::-webkit-scrollbar {
+    height: 14px;
+    width: 14px;
+}
+.table-scroll::-webkit-scrollbar-track {
+    background: #cbd5e1;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 8px;
+    border: 2px solid #cbd5e1;
 }
 .table-scroll.dragging {
     cursor: grabbing;
@@ -258,17 +273,23 @@ td.S.down { background: #fca5a5 !important; color: #7f1d1d; }
 td.S.neg { color: #991b1b !important; font-weight: 400; }
 th.saldo-start,
 td.saldo-start { border-left: 3px solid #64748b; }
-th.S.person-p { background: #bfdbfe; }
+.data-table thead th.S.person-p,
+th.S.person-p { background: #bfdbfe !important; }
 td.S.person-p { background: #dbeafe; }
-th.S.person-l { background: #c7d2fe; }
+.data-table thead th.S.person-l,
+th.S.person-l { background: #c7d2fe !important; }
 td.S.person-l { background: #e0e7ff; }
-th.S.person-h { background: #fde68a; }
+.data-table thead th.S.person-h,
+th.S.person-h { background: #fde68a !important; }
 td.S.person-h { background: #fef3c7; }
+.data-table thead th.S.person-a,
+.data-table thead th.S.person-e,
 th.S.person-a,
-th.S.person-e { background: #fdba74; }
+th.S.person-e { background: #fdba74 !important; }
 td.S.person-a,
 td.S.person-e { background: #ffedd5; }
-th.S.total-col { background: #86efac; }
+.data-table thead th.S.total-col,
+th.S.total-col { background: #86efac !important; }
 td.S.total-col { background: #dcfce7; font-weight: 400; }
 
 @media (prefers-color-scheme: dark) {
@@ -309,4 +330,18 @@ td.S.total-col { background: #dcfce7; font-weight: 400; }
     td.S.up { background: #86efac !important; color: #14532d; }
     td.S.down { background: #fca5a5 !important; color: #7f1d1d; }
     td.S.neg { color: #7f1d1d !important; }
+    .data-table thead th.S.person-p,
+    th.S.person-p { background: #bfdbfe !important; }
+    .data-table thead th.S.person-l,
+    th.S.person-l { background: #c7d2fe !important; }
+    .data-table thead th.S.person-h,
+    th.S.person-h { background: #fde68a !important; }
+    .data-table thead th.S.person-a,
+    .data-table thead th.S.person-e,
+    th.S.person-a,
+    th.S.person-e { background: #fdba74 !important; }
+    .data-table thead th.S.total-col,
+    th.S.total-col { background: #86efac !important; }
+    .table-scroll::-webkit-scrollbar-track { background: #94a3b8; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #475569; border-color: #94a3b8; }
 }

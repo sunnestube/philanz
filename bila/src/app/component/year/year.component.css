@@ -45,14 +45,22 @@
     color-scheme: light;
 }
 .csv-tab,
+.csv-tab *,
 .csv-tab p,
 .csv-tab h2,
 .csv-tab h3,
 .csv-tab span,
 .csv-tab label,
-.csv-tab article {
+.csv-tab article,
+.csv-tab code,
+.csv-tab button {
     color: #0f172a;
 }
+.csv-tab .csv-btn,
+.csv-tab .csv-btn.secondary {
+    color: #ffffff;
+}
+
 .month-content { padding: 0; }
 .csv-tab h2 { margin: 0 0 6px; color: #0f172a; }
 .csv-tab p { margin: 0 0 10px; color: #334155; }
@@ -133,8 +141,9 @@
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #2b2b2b; color: #111; }
     .tab-content { background: #ececec; color: #111; }
-    .tab-content.csv-tab { background: #dbe4ee; color: #0f172a; }
-    .csv-tab h2, .csv-tab p, .csv-card, .csv-card h3, .csv-card p { color: #0f172a; }
+    .tab-content.csv-tab { background: #dbe4ee; color: #0f172a; color-scheme: light; }
+    .csv-tab, .csv-tab *, .csv-tab h2, .csv-tab p, .csv-card, .csv-card h3, .csv-card p { color: #0f172a; }
+    .csv-tab .csv-btn, .csv-tab .csv-btn.secondary { color: #ffffff; }
     .csv-card { background: #ffffff; }
     .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
