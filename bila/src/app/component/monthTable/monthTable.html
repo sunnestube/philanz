@@ -22,7 +22,7 @@
                 (input)="onFormulaInput($event, activeCell())"
                 (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
                 (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+                (paste)="onFormulaPaste($event)"
                 (blur)="onFormulaBlur($event)"
             />
         </div>
@@ -54,7 +54,7 @@
             @for (column of month.columns; track $index) {
                 <th class="{{column.type.split('_')[0]}} {{column.section}}"
                     title="{{ columnLetter($index) }} · {{ column.type }}">
-                    <div>{{ column.title }}</div>
+                    <div class="title-pack"><span>{{ column.title }}</span></div>
                     @if (column.type === 'text') {
                         <span class="col-resizer" (pointerdown)="onTextResizeStart($event)" title="Textspalte breiter ziehen"></span>
                     }
@@ -66,13 +66,13 @@
                     <th class="number S person-{{combo.person.toLowerCase()}}"
                         [class.saldo-start]="first"
                         title="Saldo {{ saldoTitle(combo) }}">
-                        <div>{{ saldoTitle(combo) }}</div>
+                        <div class="title-pack"><span>{{ saldoTitle(combo) }}</span></div>
                         <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
                     </th>
                 }
                 @if (saldoTotalVisible() && saldoCombos().length) {
                     <th class="number S total-col" title="Saldo {{ saldoTotalTitle() }}">
-                        <div>{{ saldoTotalTitle() }}</div>
+                        <div class="title-pack"><span>{{ saldoTotalTitle() }}</span></div>
                         <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
                     </th>
                 }
