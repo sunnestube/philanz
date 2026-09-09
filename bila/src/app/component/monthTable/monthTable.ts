@@ -30,6 +30,7 @@ export class MonthTable {
     private cachedRev = -1;
     private cachedTitle = '';
     private cachedRunning: Array<Record<string, number>> = [];
+    private readonly refTokenPattern = /(?:[A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+/g;
     @ViewChild('formulaInput') formulaInput?: ElementRef<HTMLInputElement>;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
@@ -73,6 +74,76 @@ export class MonthTable {
 
     leaveRefPick(): void {
         this.refPickMode = false;
+    }
+
+    showRefColors(): boolean {
+        return (this.formulaMode || this.refPickMode) && this.draft.trim().startsWith('=');
+    }
+
+    formulaTokens(): Array<{text: string; color: number | null}> {
+        const raw = this.draft || '';
+        if (!raw.startsWith('=')) {
+            return [{text: raw, color: null}];
+        }
+        const colors = this.refColorMap();
+        const tokens: Array<{text: string; color: number | null}> = [];
+        const pattern = new RegExp(this.refTokenPattern.source, 'g');
+        let last = 0;
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(raw)) !== null) {
+            if (match.index > last) {
+                tokens.push({text: raw.slice(last, match.index), color: null});
+            }
+            tokens.push({
+                text: match[0],
+                color: colors.get(match[0].replace(/\$/g, '').toUpperCase()) ?? 0
+            });
+            last = match.index + match[0].length;
+        }
+        if (last < raw.length) {
+            tokens.push({text: raw.slice(last), color: null});
+        }
+        return tokens.length ? tokens : [{text: raw, color: null}];
+    }
+
+    refColorAt(rowIndex: number, colIndex: number): number | null {
+        if (!this.showRefColors()) {
+            return null;
+        }
+        if (rowIndex === this.editingRow && colIndex === this.editingCol) {
+            return null;
+        }
+        const title = this.month?.label.title ?? '';
+        const colors = this.refColorMap();
+        for (const [token, color] of colors) {
+            const parsed = this.formulaService.parseAddress(token, title);
+            if (!parsed) {
+                continue;
+            }
+            if (parsed.monthTitle && parsed.monthTitle !== title) {
+                continue;
+            }
+            if (parsed.row === rowIndex && parsed.col === colIndex) {
+                return color;
+            }
+        }
+        return null;
+    }
+
+    private refColorMap(): Map<string, number> {
+        const map = new Map<string, number>();
+        const raw = this.draft || '';
+        const pattern = new RegExp(this.refTokenPattern.source, 'g');
+        let index = 0;
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(raw)) !== null) {
+            const key = match[0].replace(/\$/g, '').toUpperCase();
+            if (!map.has(key)) {
+                map.set(key, index % 6);
+                index++;
+            }
+        }
+        return map;
     }
 
     saldoCombos(): SaldoCombo[] {
