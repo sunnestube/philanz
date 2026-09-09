@@ -22,7 +22,7 @@
                 (input)="onFormulaInput($event, activeCell())"
                 (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
                 (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (paste)="onFormulaPaste($event)"
+                (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
                 (blur)="onFormulaBlur($event)"
             />
         </div>
