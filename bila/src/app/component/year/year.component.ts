@@ -10,6 +10,7 @@ import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
+import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
 
 @Component({
     templateUrl: './year.component.html',
@@ -21,7 +22,8 @@ import {YearGrafComponent} from '../yearGraf/year-graf.component';
         SaldoPanelComponent,
         StartTabComponent,
         YearTotalComponent,
-        YearGrafComponent
+        YearGrafComponent,
+        NewRowButtonsComponent
     ],
     styleUrls: ['./year.component.css']
 })
@@ -36,7 +38,11 @@ export class YearComponent implements OnInit {
         const stored = localStorage.getItem('year');
         if (stored) {
             this.workbook.applyCsv(stored);
+            return;
         }
+        this.http.get('assets/empty.csv', {responseType: 'text'}).subscribe((csvData) => {
+            this.workbook.applyCsv(csvData);
+        });
     }
 
     protected import(months: Month[]): void {
