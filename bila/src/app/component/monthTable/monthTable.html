@@ -139,10 +139,14 @@
                     }
                 </tr>
             }
+            <tr class="foot-spacer" aria-hidden="true">
+                <td [attr.colspan]="month.columns.length + extraColCount()"
+                    [style.height.px]="footerRows().length * 20"></td>
+            </tr>
         </tbody>
         <tfoot>
-            @for (foot of footerRows(); track foot.label) {
-                <tr class="foot-row {{foot.color}}">
+            @for (foot of footerRows(); track foot.label; let footIndex = $index) {
+                <tr class="foot-row {{foot.color}}" [style.--foot-y]="footerOffset(footIndex) + 'px'">
                     @for (column of month.columns; let colIndex = $index; track $index) {
                         <td class="{{column.type.split('_')[0]}} {{column.section}}">
                             {{ footerValue(foot.person, colIndex) }}
