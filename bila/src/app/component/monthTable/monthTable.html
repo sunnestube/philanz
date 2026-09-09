@@ -10,11 +10,12 @@
             type="text"
             [value]="draft"
             [placeholder]="formulaMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – mit = beginnt eine Formel'"
+            (focus)="enterRefPick()"
             (input)="onFormulaInput($event, activeCell())"
             (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-            (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
+            (blur)="leaveRefPick(); formulaMode && activeCell() && commitEdit(activeCell())"
         />
     </div>
     <div class="table-scroll"
@@ -23,11 +24,27 @@
          (pointerdown)="onPanStart($event)">
     <table class="data-table">
         <thead>
-        <tr>
+        <tr class="letter-row">
+            @for (column of month.columns; track $index) {
+                <th class="{{column.type.split('_')[0]}} {{column.section}} letter-cell"
+                    [attr.title]="letterTitle($index, column.type)">
+                    {{ displayLetter($index) }}
+                </th>
+            }
+            @if (workbook.saldoColumnsOpen()) {
+                @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                    <th class="number S person-{{combo.person.toLowerCase()}} letter-cell"
+                        [class.saldo-start]="first"></th>
+                }
+                @if (saldoCombos().length) {
+                    <th class="number S total-col letter-cell"></th>
+                }
+            }
+        </tr>
+        <tr class="title-row">
             @for (column of month.columns; track $index) {
                 <th class="{{column.type.split('_')[0]}} {{column.section}}"
-                    title="{{ columnLetter($index) }} · {{ column.type }}">
-                    <span class="col-letter">{{ columnLetter($index) }}</span>
+                    title="{{ displayLetter($index) }} · {{ column.type }}">
                     <div>{{ column.title }}</div>
                 </th>
             }
@@ -54,7 +71,7 @@
                         <td [class]="cell.type.id.split('_')[0]"
                             [class.formula]="isFormula(cell)"
                             [class.editing]="editingRow === rowIndex && editingCol === colIndex"
-                            [class.ref-target]="formulaMode && !(editingRow === rowIndex && editingCol === colIndex)"
+                            [class.ref-target]="refPickMode && !(editingRow === rowIndex && editingCol === colIndex)"
                             (mousedown)="onCellMouseDown($event, rowIndex, colIndex)">
                             @if (cell.type.id.indexOf('select') !== -1) {
                                 <select [(ngModel)]="cell.value"
@@ -80,7 +97,7 @@
                                         [value]="editingRow === rowIndex && editingCol === colIndex ? draft : displayValue(cell)"
                                         (focus)="startEdit(rowIndex, colIndex, cell)"
                                         (input)="onCellInput($event, cell)"
-                                        (blur)="!formulaMode && commitEdit(cell)"
+                                        (blur)="!refPickMode && commitEdit(cell)"
                                         (keydown)="onKeydown($event, rowIndex, colIndex, cell)"
                                         (copy)="onCopy($event, rowIndex, colIndex, cell)"
                                         (paste)="onPaste($event, rowIndex, colIndex, cell)"
@@ -109,26 +126,6 @@
                                 [class.zero]="saldoTotal(rowIndex) === 0">
                                 {{ formatSaldo(saldoTotal(rowIndex)) }}
                             </td>
-                        }
-                    }
-                </tr>
-            }
-            <tr class="add-row">
-                <td [attr.colspan]="month.columns.length + extraColCount()">
-                    <bal-new-row-buttons [month]="month"></bal-new-row-buttons>
-                </td>
-            </tr>
-            @for (filler of fillerRows(); track $index) {
-                <tr class="filler">
-                    @for (column of month.columns; track $index) {
-                        <td [class]="column.type.split('_')[0]"></td>
-                    }
-                    @if (workbook.saldoColumnsOpen()) {
-                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                            <td class="number S" [class.saldo-start]="first"></td>
-                        }
-                        @if (saldoCombos().length) {
-                            <td class="number S total-col"></td>
                         }
                     }
                 </tr>
