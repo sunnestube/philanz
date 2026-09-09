@@ -49,8 +49,28 @@
     color: #64748b;
     border-right: 1px solid #d1d5db;
 }
-.formula-input {
+.formula-input-wrap {
     flex: 1;
+    position: relative;
+    min-width: 0;
+}
+.formula-color-layer {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    font: 13px/32px ui-monospace, SFMono-Regular, Menlo, monospace;
+    pointer-events: none;
+    white-space: pre;
+    overflow: hidden;
+}
+.formula-input-wrap.colorize .formula-input {
+    color: transparent;
+    caret-color: #111;
+}
+.formula-input {
+    width: 100%;
     border: none;
     outline: none;
     background: transparent;
@@ -58,7 +78,16 @@
     font: 13px/32px ui-monospace, SFMono-Regular, Menlo, monospace;
     color: #0f172a;
     min-width: 0;
+    position: relative;
+    z-index: 1;
 }
+.tok-plain { color: #0f172a; }
+.tok-0 { color: #2172c4; font-weight: 700; }
+.tok-1 { color: #c44b4b; font-weight: 700; }
+.tok-2 { color: #6f42c1; font-weight: 700; }
+.tok-3 { color: #2e7d32; font-weight: 700; }
+.tok-4 { color: #c47a00; font-weight: 700; }
+.tok-5 { color: #0d9488; font-weight: 700; }
 .data-table {
     width: max-content;
     min-width: 100%;
@@ -160,6 +189,12 @@
     outline-offset: -2px;
     cursor: cell;
 }
+.data-table td[data-ref="0"] { outline: 2px solid #2172c4; outline-offset: -2px; background: #d0e3f5 !important; z-index: 2; }
+.data-table td[data-ref="1"] { outline: 2px solid #c44b4b; outline-offset: -2px; background: #f5d0d0 !important; z-index: 2; }
+.data-table td[data-ref="2"] { outline: 2px solid #6f42c1; outline-offset: -2px; background: #e4d4f5 !important; z-index: 2; }
+.data-table td[data-ref="3"] { outline: 2px solid #2e7d32; outline-offset: -2px; background: #d4edda !important; z-index: 2; }
+.data-table td[data-ref="4"] { outline: 2px solid #c47a00; outline-offset: -2px; background: #ffe8c4 !important; z-index: 2; }
+.data-table td[data-ref="5"] { outline: 2px solid #0d9488; outline-offset: -2px; background: #ccfbf1 !important; z-index: 2; }
 th.date { width: 40px; min-width: 40px; max-width: 40px; }
 th.select { width: 22px; min-width: 22px; max-width: 22px; }
 th.text { width: 120px; min-width: 120px; max-width: 120px; }
@@ -242,6 +277,7 @@ td.S.total-col { background: #dcfce7; font-weight: 400; }
     .formula-address { background: #c7d2fe; color: #1e1b4b; border-color: #a3a3a3; }
     .formula-fx { color: #444; border-color: #a3a3a3; }
     .formula-input { color: #111; }
+    .tok-plain { color: #111; }
     .data-table { background: #f3f3f3; color: #111; }
     .data-table th,
     .data-table td { border-color: #b0b0b0; color: #111; }
