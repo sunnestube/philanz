@@ -26,7 +26,18 @@
                         <div>{{ column.title }}</div>
                     </th>
                 }
-                <th></th>
+                @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                    <th class="number S person-{{combo.person.toLowerCase()}}"
+                        [class.saldo-start]="first"
+                        title="Saldo {{ combo.person }} {{ combo.account }}">
+                        <div>{{ combo.person }} {{ combo.account }}</div>
+                    </th>
+                }
+                @if (saldoCombos().length) {
+                    <th class="number S total-col" title="Saldo Total">
+                        <div>Total</div>
+                    </th>
+                }
             }
         </tr>
         </thead>
@@ -70,10 +81,26 @@
                             }
                         </td>
                     }
+                    @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                        <td class="number S person-{{combo.person.toLowerCase()}}"
+                            [class.saldo-start]="first"
+                            [class.neg]="saldoAt(rowIndex, combo.key) < 0"
+                            [class.zero]="saldoAt(rowIndex, combo.key) === 0"
+                            [class.hit]="isSaldoHit(rowIndex, combo)">
+                            {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
+                        </td>
+                    }
+                    @if (saldoCombos().length) {
+                        <td class="number S total-col"
+                            [class.neg]="saldoTotal(rowIndex) < 0"
+                            [class.zero]="saldoTotal(rowIndex) === 0">
+                            {{ formatSaldo(saldoTotal(rowIndex)) }}
+                        </td>
+                    }
                 </tr>
             }
         <tr>
-            <td [attr.colspan]="month.columns.length">
+            <td [attr.colspan]="month.columns.length + extraColCount()">
                 <bal-new-row-buttons [month]="month"></bal-new-row-buttons>
             </td>
         </tr>

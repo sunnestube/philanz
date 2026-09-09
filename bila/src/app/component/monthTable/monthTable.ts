@@ -7,7 +7,7 @@ import {MonthRow} from '../../model/MonthRow';
 import {TableNavigationService} from '../../service/tableNavigation.service';
 import {CELL_TYPE} from '../../model/CellType';
 import {FormulaService} from '../../service/formula.service';
-import {WorkbookService} from '../../service/workbook.service';
+import {SaldoCombo, WorkbookService} from '../../service/workbook.service';
 
 @Component({
     selector: 'bal-month-table',
@@ -22,6 +22,9 @@ export class MonthTable {
     formulaMode = false;
     draft = '';
     activeAddress = '';
+    private cachedRev = -1;
+    private cachedTitle = '';
+    private cachedRunning: Array<Record<string, number>> = [];
     @ViewChild('formulaInput') formulaInput?: ElementRef<HTMLInputElement>;
 
     constructor(
@@ -46,10 +49,63 @@ export class MonthTable {
             row.cells.forEach((cell) => this.applySelectSideEffects(cell, row));
         });
         this._month = month;
+        this.cachedRev = -1;
         this.formulaService.recalculateAll();
     }
     get month(): Month | undefined {
         return this._month;
+    }
+
+    saldoCombos(): SaldoCombo[] {
+        this.workbook.revision();
+        return this.workbook.saldoCombos();
+    }
+
+    runningRows(): Array<Record<string, number>> {
+        const rev = this.workbook.revision();
+        const title = this.month?.label.title ?? '';
+        if (this.cachedRev === rev && this.cachedTitle === title) {
+            return this.cachedRunning;
+        }
+        this.cachedRunning = this.workbook.runningSaldosForMonth(this.month);
+        this.cachedRev = rev;
+        this.cachedTitle = title;
+        return this.cachedRunning;
+    }
+
+    saldoAt(rowIndex: number, key: string): number {
+        return this.runningRows()[rowIndex]?.[key] ?? 0;
+    }
+
+    saldoTotal(rowIndex: number): number {
+        const row = this.runningRows()[rowIndex];
+        if (!row) {
+            return 0;
+        }
+        return Object.values(row).reduce((sum, value) => sum + value, 0);
+    }
+
+    isSaldoHit(rowIndex: number, combo: SaldoCombo): boolean {
+        const row = this.month?.rows[rowIndex];
+        if (!row) {
+            return false;
+        }
+        const person = row.cells.find((cell) => cell.type.id === CELL_TYPE.select_person)?.raw ?? '';
+        const account = row.cells.find((cell) => cell.type.id === CELL_TYPE.select_account)?.raw ?? '';
+        return person.trim().toUpperCase() === combo.person
+            && account.trim().toUpperCase() === combo.account;
+    }
+
+    formatSaldo(value: number): string {
+        return value.toLocaleString('de-CH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    extraColCount(): number {
+        const combos = this.saldoCombos().length;
+        return combos ? combos + 1 : 0;
     }
 
     columnLetter(index: number): string {

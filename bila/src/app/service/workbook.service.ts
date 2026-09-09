@@ -2,6 +2,7 @@ import {Injectable, computed, signal} from '@angular/core';
 import {Month} from '../model/Month';
 import {MonthColumn} from '../model/MonthColumn';
 import {MonthCell} from '../model/MonthCell';
+import {MonthRow} from '../model/MonthRow';
 import {CELL_TYPE, CellType} from '../model/CellType';
 import {SECTION} from '../model/Section';
 import {CsvExportService} from './csv-export.service';
@@ -21,6 +22,12 @@ export interface ComboSaldo {
     balance: number;
 }
 
+export interface SaldoCombo {
+    person: string;
+    account: string;
+    key: string;
+}
+
 const SETTINGS_KEY = 'philanz-settings';
 
 @Injectable({
@@ -36,6 +43,19 @@ export class WorkbookService {
 
     readonly personCodes = computed(() => this.persons().filter((code) => !!code));
     readonly accountCodes = computed(() => this.accounts().filter((code) => !!code));
+    readonly saldoCombos = computed((): SaldoCombo[] => {
+        const combos: SaldoCombo[] = [];
+        this.personCodes().forEach((person) => {
+            this.accountCodes().forEach((account) => {
+                combos.push({
+                    person,
+                    account,
+                    key: `${person}|${account}`
+                });
+            });
+        });
+        return combos;
+    });
 
     constructor(private readonly formulaService: FormulaService) {
         this.restoreSettings();
@@ -217,18 +237,14 @@ export class WorkbookService {
         const months = scope === 'month'
             ? (this.selectedMonth() ? [this.selectedMonth() as Month] : [])
             : this.months();
-        const persons = this.personCodes();
-        const accounts = this.accountCodes();
         const map = new Map<string, ComboSaldo>();
-        persons.forEach((person) => {
-            accounts.forEach((account) => {
-                map.set(`${person}|${account}`, {
-                    person,
-                    account,
-                    expenses: 0,
-                    income: 0,
-                    balance: 0
-                });
+        this.saldoCombos().forEach((combo) => {
+            map.set(combo.key, {
+                person: combo.person,
+                account: combo.account,
+                expenses: 0,
+                income: 0,
+                balance: 0
             });
         });
         months.forEach((month) => {
@@ -241,23 +257,70 @@ export class WorkbookService {
                 if (!bucket) {
                     return;
                 }
-                month.columns.forEach((column, index) => {
-                    if (column.type !== CELL_TYPE.number) {
-                        return;
-                    }
-                    const amount = this.formulaService.toNumber(row.cells[index]?.display || row.cells[index]?.raw || '') ?? 0;
-                    if (column.section === SECTION.EINGANG) {
-                        bucket.income += amount;
-                    } else if (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')) {
-                        bucket.expenses += amount;
-                    }
-                });
+                const split = this.rowSplit(month, row);
+                bucket.income += split.income;
+                bucket.expenses += split.expenses;
             });
         });
         map.forEach((item) => {
             item.balance = item.income - item.expenses;
         });
         return [...map.values()];
+    }
+
+    runningSaldosForMonth(month: Month | undefined): Array<Record<string, number>> {
+        this.revision();
+        if (!month) {
+            return [];
+        }
+        const running: Record<string, number> = {};
+        this.saldoCombos().forEach((combo) => {
+            running[combo.key] = 0;
+        });
+        const snapshots: Array<Record<string, number>> = [];
+        for (const current of this.months()) {
+            const personIdx = current.columns.findIndex((col) => col.type === CELL_TYPE.select_person);
+            const accountIdx = current.columns.findIndex((col) => col.type === CELL_TYPE.select_account);
+            current.rows.forEach((row) => {
+                const person = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+                const account = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+                const key = `${person}|${account}`;
+                if (Object.prototype.hasOwnProperty.call(running, key)) {
+                    running[key] += this.rowDelta(current, row);
+                }
+                if (current === month) {
+                    snapshots.push({...running});
+                }
+            });
+            if (current === month) {
+                break;
+            }
+        }
+        return snapshots;
+    }
+
+    rowDelta(month: Month, row: MonthRow): number {
+        const split = this.rowSplit(month, row);
+        return split.income - split.expenses;
+    }
+
+    private rowSplit(month: Month, row: MonthRow): {income: number; expenses: number} {
+        let income = 0;
+        let expenses = 0;
+        month.columns.forEach((column, index) => {
+            if (column.type !== CELL_TYPE.number || column.section === SECTION.SALDO) {
+                return;
+            }
+            const amount = this.formulaService.toNumber(
+                row.cells[index]?.display || row.cells[index]?.raw || ''
+            ) ?? 0;
+            if (column.section === SECTION.EINGANG) {
+                income += amount;
+            } else if (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')) {
+                expenses += amount;
+            }
+        });
+        return {income, expenses};
     }
 
     private publish(months: Month[]): void {
