@@ -1,7 +1,6 @@
 import {Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
-import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
 import {MonthCell} from '../../model/MonthCell';
 import {MonthRow} from '../../model/MonthRow';
 import {TableNavigationService} from '../../service/tableNavigation.service';
@@ -12,7 +11,7 @@ import {SaldoCombo, WorkbookService} from '../../service/workbook.service';
 @Component({
     selector: 'bal-month-table',
     templateUrl: './monthTable.html',
-    imports: [FormsModule, NewRowButtonsComponent],
+    imports: [FormsModule],
     styleUrls: ['./monthTable.css']
 })
 export class MonthTable {
@@ -20,6 +19,7 @@ export class MonthTable {
     editingRow: number | null = null;
     editingCol: number | null = null;
     formulaMode = false;
+    refPickMode = false;
     draft = '';
     activeAddress = '';
     panning = false;
@@ -66,9 +66,13 @@ export class MonthTable {
         return TableNavigationService.cellId(this.month?.label.title ?? '', rowIndex, colIndex);
     }
 
-    fillerRows(): number[] {
-        const have = this.month?.rows.length ?? 0;
-        return Array.from({length: Math.max(16, 36 - have)}, (_, index) => index);
+    enterRefPick(): void {
+        this.refPickMode = true;
+        this.formulaMode = true;
+    }
+
+    leaveRefPick(): void {
+        this.refPickMode = false;
     }
 
     saldoCombos(): SaldoCombo[] {
@@ -147,7 +151,7 @@ export class MonthTable {
     }
 
     onPanStart(event: PointerEvent): void {
-        if (this.formulaMode) {
+        if (this.refPickMode) {
             return;
         }
         const target = event.target as HTMLElement;
@@ -222,9 +226,7 @@ export class MonthTable {
         this.draft = cell.raw ?? '';
         this.activeAddress = this.cellAddress(rowIndex, colIndex);
         this.formulaMode = this.formulaService.isFormula(this.draft);
-        if (this.formulaMode) {
-            queueMicrotask(() => this.focusFormulaBar());
-        }
+        this.refPickMode = false;
     }
     onCellInput(event: Event, cell: MonthCell): void {
         const value = (event.target as HTMLInputElement).value;
@@ -232,6 +234,7 @@ export class MonthTable {
         cell.raw = value;
         this.formulaMode = value.trim().startsWith('=');
         if (this.formulaMode) {
+            this.refPickMode = true;
             queueMicrotask(() => this.focusFormulaBar());
         }
     }
@@ -251,6 +254,7 @@ export class MonthTable {
         this.formulaService.recalculateAll();
         this.workbook.touch();
         this.formulaMode = false;
+        this.refPickMode = false;
         this.editingRow = null;
         this.editingCol = null;
     }
@@ -259,6 +263,7 @@ export class MonthTable {
             this.formulaService.recalculateAll();
         }
         this.formulaMode = false;
+        this.refPickMode = false;
         this.editingRow = null;
         this.editingCol = null;
         this.draft = '';
@@ -285,6 +290,7 @@ export class MonthTable {
         this.formulaService.recalculateAll();
         this.workbook.touch();
         if (this.formulaMode) {
+            this.refPickMode = true;
             queueMicrotask(() => this.focusFormulaBar());
         }
     }
@@ -297,19 +303,27 @@ export class MonthTable {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
             return;
         }
-        if (this.formulaMode) {
+        if (event.key === 'F2') {
+            event.preventDefault();
+            this.formulaMode = true;
+            this.refPickMode = true;
+            queueMicrotask(() => this.focusFormulaBar());
+            return;
+        }
+        if (this.refPickMode) {
             this.onFormulaKeydown(event, rowIndex, colIndex, cell);
             return;
         }
         if (event.key === '=' && !this.draft) {
             this.formulaMode = true;
+            this.refPickMode = true;
             this.draft = '=';
             cell.raw = '=';
             event.preventDefault();
             queueMicrotask(() => this.focusFormulaBar());
             return;
         }
-        if (event.key === 'Enter' || event.key === 'Tab') {
+        if (event.key === 'Enter' || event.key === 'Tab' || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
             this.commitEdit(cell);
         }
         this.navigate(event, rowIndex, colIndex);
@@ -346,7 +360,7 @@ export class MonthTable {
         }
     }
     onCellMouseDown(event: MouseEvent, rowIndex: number, colIndex: number): void {
-        if (!this.formulaMode || this.editingRow === null) {
+        if (!this.refPickMode || this.editingRow === null) {
             return;
         }
         if (rowIndex === this.editingRow && colIndex === this.editingCol) {
