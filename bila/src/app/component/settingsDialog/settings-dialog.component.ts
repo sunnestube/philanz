@@ -119,19 +119,19 @@ export class SettingsDialogComponent {
         this.workbook.updateColumn(index, {section: section as SECTION});
     }
 
-    prefVisible(_key: string): boolean {
-        return true;
+    prefVisible(key: string): boolean {
+        return this.workbook.saldoColumnPrefs()[key]?.visible !== false;
     }
 
-    prefTitle(_key: string, fallback: string): string {
-        return fallback;
+    prefTitle(key: string, fallback: string): string {
+        return this.workbook.saldoColumnPrefs()[key]?.title || fallback;
     }
 
-    toggleCombo(_key: string, _visible: boolean): void {
-        return;
+    toggleCombo(key: string, visible: boolean): void {
+        this.workbook.setSaldoColumnPref(key, {visible});
     }
 
-    renameCombo(_key: string, _title: string): void {
-        return;
+    renameCombo(key: string, title: string): void {
+        this.workbook.setSaldoColumnPref(key, {title});
     }
 }

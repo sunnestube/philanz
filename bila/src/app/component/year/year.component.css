@@ -42,6 +42,16 @@
     overflow: auto;
     background: #e8eef5;
     color: #0f172a;
+    color-scheme: light;
+}
+.csv-tab,
+.csv-tab p,
+.csv-tab h2,
+.csv-tab h3,
+.csv-tab span,
+.csv-tab label,
+.csv-tab article {
+    color: #0f172a;
 }
 .month-content { padding: 0; }
 .csv-tab h2 { margin: 0 0 6px; color: #0f172a; }
