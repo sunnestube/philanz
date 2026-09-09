@@ -27,7 +27,7 @@
                 <tbody>
                     @for (person of data.persons; track person) {
                         <tr class="person-{{person.toLowerCase()}}">
-                            <th>{{ person }}</th>
+                            <th>{{ workbook.personLabel(person) }}</th>
                             @for (col of data.columns; track col.title) {
                                 <td>{{ format(block.byPerson[person][col.title]) }}</td>
                             }
