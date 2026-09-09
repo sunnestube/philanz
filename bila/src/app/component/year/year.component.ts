@@ -48,12 +48,16 @@ export class YearComponent implements OnInit {
         this.workbook.setView('month');
     }
 
-    protected openView(view: 'start' | 'total' | 'graf'): void {
+    protected openView(view: YearView): void {
         this.workbook.setView(view);
     }
 
     protected openCsv(): void {
         this.workbook.setView('csv' as YearView);
+    }
+
+    protected isCsv(): boolean {
+        return (this.workbook.view() as string) === 'csv';
     }
 
     protected save(): void {

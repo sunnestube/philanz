@@ -29,7 +29,7 @@
                     <bal-year-graf/>
                 </div>
             }
-            @if (workbook.view() === 'csv') {
+            @if (isCsv()) {
                 <div class="tab-content extra active csv-tab">
                     <h2>CSV</h2>
                     <p>Import und Export. Formeln und Start-Saldi bleiben erhalten.</p>
@@ -45,7 +45,7 @@
                     <bal-month [month]="month"></bal-month>
                 </div>
             }
-            @if (!workbook.months().length && workbook.view() !== 'csv') {
+            @if (!workbook.months().length && !isCsv()) {
                 <div class="tab-content extra active">
                     <p>Noch keine Daten. Tab CSV nutzen oder Beispiel laden.</p>
                     <bal-import (dataLoaded)="import($event)"></bal-import>
@@ -76,7 +76,7 @@
              [class.active]="workbook.view() === 'graf'"
              (click)="openView('graf')">Graf</div>
         <div class="tab-label csv-tab-label"
-             [class.active]="workbook.view() === 'csv'"
+             [class.active]="isCsv()"
              (click)="openCsv()">CSV</div>
     </div>
 </div>
