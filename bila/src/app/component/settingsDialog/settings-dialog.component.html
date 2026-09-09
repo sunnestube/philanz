@@ -14,32 +14,62 @@
         <button type="button" [class.active]="tab === 'saldo'" (click)="tab = 'saldo'">Saldo</button>
     </div>
     @if (tab === 'person') {
-        <p class="hint">Codes in Spalte Person. Bestimmt Farbe und Saldo-Gruppe.</p>
-        <div class="chips">
-            @for (code of workbook.personCodes(); track code) {
-                <span class="chip person-{{code.toLowerCase()}}">
-                    <input [ngModel]="code" (change)="renamePerson(code, $any($event.target).value)" maxlength="2" aria-label="Person umbenennen"/>
-                    <button type="button" (click)="removePerson(code)" aria-label="Person entfernen">×</button>
-                </span>
-            }
-        </div>
+        <p class="hint">Code bleibt in der Tabelle (Farbe, Formeln). Anzeigename erscheint in Saldospalten und Monatstotal.</p>
+        <table class="col-table name-table">
+            <thead>
+            <tr><th>Code</th><th>Anzeigename</th><th></th></tr>
+            </thead>
+            <tbody>
+                @for (code of workbook.personCodes(); track code) {
+                    <tr class="person-{{code.toLowerCase()}}">
+                        <td>
+                            <input class="code-input" [ngModel]="code"
+                                   (change)="renamePerson(code, $any($event.target).value)"
+                                   maxlength="2" aria-label="Person-Code"/>
+                        </td>
+                        <td>
+                            <input [ngModel]="workbook.personLabel(code)"
+                                   (change)="renamePersonName(code, $any($event.target).value)"
+                                   placeholder="z.B. Peter"/>
+                        </td>
+                        <td><button type="button" class="danger" (click)="removePerson(code)">Entfernen</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
         <div class="add-row">
-            <input [(ngModel)]="newPerson" maxlength="2" placeholder="z.B. M" (keydown.enter)="addPerson()"/>
+            <input class="code-input" [(ngModel)]="newPerson" maxlength="2" placeholder="Code" (keydown.enter)="addPerson()"/>
+            <input [(ngModel)]="newPersonName" placeholder="Anzeigename" (keydown.enter)="addPerson()"/>
             <p-button label="Hinzufügen" size="small" (onClick)="addPerson()"/>
         </div>
     }
     @if (tab === 'account') {
-        <p class="hint">Codes in Spalte Konto. Zusammen mit Person ergibt sich P B, P T, …</p>
-        <div class="chips">
-            @for (code of workbook.accountCodes(); track code) {
-                <span class="chip">
-                    <input [ngModel]="code" (change)="renameAccount(code, $any($event.target).value)" maxlength="2" aria-label="Konto umbenennen"/>
-                    <button type="button" (click)="removeAccount(code)" aria-label="Konto entfernen">×</button>
-                </span>
-            }
-        </div>
+        <p class="hint">Code bleibt in der Kontospalte. Anzeigename steht in den Saldoköpfen (z.B. Peter Bank).</p>
+        <table class="col-table name-table">
+            <thead>
+            <tr><th>Code</th><th>Anzeigename</th><th></th></tr>
+            </thead>
+            <tbody>
+                @for (code of workbook.accountCodes(); track code) {
+                    <tr>
+                        <td>
+                            <input class="code-input" [ngModel]="code"
+                                   (change)="renameAccount(code, $any($event.target).value)"
+                                   maxlength="2" aria-label="Konto-Code"/>
+                        </td>
+                        <td>
+                            <input [ngModel]="workbook.accountLabel(code)"
+                                   (change)="renameAccountName(code, $any($event.target).value)"
+                                   placeholder="z.B. Bank"/>
+                        </td>
+                        <td><button type="button" class="danger" (click)="removeAccount(code)">Entfernen</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
         <div class="add-row">
-            <input [(ngModel)]="newAccount" maxlength="2" placeholder="z.B. X" (keydown.enter)="addAccount()"/>
+            <input class="code-input" [(ngModel)]="newAccount" maxlength="2" placeholder="Code" (keydown.enter)="addAccount()"/>
+            <input [(ngModel)]="newAccountName" placeholder="Anzeigename" (keydown.enter)="addAccount()"/>
             <p-button label="Hinzufügen" size="small" (onClick)="addAccount()"/>
         </div>
     }
@@ -82,7 +112,7 @@
         <p-button label="Spalte hinzufügen" icon="pi pi-plus" size="small" (onClick)="addColumn()"/>
     }
     @if (tab === 'saldo') {
-        <p class="hint">Virtuelle Saldospalten einblenden, ausblenden und umbenennen. Die Werte bleiben berechnet.</p>
+        <p class="hint">Virtuelle Saldospalten. Ohne eigenen Titel gilt Personname + Kontoname.</p>
         <table class="col-table">
             <thead>
             <tr><th>Anzeigen</th><th>Titel</th><th>Gruppe</th></tr>
@@ -96,10 +126,10 @@
                                    (change)="toggleCombo(combo.key, $any($event.target).checked)"/>
                         </td>
                         <td>
-                            <input [ngModel]="prefTitle(combo.key, combo.person + ' ' + combo.account)"
+                            <input [ngModel]="prefTitle(combo.key, workbook.saldoTitleFor(combo))"
                                    (ngModelChange)="renameCombo(combo.key, $event)"/>
                         </td>
-                        <td>{{ combo.person }} {{ combo.account }}</td>
+                        <td>{{ workbook.personLabel(combo.person) }} · {{ workbook.accountLabel(combo.account) }}</td>
                     </tr>
                 }
                 <tr>
