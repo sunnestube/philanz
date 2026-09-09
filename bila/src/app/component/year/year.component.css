@@ -37,7 +37,7 @@
     flex-direction: column;
     max-height: none;
 }
-.tab-content.extra { padding: 12px; overflow: hidden; }
+.tab-content.extra { padding: 12px; overflow: auto; }
 .tab-content.csv-tab {
     overflow: auto;
     background: #e8eef5;
@@ -60,7 +60,6 @@
 .csv-tab .csv-btn.secondary {
     color: #ffffff;
 }
-
 .month-content { padding: 0; }
 .csv-tab h2 { margin: 0 0 6px; color: #0f172a; }
 .csv-tab p { margin: 0 0 10px; color: #334155; }
@@ -131,13 +130,11 @@
 .tab-label.total-tab { background: #bbf7d0; }
 .tab-label.graf-tab { background: #bfdbfe; }
 .tab-label.csv-tab-label { background: #e2e8f0; color: #111; }
-
 @media (min-width: 1100px) {
     .year-shell.panel-open .year-body {
         flex-direction: row;
     }
 }
-
 @media (prefers-color-scheme: dark) {
     .year-shell { background: #2b2b2b; color: #111; }
     .tab-content { background: #ececec; color: #111; }

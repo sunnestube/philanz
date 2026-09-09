@@ -140,6 +140,34 @@
                 </tr>
             }
         </tbody>
+        <tfoot>
+            @for (foot of footerRows(); track foot.label) {
+                <tr class="foot-row {{foot.color}}">
+                    @for (column of month.columns; let colIndex = $index; track $index) {
+                        <td class="{{column.type.split('_')[0]}} {{column.section}}">
+                            {{ footerValue(foot.person, colIndex) }}
+                        </td>
+                    }
+                    @if (workbook.saldoColumnsOpen()) {
+                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
+                            <td class="number S person-{{combo.person.toLowerCase()}}"
+                                [class.saldo-start]="first"
+                                [class.zero]="footerSaldo(foot.person, combo.key) === 0">
+                                @if (footerSaldo(foot.person, combo.key) !== null) {
+                                    {{ formatSaldo(footerSaldo(foot.person, combo.key) ?? 0) }}
+                                }
+                            </td>
+                        }
+                        @if (saldoTotalVisible() && saldoCombos().length) {
+                            <td class="number S total-col"
+                                [class.zero]="footerSaldoTotal(foot.person) === 0">
+                                {{ formatSaldo(footerSaldoTotal(foot.person)) }}
+                            </td>
+                        }
+                    }
+                </tr>
+            }
+        </tfoot>
     </table>
     </div>
 }
