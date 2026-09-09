@@ -1,6 +1,6 @@
 import {Pipe, PipeTransform} from '@angular/core';
 import {CELL_TYPE, CellType, FRACTION_DIGITS} from '../model/CellType';
-import {MonthLabel} from '../model/MonthLabel';
+import {MonthKey, MonthLabel} from '../model/MonthLabel';
 
 @Pipe({
     name: 'cellFormat'
@@ -40,11 +40,28 @@ export class CellFormatPipe implements PipeTransform {
     }
 
     private transformDate(value: string, monthLabel: MonthLabel): string {
-        const split: string[] = value.split('.');
-        return `${this.enterDate(split[0])}. ${monthLabel.title}`;
+        const dayToken = String(value).split(/[.\s]/)[0] ?? '';
+        const day = parseInt(dayToken.replace(/\D/g, ''), 10);
+        if (!Number.isFinite(day) || day <= 0) {
+            return value;
+        }
+        const monthNumber = CellFormatPipe.monthNumber(monthLabel.title);
+        return monthNumber ? `${day}.${monthNumber}` : value;
     }
 
-    private enterDate(date: string): string {
-        return date.length < 2 ? '0' + date : date;
+    static monthNumber(title: string): number {
+        const order = Object.values(MonthKey);
+        const index = order.findIndex((key) => key.toLowerCase() === String(title).toLowerCase());
+        return index >= 0 ? index + 1 : 0;
+    }
+
+    static formatDate(value: string, monthTitle: string): string {
+        const dayToken = String(value).split(/[.\s]/)[0] ?? '';
+        const day = parseInt(dayToken.replace(/\D/g, ''), 10);
+        if (!Number.isFinite(day) || day <= 0) {
+            return value;
+        }
+        const monthNumber = CellFormatPipe.monthNumber(monthTitle);
+        return monthNumber ? `${day}.${monthNumber}` : value;
     }
 }
