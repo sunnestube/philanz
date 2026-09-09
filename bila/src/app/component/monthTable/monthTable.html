@@ -9,7 +9,8 @@
                 <div class="formula-color-layer" aria-hidden="true">
                     @for (tok of formulaTokens(); track $index) {
                         <span [class]="tok.color === null ? 'tok-plain' : 'tok-' + tok.color">{{ tok.text }}</span>
-                    </div>
+                    }
+                </div>
             }
             <input
                 #formulaInput
