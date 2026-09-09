@@ -62,6 +62,15 @@ export class MonthTable {
         return this._month;
     }
 
+    cellId(rowIndex: number, colIndex: number): string {
+        return TableNavigationService.cellId(this.month?.label.title ?? '', rowIndex, colIndex);
+    }
+
+    fillerRows(): number[] {
+        const have = this.month?.rows.length ?? 0;
+        return Array.from({length: Math.max(16, 36 - have)}, (_, index) => index);
+    }
+
     saldoCombos(): SaldoCombo[] {
         this.workbook.revision();
         return this.workbook.saldoCombos();
@@ -273,6 +282,7 @@ export class MonthTable {
         this.navigate(event, rowIndex, colIndex);
     }
     onFormulaKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        const title = this.month?.label.title ?? '';
         if (event.key === 'Escape') {
             event.preventDefault();
             this.cancelEdit(cell);
@@ -281,13 +291,13 @@ export class MonthTable {
         if (event.key === 'Enter') {
             event.preventDefault();
             this.commitEdit(cell);
-            TableNavigationService.navigate('Enter', rowIndex, colIndex, this.month?.columns?.length);
+            TableNavigationService.navigate('Enter', rowIndex, colIndex, this.month?.columns?.length, title);
             return;
         }
         if (event.key === 'Tab') {
             event.preventDefault();
             this.commitEdit(cell);
-            TableNavigationService.navigate(event.shiftKey ? 'ArrowLeft' : 'ArrowRight', rowIndex, colIndex, this.month?.columns?.length);
+            TableNavigationService.navigate(event.shiftKey ? 'ArrowLeft' : 'ArrowRight', rowIndex, colIndex, this.month?.columns?.length, title);
             return;
         }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
@@ -317,7 +327,13 @@ export class MonthTable {
         return this.month.rows[this.editingRow]?.cells[this.editingCol] ?? null;
     }
     navigate(event: KeyboardEvent, rowIndex: number, cellIndex: number): void {
-        TableNavigationService.navigate(event.key, rowIndex, cellIndex, this.month?.columns?.length);
+        TableNavigationService.navigate(
+            event.key,
+            rowIndex,
+            cellIndex,
+            this.month?.columns?.length,
+            this.month?.label.title ?? ''
+        );
     }
     private insertReference(rowIndex: number, colIndex: number): void {
         const address = this.cellAddress(rowIndex, colIndex);
