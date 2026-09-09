@@ -92,7 +92,7 @@
                             @if (cell.type.id.indexOf('select') !== -1) {
                                 <select [(ngModel)]="cell.value"
                                         (change)="onSelectChange(cell, row)"
-                                        (keydown)="onSelectKeydown($event, rowIndex, colIndex)"
+                                        (keydown)="$event.key.startsWith('Arrow') && ($event.preventDefault(), navigate($event, rowIndex, colIndex))"
                                         (keyup)="$event.key.startsWith('Arrow') && $event.preventDefault()"
                                         (paste)="onPaste($event, rowIndex, colIndex, cell)"
                                         (copy)="onCopy($event, rowIndex, colIndex, cell)"
