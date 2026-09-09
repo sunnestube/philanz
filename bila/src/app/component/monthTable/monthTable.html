@@ -9,8 +9,7 @@
                 <div class="formula-color-layer" aria-hidden="true">
                     @for (tok of formulaTokens(); track $index) {
                         <span [class]="tok.color === null ? 'tok-plain' : 'tok-' + tok.color">{{ tok.text }}</span>
-                    }
-                </div>
+                    </div>
             }
             <input
                 #formulaInput
@@ -93,6 +92,7 @@
                                 <select [(ngModel)]="cell.value"
                                         (change)="onSelectChange(cell, row)"
                                         (keydown)="onSelectKeydown($event, rowIndex, colIndex)"
+                                        (keyup)="$event.key.startsWith('Arrow') && $event.preventDefault()"
                                         (paste)="onPaste($event, rowIndex, colIndex, cell)"
                                         (copy)="onCopy($event, rowIndex, colIndex, cell)"
                                         [id]="cellId(rowIndex, colIndex)"
