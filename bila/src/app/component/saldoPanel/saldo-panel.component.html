@@ -8,7 +8,7 @@
             <tr>
                 <th></th>
                 @for (account of accounts(); track account) {
-                    <th>{{ account }}</th>
+                    <th title="{{ account }}">{{ workbook.accountLabel(account) }}</th>
                 }
                 <th>Σ</th>
             </tr>
@@ -16,7 +16,7 @@
             <tbody>
                 @for (person of persons(); track person) {
                     <tr class="person-{{person.toLowerCase()}}">
-                        <th>{{ person }}</th>
+                        <th title="{{ person }}">{{ workbook.personLabel(person) }}</th>
                         @for (account of accounts(); track account) {
                             <td [class.neg]="cell(person, account, monthRows()) < 0"
                                 [class.zero]="cell(person, account, monthRows()) === 0">
@@ -38,7 +38,7 @@
             <tr>
                 <th></th>
                 @for (account of accounts(); track account) {
-                    <th>{{ account }}</th>
+                    <th title="{{ account }}">{{ workbook.accountLabel(account) }}</th>
                 }
                 <th>Σ</th>
             </tr>
@@ -46,7 +46,7 @@
             <tbody>
                 @for (person of persons(); track person) {
                     <tr class="person-{{person.toLowerCase()}}">
-                        <th>{{ person }}</th>
+                        <th title="{{ person }}">{{ workbook.personLabel(person) }}</th>
                         @for (account of accounts(); track account) {
                             <td [class.neg]="cell(person, account, yearRows()) < 0"
                                 [class.zero]="cell(person, account, yearRows()) === 0">
