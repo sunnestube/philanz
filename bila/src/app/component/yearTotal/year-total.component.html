@@ -8,7 +8,10 @@
         <div class="card"><span>Ø Monat</span><strong>{{ format(data.monthAvg) }}</strong></div>
         <div class="card"><span>Ø Tag</span><strong>{{ format(data.dayAvg) }}</strong></div>
     </div>
-    <div class="total-scroll">
+    <div class="total-scroll"
+         #scroller
+         [class.dragging]="panning"
+         (pointerdown)="onPanStart($event)">
         @for (block of data.months; track block.title) {
             <h3>{{ block.title }}</h3>
             <table>
