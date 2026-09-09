@@ -54,7 +54,8 @@ export class FormulaService {
     }
 
     addressFor(colIndex: number, rowIndex: number, monthTitle?: string): string {
-        const local = `${this.columnLetter(colIndex)}${rowIndex + 1}`;
+        const visible = this.visibleIndex(colIndex);
+        const local = `${this.columnLetter(visible ?? colIndex)}${rowIndex + 1}`;
         return monthTitle ? `${monthTitle}!${local}` : local;
     }
 
@@ -67,6 +68,50 @@ export class FormulaService {
             n = Math.floor((n - 1) / 26);
         }
         return letters;
+    }
+
+    isLetterColumnType(type: string | undefined): boolean {
+        return type !== CELL_TYPE.none && type !== CELL_TYPE.index;
+    }
+
+    visibleIndex(rawIndex: number, columns?: Array<{type: string}>): number | null {
+        const cols = columns ?? this.columns();
+        if (!cols.length) {
+            return rawIndex;
+        }
+        const current = cols[rawIndex]?.type;
+        if (!this.isLetterColumnType(current)) {
+            return null;
+        }
+        let count = 0;
+        for (let i = 0; i < rawIndex; i++) {
+            if (this.isLetterColumnType(cols[i]?.type)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    rawIndexFromLetters(letters: string, columns?: Array<{type: string}>): number {
+        const visible = this.letterToIndex(letters);
+        const cols = columns ?? this.columns();
+        if (!cols.length) {
+            return visible;
+        }
+        let count = 0;
+        for (let i = 0; i < cols.length; i++) {
+            if (this.isLetterColumnType(cols[i]?.type)) {
+                if (count === visible) {
+                    return i;
+                }
+                count++;
+            }
+        }
+        return visible;
+    }
+
+    private columns(): Array<{type: string}> {
+        return this.months[0]?.columns ?? [];
     }
 
     shiftAfterColumnRemoved(removedIndex: number): void {
@@ -100,13 +145,14 @@ export class FormulaService {
                         continue;
                     }
                     cell.raw = raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
-                        const col = this.letterToIndex(String(letters).toUpperCase());
+                        const col = this.rawIndexFromLetters(String(letters).toUpperCase());
                         const colAbs = !!colDollar;
                         const nextCol = mapColumn(col, colAbs);
                         if (nextCol === null) {
                             return '#BEZUG!';
                         }
-                        const next = `${colDollar ?? ''}${this.columnLetter(nextCol)}${rowDollar ?? ''}${digits}`;
+                        const visible = this.visibleIndex(nextCol);
+                        const next = `${colDollar ?? ''}${this.columnLetter(visible ?? nextCol)}${rowDollar ?? ''}${digits}`;
                         return monthName ? `${monthName}!${next}` : next;
                     });
                 }
@@ -123,7 +169,7 @@ export class FormulaService {
         const colAbs = !!match[2];
         const letters = match[3].toUpperCase();
         const rowAbs = !!match[4];
-        const col = this.letterToIndex(letters);
+        const col = this.rawIndexFromLetters(letters);
         const row = Number(match[5]) - 1;
         if (col < 0 || row < 0) {
             return null;
@@ -166,14 +212,15 @@ export class FormulaService {
         return raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
             const colAbs = !!colDollar;
             const rowAbs = !!rowDollar;
-            const col = this.letterToIndex(String(letters).toUpperCase());
+            const col = this.rawIndexFromLetters(String(letters).toUpperCase());
             const row = Number(digits) - 1;
             const nextCol = colAbs ? col : col + (toCol - fromCol);
             const nextRow = rowAbs ? row : row + (toRow - fromRow);
             if (nextCol < 0 || nextRow < 0) {
                 return '#BEZUG!';
             }
-            const local = `${colAbs ? '$' : ''}${this.columnLetter(nextCol)}${rowAbs ? '$' : ''}${nextRow + 1}`;
+            const visible = this.visibleIndex(nextCol);
+            const local = `${colAbs ? '$' : ''}${this.columnLetter(visible ?? nextCol)}${rowAbs ? '$' : ''}${nextRow + 1}`;
             return monthName ? `${monthName}!${local}` : local;
         });
     }
