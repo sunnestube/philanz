@@ -6,7 +6,6 @@ import {Month} from '../../model/Month';
 import {MonthRow} from '../../model/MonthRow';
 import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
-import {Button} from 'primeng/button';
 import {WorkbookService, YearView} from '../../service/workbook.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
@@ -22,7 +21,6 @@ const MIN_ROWS = 36;
         FormsModule,
         MonthComponent,
         ImportComponent,
-        Button,
         SaldoPanelComponent,
         StartTabComponent,
         YearTotalComponent,
@@ -34,6 +32,7 @@ const MIN_ROWS = 36;
 export class YearComponent implements OnInit {
     readonly workbook = inject(WorkbookService);
     private readonly http = inject(HttpClient);
+    saveMessage = '';
 
     ngOnInit(): void {
         this.ensureSaldoColumns();
@@ -68,18 +67,22 @@ export class YearComponent implements OnInit {
     }
 
     protected openCsv(): void {
-        this.workbook.setView('csv' as YearView);
+        this.workbook.setView('csv');
     }
 
     protected isCsv(): boolean {
-        return (this.workbook.view() as string) === 'csv';
+        return this.workbook.view() === 'csv';
     }
 
     protected save(): void {
         const csvData = this.workbook.toCsv();
-        if (csvData) {
-            localStorage.setItem('year', csvData);
+        if (!csvData) {
+            this.saveMessage = 'Nichts zu speichern.';
+            return;
         }
+        localStorage.setItem('year', csvData);
+        const now = new Date();
+        this.saveMessage = `Gespeichert um ${now.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'})}.`;
     }
 
     protected exportToCSV(): void {
@@ -87,7 +90,7 @@ export class YearComponent implements OnInit {
         if (!csvData) {
             return;
         }
-        const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;'});
+        const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);

@@ -33,6 +33,14 @@ export class YearTotalComponent {
         if (!el) {
             return;
         }
+        const rect = el.getBoundingClientRect();
+        if (event.clientX >= rect.left + el.clientWidth - 2 || event.clientY >= rect.top + el.clientHeight - 2) {
+            return;
+        }
+        const allowPan = event.pointerType === 'touch' || event.button === 1 || event.altKey;
+        if (!allowPan) {
+            return;
+        }
         this.panning = true;
         this.panX = event.clientX;
         this.panY = event.clientY;
