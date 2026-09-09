@@ -6,6 +6,7 @@
     width: 100%;
     overflow: hidden;
     background: #f8fafc;
+    color: #111;
 }
 .year-body {
     flex: 1 1 auto;
@@ -28,6 +29,7 @@
     min-height: 0;
     overflow: hidden;
     background: #ececec;
+    color: #111;
     border: 0;
 }
 .tab-content.active {
@@ -36,10 +38,14 @@
     max-height: none;
 }
 .tab-content.extra { padding: 12px; overflow: hidden; }
-.tab-content.csv-tab { overflow: auto; }
+.tab-content.csv-tab {
+    overflow: auto;
+    background: #ececec;
+    color: #111;
+}
 .month-content { padding: 0; }
 .csv-tab h2 { margin: 0 0 6px; color: #111; }
-.csv-tab p { margin: 0 0 10px; color: #475569; }
+.csv-tab p { margin: 0 0 10px; color: #334155; }
 .csv-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 .tabs {
     display: flex;
@@ -67,17 +73,19 @@
     margin-right: 5px;
     font-size: smaller;
     flex-shrink: 0;
+    color: #111;
 }
 .tab-label:hover { background: #d0d0d0; }
 .tab-label.active {
     background: white;
     border-top: 2px solid #2563eb;
     font-weight: bold;
+    color: #111;
 }
 .tab-label.start-tab { background: #fde68a; }
 .tab-label.total-tab { background: #bbf7d0; }
 .tab-label.graf-tab { background: #bfdbfe; }
-.tab-label.csv-tab-label { background: #e2e8f0; }
+.tab-label.csv-tab-label { background: #e2e8f0; color: #111; }
 
 @media (min-width: 1100px) {
     .year-shell.panel-open .year-body {
@@ -86,12 +94,15 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    .year-shell { background: #2b2b2b; }
-    .tab-content { background: #ececec; }
+    .year-shell { background: #2b2b2b; color: #111; }
+    .tab-content { background: #ececec; color: #111; }
+    .tab-content.csv-tab { background: #ececec; color: #111; }
+    .csv-tab h2, .csv-tab p { color: #111; }
     .tabs { background: #3a3a3a; border-top-color: #5b5b5b; }
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
     .tab-label.active { background: #ececec; color: #111; }
     .tab-label.start-tab { background: #a16207; color: #fffbeb; }
     .tab-label.total-tab { background: #166534; color: #dcfce7; }
     .tab-label.graf-tab { background: #1d4ed8; color: #dbeafe; }
+    .tab-label.csv-tab-label { background: #64748b; color: #fff; }
 }

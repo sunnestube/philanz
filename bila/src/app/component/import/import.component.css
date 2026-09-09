@@ -4,6 +4,8 @@
   padding: 20px;
   text-align: center;
   transition: background-color 0.3s;
+  color: #111;
+  background: #fff;
 }
 .drop-area:hover { background-color: #f0f8ff; }
 .drop-area.drag-over { background-color: #e0e0e0; }
@@ -23,6 +25,10 @@
 }
 .import-actions button.example { background: #0f766e; }
 @media (prefers-color-scheme: dark) {
-  .drop-area { border-color: #38bdf8; color: #e2e8f0; }
-  .drop-area:hover { background-color: #0f172a; }
+  .drop-area {
+    border-color: #2563eb;
+    color: #111;
+    background: #fff;
+  }
+  .drop-area:hover { background-color: #eff6ff; }
 }
