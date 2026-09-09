@@ -12,6 +12,8 @@
             [placeholder]="formulaMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – mit = beginnt eine Formel'"
             (input)="onFormulaInput($event, activeCell())"
             (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+            (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
+            (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
             (blur)="formulaMode && activeCell() && commitEdit(activeCell())"
         />
     </div>
@@ -25,6 +27,7 @@
             @for (column of month.columns; track $index) {
                 <th class="{{column.type.split('_')[0]}} {{column.section}}"
                     title="{{ columnLetter($index) }} · {{ column.type }}">
+                    <span class="col-letter">{{ columnLetter($index) }}</span>
                     <div>{{ column.title }}</div>
                 </th>
             }
@@ -68,7 +71,7 @@
                                 </select>
                             } @else {
                                 @if (cell.type.id === 'index') {
-                                    <div>{{ cell.value }}</div>
+                                    <div>{{ rowIndex + 1 }}</div>
                                 } @else {
                                     <input
                                         [id]="cellId(rowIndex, colIndex)"
@@ -79,6 +82,8 @@
                                         (input)="onCellInput($event, cell)"
                                         (blur)="!formulaMode && commitEdit(cell)"
                                         (keydown)="onKeydown($event, rowIndex, colIndex, cell)"
+                                        (copy)="onCopy($event, rowIndex, colIndex, cell)"
+                                        (paste)="onPaste($event, rowIndex, colIndex, cell)"
                                     />
                                 }
                             }
