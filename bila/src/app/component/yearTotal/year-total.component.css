@@ -21,7 +21,9 @@ h3 { margin: 16px 0 6px; font-size: 14px; }
 .total-scroll {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-x: scroll;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
     touch-action: none;
     cursor: grab;
