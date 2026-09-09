@@ -1,4 +1,4 @@
-import {Component, ElementRef, Input, ViewChild} from '@angular/core';
+import {Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
 import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
@@ -22,14 +22,20 @@ export class MonthTable {
     formulaMode = false;
     draft = '';
     activeAddress = '';
+    panning = false;
+    private panX = 0;
+    private panY = 0;
+    private panLeft = 0;
+    private panTop = 0;
     private cachedRev = -1;
     private cachedTitle = '';
     private cachedRunning: Array<Record<string, number>> = [];
     @ViewChild('formulaInput') formulaInput?: ElementRef<HTMLInputElement>;
+    @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
     constructor(
         private readonly formulaService: FormulaService,
-        private readonly workbook: WorkbookService
+        readonly workbook: WorkbookService
     ) {}
 
     optionsFor(cell: MonthCell): string[] {
@@ -73,8 +79,20 @@ export class MonthTable {
         return this.cachedRunning;
     }
 
+    previousSaldo(rowIndex: number, key: string): number {
+        if (rowIndex <= 0) {
+            const [person, account] = key.split('|');
+            return this.workbook.openingOf(person, account);
+        }
+        return this.runningRows()[rowIndex - 1]?.[key] ?? 0;
+    }
+
     saldoAt(rowIndex: number, key: string): number {
         return this.runningRows()[rowIndex]?.[key] ?? 0;
+    }
+
+    saldoDelta(rowIndex: number, key: string): number {
+        return this.saldoAt(rowIndex, key) - this.previousSaldo(rowIndex, key);
     }
 
     saldoTotal(rowIndex: number): number {
@@ -83,6 +101,14 @@ export class MonthTable {
             return 0;
         }
         return Object.values(row).reduce((sum, value) => sum + value, 0);
+    }
+
+    saldoTotalDelta(rowIndex: number): number {
+        const current = this.saldoTotal(rowIndex);
+        if (rowIndex <= 0) {
+            return current - this.workbook.openingGrandTotal();
+        }
+        return current - this.saldoTotal(rowIndex - 1);
     }
 
     isSaldoHit(rowIndex: number, combo: SaldoCombo): boolean {
@@ -104,8 +130,50 @@ export class MonthTable {
     }
 
     extraColCount(): number {
+        if (!this.workbook.saldoColumnsOpen()) {
+            return 0;
+        }
         const combos = this.saldoCombos().length;
         return combos ? combos + 1 : 0;
+    }
+
+    onPanStart(event: PointerEvent): void {
+        if (this.formulaMode) {
+            return;
+        }
+        const target = event.target as HTMLElement;
+        if (target.closest('input, select, button, textarea, a')) {
+            return;
+        }
+        const el = this.scroller?.nativeElement;
+        if (!el) {
+            return;
+        }
+        this.panning = true;
+        this.panX = event.clientX;
+        this.panY = event.clientY;
+        this.panLeft = el.scrollLeft;
+        this.panTop = el.scrollTop;
+        el.setPointerCapture?.(event.pointerId);
+        event.preventDefault();
+    }
+
+    @HostListener('document:pointermove', ['$event'])
+    onPanMove(event: PointerEvent): void {
+        if (!this.panning) {
+            return;
+        }
+        const el = this.scroller?.nativeElement;
+        if (!el) {
+            return;
+        }
+        el.scrollLeft = this.panLeft - (event.clientX - this.panX);
+        el.scrollTop = this.panTop - (event.clientY - this.panY);
+    }
+
+    @HostListener('document:pointerup')
+    onPanEnd(): void {
+        this.panning = false;
     }
 
     columnLetter(index: number): string {
