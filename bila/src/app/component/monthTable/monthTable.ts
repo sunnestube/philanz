@@ -1,4 +1,4 @@
-import {Component, ElementRef, HostListener, Input, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, NgZone, OnDestroy, ViewChild} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
@@ -15,7 +15,7 @@ import {SaldoCombo, WorkbookService} from '../../service/workbook.service';
     imports: [FormsModule],
     styleUrls: ['./monthTable.css']
 })
-export class MonthTable {
+export class MonthTable implements OnDestroy {
     private _month?: Month;
     editingRow: number | null = null;
     editingCol: number | null = null;
@@ -34,6 +34,8 @@ export class MonthTable {
     private panMoveY = 0;
     private panLeft = 0;
     private panTop = 0;
+    private readonly onWindowPanMove = (event: PointerEvent) => this.onPanMove(event);
+    private readonly onWindowPanEnd = () => this.onPanEnd();
     private cachedRev = -1;
     private cachedTitle = '';
     private cachedRunning: Array<Record<string, number>> = [];
@@ -43,8 +45,24 @@ export class MonthTable {
 
     constructor(
         private readonly formulaService: FormulaService,
-        readonly workbook: WorkbookService
-    ) {}
+        readonly workbook: WorkbookService,
+        private readonly zone: NgZone
+    ) {
+        this.zone.runOutsideAngular(() => {
+            document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
+            document.addEventListener('pointerup', this.onWindowPanEnd);
+            document.addEventListener('pointercancel', this.onWindowPanEnd);
+        });
+    }
+
+    ngOnDestroy(): void {
+        document.removeEventListener('pointermove', this.onWindowPanMove);
+        document.removeEventListener('pointerup', this.onWindowPanEnd);
+        document.removeEventListener('pointercancel', this.onWindowPanEnd);
+        if (this.panFrame) {
+            cancelAnimationFrame(this.panFrame);
+        }
+    }
 
     optionsFor(cell: MonthCell): string[] {
         this.workbook.revision();
@@ -257,11 +275,15 @@ export class MonthTable {
 
     footerLabelCol(): number {
         const columns = this.month?.columns ?? [];
-        const date = columns.findIndex((column) => column.type === CELL_TYPE.date);
-        if (date >= 0) {
-            return date;
+        const text = columns.findIndex((column) => column.type === CELL_TYPE.text);
+        if (text >= 0) {
+            return text;
         }
-        return columns.findIndex((column) => column.type === CELL_TYPE.text);
+        return columns.findIndex((column) => column.type === CELL_TYPE.date);
+    }
+
+    footerOffset(index: number): number {
+        return Math.max(0, this.footerRows().length - 1 - index) * 20;
     }
 
     footerValue(person: string | null, colIndex: number): string {
@@ -338,13 +360,14 @@ export class MonthTable {
             return;
         }
         const rect = el.getBoundingClientRect();
-        const gutter = 16;
+        const gutter = 18;
         if (event.clientX >= rect.left + el.clientWidth - gutter) {
             return;
         }
         if (event.clientY >= rect.top + el.clientHeight - gutter) {
             return;
         }
+        const onField = !!target.closest('input, select');
         this.panCandidate = true;
         this.panning = false;
         this.panPointer = event.pointerId;
@@ -354,9 +377,29 @@ export class MonthTable {
         this.panMoveY = event.clientY;
         this.panLeft = el.scrollLeft;
         this.panTop = el.scrollTop;
+        if (event.button === 1 || (event.pointerType !== 'mouse' && !onField)) {
+            event.preventDefault();
+            this.beginPan(el, event.pointerId);
+        }
     }
 
-    @HostListener('document:pointermove', ['$event'])
+    private beginPan(el: HTMLDivElement, pointerId: number): void {
+        if (this.panning) {
+            return;
+        }
+        this.panning = true;
+        el.classList.add('dragging');
+        try {
+            el.setPointerCapture(pointerId);
+        } catch {
+            /* ignore */
+        }
+        const active = document.activeElement as HTMLElement | null;
+        if (active && el.contains(active) && typeof active.blur === 'function') {
+            active.blur();
+        }
+    }
+
     onPanMove(event: PointerEvent): void {
         if (!this.panCandidate && !this.panning) {
             return;
@@ -373,15 +416,10 @@ export class MonthTable {
         const dx = this.panMoveX - this.panX;
         const dy = this.panMoveY - this.panY;
         if (!this.panning) {
-            if (Math.abs(dx) + Math.abs(dy) < 6) {
+            if (Math.hypot(dx, dy) < 8) {
                 return;
             }
-            this.panning = true;
-            el.setPointerCapture?.(event.pointerId);
-            const active = document.activeElement as HTMLElement | null;
-            if (active && el.contains(active) && typeof active.blur === 'function') {
-                active.blur();
-            }
+            this.beginPan(el, event.pointerId);
         }
         event.preventDefault();
         if (this.panFrame) {
@@ -398,9 +436,9 @@ export class MonthTable {
         });
     }
 
-    @HostListener('document:pointerup')
-    @HostListener('document:pointercancel')
     onPanEnd(): void {
+        const el = this.scroller?.nativeElement;
+        el?.classList.remove('dragging');
         this.panCandidate = false;
         this.panning = false;
         this.panPointer = 0;
