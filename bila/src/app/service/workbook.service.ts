@@ -28,7 +28,17 @@ export interface SaldoCombo {
     key: string;
 }
 
-export type YearView = 'month' | 'start' | 'total' | 'graf' | 'csv';
+export type YearView = 'month' | 'start' | 'constants' | 'total' | 'graf' | 'csv';
+
+export const CONSTANT_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] as const;
+
+export interface ConstantDef {
+    id: string;
+    name: string;
+    person: string;
+    account: string;
+    months: string[];
+}
 
 export interface SaldoColumnPref {
     visible: boolean;
@@ -89,6 +99,7 @@ export class WorkbookService {
     readonly accountNames = signal<Record<string, string>>({});
     readonly headerRowHeight = signal(84);
     readonly textColWidth = signal(160);
+    readonly constants = signal<ConstantDef[]>([WorkbookService.emptyConstant('Miete')]);
 
     readonly personCodes = computed(() => this.persons().filter((code) => !!code));
     readonly accountCodes = computed(() => this.accounts().filter((code) => !!code));
@@ -197,6 +208,99 @@ export class WorkbookService {
         if (persist) {
             this.persistSettings();
         }
+    }
+
+    addConstant(name = ''): void {
+        this.constants.update((list) => [...list, WorkbookService.emptyConstant(name)]);
+        this.persistSettings();
+        this.touch();
+    }
+
+    removeConstant(id: string): void {
+        this.constants.update((list) => list.filter((item) => item.id !== id));
+        this.persistSettings();
+        this.touch();
+    }
+
+    setConstantName(id: string, name: string): void {
+        this.patchConstant(id, {name: name.trim()});
+    }
+
+    setConstantPerson(id: string, person: string): void {
+        this.patchConstant(id, {person: (person || '').trim().toUpperCase()});
+    }
+
+    setConstantAccount(id: string, account: string): void {
+        this.patchConstant(id, {account: (account || '').trim().toUpperCase()});
+    }
+
+    setConstantMonth(id: string, index: number, raw: string): void {
+        const current = this.constants().find((item) => item.id === id);
+        if (!current || index < 0 || index >= 12) {
+            return;
+        }
+        const months = [...current.months];
+        months[index] = raw ?? '';
+        this.patchConstant(id, {months});
+    }
+
+    isFormula(raw: string | null | undefined): boolean {
+        return this.formulaService.isFormula(raw);
+    }
+
+    constantAmount(item: ConstantDef, monthTitle: string): number {
+        const index = CONSTANT_MONTHS.indexOf(monthTitle as typeof CONSTANT_MONTHS[number]);
+        if (index < 0) {
+            return 0;
+        }
+        return this.evaluateAmount(item.months[index] ?? '', monthTitle);
+    }
+
+    constantAverage(item: ConstantDef): number {
+        const values = item.months
+            .map((raw) => ({raw, value: this.evaluateAmount(raw)}))
+            .filter((entry) => entry.raw.trim() !== '');
+        if (!values.length) {
+            return 0;
+        }
+        return values.reduce((sum, entry) => sum + entry.value, 0) / values.length;
+    }
+
+    constantTotal(item: ConstantDef): number {
+        return item.months.reduce((sum, raw) => sum + this.evaluateAmount(raw), 0);
+    }
+
+    constantHit(month: Month, row: MonthRow): {amount: number; debitKey: string | null; creditKey: string | null} | null {
+        const match = this.matchConstant(month, row);
+        if (!match) {
+            return null;
+        }
+        const amount = this.constantAmount(match, month.label.title);
+        if (!amount) {
+            return null;
+        }
+        const personIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_person);
+        const accountIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_account);
+        const payer = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+        const payerAccount = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+        const debitKey = payer && payerAccount ? `${payer}|${payerAccount}` : null;
+        const creditKey = match.person && match.account ? `${match.person}|${match.account}` : null;
+        return {amount, debitKey, creditKey};
+    }
+
+    matchConstant(month: Month, row: MonthRow): ConstantDef | null {
+        const textIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.text);
+        if (textIdx < 0) {
+            return null;
+        }
+        const cell = row.cells[textIdx];
+        const raw = (cell?.raw ?? '').trim();
+        const display = (cell?.display ?? '').trim();
+        const labels = raw.startsWith('=') ? [display] : [raw, display];
+        return this.constants().find((item) => {
+            const name = item.name.trim();
+            return !!name && labels.some((label) => label === name);
+        }) ?? null;
     }
 
     saldoTitleFor(combo: SaldoCombo): string {
@@ -408,6 +512,15 @@ export class WorkbookService {
             }
         });
         this.saldoColumnPrefs.set(prefs);
+        this.constants.update((list) => list.map((item) => {
+            if (kind === 'person' && item.person === prev) {
+                return {...item, person: next};
+            }
+            if (kind === 'account' && item.account === prev) {
+                return {...item, account: next};
+            }
+            return item;
+        }));
         const type = kind === 'person' ? CELL_TYPE.select_person : CELL_TYPE.select_account;
         this.months().forEach((month) => {
             month.rows.forEach((row) => {
@@ -448,12 +561,14 @@ export class WorkbookService {
             personNames: this.personNames(),
             accountNames: this.accountNames(),
             headerRowHeight: this.headerRowHeight(),
-            textColWidth: this.textColWidth()
+            textColWidth: this.textColWidth(),
+            constants: this.constants()
         });
         const meta = [
             `#persons:${this.encodeNamedCodes(this.personCodes(), this.personNames())}`,
             `#accounts:${this.encodeNamedCodes(this.accountCodes(), this.accountNames())}`,
             opening ? `#opening:${opening}` : '',
+            `#constants:${JSON.stringify(this.constants())}`,
             `#settings:${settings}`
         ].filter(Boolean).join('\n');
         return `${meta}\n${CsvExportService.convertToCSV(months, months[0].columns)}`;
@@ -502,6 +617,12 @@ export class WorkbookService {
             if (typeof meta.settings.textColWidth === 'number') {
                 this.textColWidth.set(meta.settings.textColWidth);
             }
+            if (Array.isArray(meta.settings.constants)) {
+                this.constants.set(WorkbookService.normalizeConstants(meta.settings.constants));
+            }
+        }
+        if (meta.constants.length) {
+            this.constants.set(WorkbookService.normalizeConstants(meta.constants));
         }
         const months = CsvImportService.parseCSV(body);
         this.setMonths(months);
@@ -532,12 +653,12 @@ export class WorkbookService {
                 const person = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
                 const account = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
                 const bucket = map.get(`${person}|${account}`);
-                if (!bucket) {
-                    return;
+                if (bucket) {
+                    const split = this.rowSplit(month, row);
+                    bucket.income += split.income;
+                    bucket.expenses += split.expenses;
                 }
-                const split = this.rowSplit(month, row);
-                bucket.income += split.income;
-                bucket.expenses += split.expenses;
+                this.applyConstantHit(map, month, row);
             });
         });
         map.forEach((item) => {
@@ -566,6 +687,15 @@ export class WorkbookService {
                 const key = `${person}|${account}`;
                 if (Object.prototype.hasOwnProperty.call(running, key)) {
                     running[key] += this.rowDelta(current, row);
+                }
+                const hit = this.constantHit(current, row);
+                if (hit) {
+                    if (hit.debitKey && Object.prototype.hasOwnProperty.call(running, hit.debitKey)) {
+                        running[hit.debitKey] -= hit.amount;
+                    }
+                    if (hit.creditKey && Object.prototype.hasOwnProperty.call(running, hit.creditKey)) {
+                        running[hit.creditKey] += hit.amount;
+                    }
                 }
                 if (current === month) {
                     snapshots.push({...running});
@@ -751,6 +881,88 @@ export class WorkbookService {
         return result;
     }
 
+    private patchConstant(id: string, patch: Partial<ConstantDef>): void {
+        this.constants.update((list) => list.map((item) => item.id === id ? {...item, ...patch} : item));
+        this.persistSettings();
+        this.touch();
+    }
+
+    private applyConstantHit(
+        map: Map<string, ComboSaldo>,
+        month: Month,
+        row: MonthRow
+    ): void {
+        const hit = this.constantHit(month, row);
+        if (!hit) {
+            return;
+        }
+        if (hit.debitKey) {
+            const debit = map.get(hit.debitKey);
+            if (debit) {
+                debit.expenses += hit.amount;
+            }
+        }
+        if (hit.creditKey) {
+            const credit = map.get(hit.creditKey);
+            if (credit) {
+                credit.income += hit.amount;
+            }
+        }
+    }
+
+    private evaluateAmount(raw: string, monthTitle?: string): number {
+        const text = (raw ?? '').trim();
+        if (!text) {
+            return 0;
+        }
+        if (!this.formulaService.isFormula(text)) {
+            return this.formulaService.toNumber(text) ?? 0;
+        }
+        const month = (monthTitle
+            ? this.months().find((item) => item.label.title === monthTitle)
+            : undefined) ?? this.months()[0];
+        if (!month?.rows[0]?.cells[0]) {
+            return this.formulaService.toNumber(text.slice(1)) ?? 0;
+        }
+        const scratch = new MonthCell(0, 0, '', new CellType(CELL_TYPE.number), text);
+        this.formulaService.evaluateCell(month, scratch, new Set<string>());
+        if (scratch.error) {
+            return 0;
+        }
+        return this.formulaService.toNumber(scratch.display) ?? 0;
+    }
+
+    static emptyConstant(name = ''): ConstantDef {
+        return {
+            id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+            name,
+            person: '',
+            account: '',
+            months: Array.from({length: 12}, () => '')
+        };
+    }
+
+    static normalizeConstants(raw: unknown): ConstantDef[] {
+        if (!Array.isArray(raw)) {
+            return [WorkbookService.emptyConstant('')];
+        }
+        const list = raw.map((item) => {
+            const source = item as Partial<ConstantDef>;
+            const months = Array.from({length: 12}, (_, index) => {
+                const value = Array.isArray(source.months) ? source.months[index] : '';
+                return value == null ? '' : String(value);
+            });
+            return {
+                id: source.id || WorkbookService.emptyConstant().id,
+                name: (source.name || '').trim(),
+                person: (source.person || '').trim().toUpperCase(),
+                account: (source.account || '').trim().toUpperCase(),
+                months
+            };
+        });
+        return list.length ? list : [WorkbookService.emptyConstant('')];
+    }
+
     private persistSettings(): void {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify({
             person: this.persons(),
@@ -763,7 +975,8 @@ export class WorkbookService {
             saldoColumnPrefs: this.saldoColumnPrefs(),
             saldoTotalPref: this.saldoTotalPref(),
             headerRowHeight: this.headerRowHeight(),
-            textColWidth: this.textColWidth()
+            textColWidth: this.textColWidth(),
+            constants: this.constants()
         }));
     }
 
@@ -783,6 +996,7 @@ export class WorkbookService {
                 saldoTotalPref?: SaldoColumnPref;
                 headerRowHeight?: number;
                 textColWidth?: number;
+                constants?: ConstantDef[];
             };
             if (Array.isArray(parsed.person)) {
                 this.persons.set(this.normalizeCodes(parsed.person));
@@ -819,6 +1033,9 @@ export class WorkbookService {
                     visible: parsed.saldoTotalPref.visible !== false,
                     title: parsed.saldoTotalPref.title || 'Total'
                 });
+            }
+            if (Array.isArray(parsed.constants)) {
+                this.constants.set(WorkbookService.normalizeConstants(parsed.constants));
             }
         } catch {
             return;
@@ -877,6 +1094,7 @@ export class WorkbookService {
             personNames: Record<string, string>;
             accountNames: Record<string, string>;
             opening: Record<string, number>;
+            constants: ConstantDef[];
             settings: {
                 saldoColumnPrefs?: Record<string, SaldoColumnPref>;
                 saldoTotalPref?: SaldoColumnPref;
@@ -886,6 +1104,7 @@ export class WorkbookService {
                 accountNames?: Record<string, string>;
                 headerRowHeight?: number;
                 textColWidth?: number;
+                constants?: ConstantDef[];
             } | null;
         };
         body: string;
@@ -896,6 +1115,7 @@ export class WorkbookService {
         const personNames: Record<string, string> = {};
         const accountNames: Record<string, string> = {};
         const opening: Record<string, number> = {};
+        const constants: ConstantDef[] = [];
         let settings: {
             saldoColumnPrefs?: Record<string, SaldoColumnPref>;
             saldoTotalPref?: SaldoColumnPref;
@@ -905,6 +1125,7 @@ export class WorkbookService {
             accountNames?: Record<string, string>;
             headerRowHeight?: number;
             textColWidth?: number;
+            constants?: ConstantDef[];
         } | null = null;
         const rest: string[] = [];
         lines.forEach((line) => {
@@ -927,6 +1148,12 @@ export class WorkbookService {
                         opening[key.trim()] = value;
                     }
                 });
+            } else if (line.startsWith('#constants:')) {
+                try {
+                    constants.push(...WorkbookService.normalizeConstants(JSON.parse(line.slice(11))));
+                } catch {
+                    /* ignore */
+                }
             } else if (line.startsWith('#settings:')) {
                 try {
                     settings = JSON.parse(line.slice(10)) as typeof settings;
@@ -937,6 +1164,6 @@ export class WorkbookService {
                 rest.push(line);
             }
         });
-        return {meta: {persons, accounts, personNames, accountNames, opening, settings}, body: rest.join('\n')};
+        return {meta: {persons, accounts, personNames, accountNames, opening, constants, settings}, body: rest.join('\n')};
     }
 }
