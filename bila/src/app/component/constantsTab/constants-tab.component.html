@@ -2,7 +2,9 @@
     <div class="const-head">
         <div>
             <h2>Konstanten</h2>
-            <p>Name in der Kopfzeile. In Jan–Dez den Betrag oder eine Formel (=) eintragen. Steht in einem Monat in Spalte D genau dieser Name, wird der Monatsbetrag vom Buchungs-Person/Konto abgezogen und — falls Zeile 1+2 gesetzt sind — dort gutgeschrieben.</p>
+            <p>Spalten per Griff oder Pfeilen verschieben. Betrag oder Formel eintragen — am Handy mit der Taste «=».
+                Trifft Spalte D den Namen genau, geht der Monatsbetrag vom Buchungs-Person/Konto weg.
+                Person+Konto gesetzt: Gutschrift dort. Nur Konto gesetzt: Gutschrift bei der sendenden Person auf diesem Konto.</p>
         </div>
         <button type="button" class="const-add" (click)="workbook.addConstant()">+ Konstante</button>
     </div>
@@ -11,15 +13,25 @@
             <thead>
             <tr>
                 <th></th>
-                @for (item of constants(); track item.id) {
-                    <th>
-                        <input class="name-input"
-                               type="text"
-                               [value]="item.name"
-                               (change)="onName(item, $event)"
-                               placeholder="Name"
-                               [attr.aria-label]="'Konstante ' + item.name"/>
-                        <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)" title="Konstante entfernen">×</button>
+                @for (item of constants(); track item.id; let index = $index) {
+                    <th draggable="true"
+                        (dragstart)="onDragStart($event, item.id)"
+                        (dragover)="onDragOver($event)"
+                        (drop)="onDrop($event, index)">
+                        <div class="name-row">
+                            <span class="drag-handle" title="Ziehen zum Verschieben">⋮⋮</span>
+                            <input class="name-input"
+                                   type="text"
+                                   [value]="item.name"
+                                   (change)="onName(item, $event)"
+                                   placeholder="Name"
+                                   [attr.aria-label]="'Konstante ' + item.name"/>
+                            <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)" title="Konstante entfernen">×</button>
+                        </div>
+                        <div class="move-row">
+                            <button type="button" class="move-btn" (click)="move(item.id, index - 1)" [disabled]="index === 0" title="Nach links">←</button>
+                            <button type="button" class="move-btn" (click)="move(item.id, index + 1)" [disabled]="index === constants().length - 1" title="Nach rechts">→</button>
+                        </div>
                     </th>
                 }
             </tr>
@@ -30,7 +42,7 @@
                 @for (item of constants(); track item.id) {
                     <td>
                         <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
-                            <option value="">—</option>
+                            <option value="">— wie Sender</option>
                             @for (option of workbook.personCodes(); track option) {
                                 <option [value]="option">{{ workbook.optionLabel('person', option) }}</option>
                             }
@@ -43,7 +55,7 @@
                 @for (item of constants(); track item.id) {
                     <td>
                         <select [ngModel]="item.account" (ngModelChange)="workbook.setConstantAccount(item.id, $event)">
-                            <option value="">—</option>
+                            <option value="">— keine Gutschrift</option>
                             @for (option of workbook.accountCodes(); track option) {
                                 <option [value]="option">{{ workbook.optionLabel('account', option) }}</option>
                             }
@@ -56,13 +68,21 @@
                     <th>{{ label }}</th>
                     @for (item of constants(); track item.id) {
                         <td>
-                            <input type="text"
-                                   inputmode="decimal"
-                                   [class.formula]="workbook.isFormula(item.months[monthIndex])"
-                                   [value]="item.months[monthIndex]"
-                                   (change)="onMonth(item, monthIndex, $event)"
-                                   [title]="preview(item, label)"
-                                   [attr.aria-label]="item.name + ' ' + label"/>
+                            <div class="amount-row">
+                                <button type="button"
+                                        class="eq-btn"
+                                        (click)="insertEquals(item, monthIndex, input)"
+                                        title="Formel beginnen">=</button>
+                                <input #input
+                                       type="text"
+                                       inputmode="text"
+                                       autocomplete="off"
+                                       [class.formula]="workbook.isFormula(item.months[monthIndex])"
+                                       [value]="item.months[monthIndex]"
+                                       (change)="onMonth(item, monthIndex, $event)"
+                                       [title]="preview(item, label)"
+                                       [attr.aria-label]="item.name + ' ' + label"/>
+                            </div>
                         </td>
                     }
                 </tr>
