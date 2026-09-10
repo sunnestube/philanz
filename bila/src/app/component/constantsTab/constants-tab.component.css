@@ -51,8 +51,34 @@ p { margin: 0; color: #475569; font-size: 13px; max-width: 720px; }
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
-.const-grid .name-input { text-align: left; font-weight: 600; min-width: 96px; }
+.const-grid .name-input { text-align: left; font-weight: 600; min-width: 72px; }
 .const-grid input.formula { font-style: italic; color: #1e3a8a; }
+.name-row, .amount-row, .move-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.drag-handle {
+    cursor: grab;
+    color: #64748b;
+    font-size: 12px;
+    letter-spacing: -2px;
+    user-select: none;
+}
+.move-row { justify-content: flex-end; margin-top: 2px; }
+.move-btn, .eq-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a;
+    border-radius: 6px;
+    min-width: 28px;
+    height: 26px;
+    cursor: pointer;
+    font-weight: 700;
+}
+.move-btn:disabled { opacity: 0.35; cursor: default; }
+.eq-btn { flex-shrink: 0; }
+.amount-row input { flex: 1 1 auto; }
 .computed td, .computed th { background: #ecfeff; font-weight: 600}
 .total { font-weight: 700; }
 .const-grid select { text-align: left; }
