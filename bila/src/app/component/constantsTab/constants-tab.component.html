@@ -1,0 +1,85 @@
+<section class="const-tab">
+    <div class="const-head">
+        <div>
+            <h2>Konstanten</h2>
+            <p>Name in der Kopfzeile. In Jan–Dez den Betrag oder eine Formel (=) eintragen. Steht in einem Monat in Spalte D genau dieser Name, wird der Monatsbetrag vom Buchungs-Person/Konto abgezogen und — falls Zeile 1+2 gesetzt sind — dort gutgeschrieben.</p>
+        </div>
+        <button type="button" class="const-add" (click)="workbook.addConstant()">+ Konstante</button>
+    </div>
+    <div class="const-scroll">
+        <table class="const-grid">
+            <thead>
+            <tr>
+                <th></th>
+                @for (item of constants(); track item.id) {
+                    <th>
+                        <input class="name-input"
+                               type="text"
+                               [value]="item.name"
+                               (change)="onName(item, $event)"
+                               placeholder="Name"
+                               [attr.aria-label]="'Konstante ' + item.name"/>
+                        <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)" title="Konstante entfernen">×</button>
+                    </th>
+                }
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <th>1 Person Gutschrift</th>
+                @for (item of constants(); track item.id) {
+                    <td>
+                        <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
+                            <option value="">—</option>
+                            @for (option of workbook.personCodes(); track option) {
+                                <option [value]="option">{{ workbook.optionLabel('person', option) }}</option>
+                            }
+                        </select>
+                    </td>
+                }
+            </tr>
+            <tr>
+                <th>2 Konto Gutschrift</th>
+                @for (item of constants(); track item.id) {
+                    <td>
+                        <select [ngModel]="item.account" (ngModelChange)="workbook.setConstantAccount(item.id, $event)">
+                            <option value="">—</option>
+                            @for (option of workbook.accountCodes(); track option) {
+                                <option [value]="option">{{ workbook.optionLabel('account', option) }}</option>
+                            }
+                        </select>
+                    </td>
+                }
+            </tr>
+            @for (label of months; track label; let monthIndex = $index) {
+                <tr>
+                    <th>{{ monthIndex + 3 }} {{ label }}</th>
+                    @for (item of constants(); track item.id) {
+                        <td>
+                            <input type="text"
+                                   inputmode="decimal"
+                                   [class.formula]="workbook.isFormula(item.months[monthIndex])"
+                                   [value]="item.months[monthIndex]"
+                                   (change)="onMonth(item, monthIndex, $event)"
+                                   [title]="preview(item, label)"
+                                   [attr.aria-label]="item.name + ' ' + label"/>
+                        </td>
+                    }
+                </tr>
+            }
+            <tr class="computed">
+                <th>15 Durchschnitt</th>
+                @for (item of constants(); track item.id) {
+                    <td class="total">{{ format(workbook.constantAverage(item)) }}</td>
+                }
+            </tr>
+            <tr class="computed">
+                <th>16 Total</th>
+                @for (item of constants(); track item.id) {
+                    <td class="total">{{ format(workbook.constantTotal(item)) }}</td>
+                }
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</section>

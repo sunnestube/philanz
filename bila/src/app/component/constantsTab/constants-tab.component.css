@@ -1,0 +1,61 @@
+:host { display: block; min-height: 0; }
+.const-tab { color: #111; }
+.const-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+h2 { margin: 0 0 6px; font-size: 18px; }
+p { margin: 0; color: #475569; font-size: 13px; max-width: 720px; }
+.const-add, .const-remove {
+    border: 0;
+    cursor: pointer;
+}
+.const-add {
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.const-remove {
+    margin-left: 4px;
+    background: transparent;
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1;
+}
+.const-scroll { overflow: auto; }
+.const-grid { border-collapse: collapse; min-width: 420px; }
+.const-grid th, .const-grid td {
+    border: 1px solid #cbd5e1;
+    padding: 3px 5px;
+    text-align: right;
+    background: #fff;
+}
+.const-grid tbody th, .const-grid thead th:first-child {
+    text-align: left;
+    background: #f1f5f9;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.const-grid thead th { background: #e2e8f0; vertical-align: middle; }
+.const-grid input, .const-grid select {
+    width: 100%;
+    min-width: 88px;
+    border: 0;
+    background: transparent;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.const-grid .name-input { text-align: left; font-weight: 600; min-width: 96px; }
+.const-grid input.formula { font-style: italic; color: #1e3a8a; }
+.computed td, .computed th { background: #ecfeff; }
+.total { font-weight: 700; }
+.const-grid select { text-align: left; }
+@media (prefers-color-scheme: dark) {
+    .const-tab { color: #111; }
+}
