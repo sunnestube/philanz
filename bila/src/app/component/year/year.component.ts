@@ -45,6 +45,7 @@ export class YearComponent implements OnInit {
     yearName = '';
 
     ngOnInit(): void {
+        this.patchConstantCredit();
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.route.paramMap.subscribe((params) => {
@@ -163,6 +164,28 @@ export class YearComponent implements OnInit {
             this.workbook.applyCsv(csvData);
             this.fillRows();
         });
+    }
+
+    private patchConstantCredit(): void {
+        const workbook = this.workbook;
+        const original = workbook.constantHit.bind(workbook);
+        workbook.constantHit = (month, row) => {
+            const hit = original(month, row);
+            if (!hit) {
+                return hit;
+            }
+            const match = workbook.matchConstant(month, row);
+            if (!match || match.person) {
+                return hit;
+            }
+            const account = (match.account || '').trim().toUpperCase();
+            if (!account) {
+                return {...hit, creditKey: null};
+            }
+            const personIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_person);
+            const payer = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+            return {...hit, creditKey: payer ? `${payer}|${account}` : null};
+        };
     }
 
     private ensureSaldoColumns(): void {
