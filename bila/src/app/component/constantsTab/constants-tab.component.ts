@@ -26,14 +26,16 @@ export class ConstantsTabComponent {
         this.workbook.setConstantMonth(item.id, index, (event.target as HTMLInputElement).value);
     }
 
-    insertEquals(item: ConstantDef, index: number, input: HTMLInputElement): void {
-        const current = item.months[index] ?? '';
-        const next = current.startsWith('=') ? current : `=${current}`;
-        this.workbook.setConstantMonth(item.id, index, next);
-        input.value = next;
-        input.focus();
-        const pos = next.length;
-        input.setSelectionRange(pos, pos);
+    insertPrev(item: ConstantDef, index: number): void {
+        if (index <= 0) {
+            return;
+        }
+        this.workbook.setConstantMonth(item.id, index, '↑');
+    }
+
+    isPrevRef(raw: string | null | undefined): boolean {
+        const text = (raw ?? '').trim();
+        return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
     }
 
     move(id: string, toIndex: number): void {
@@ -77,10 +79,10 @@ export class ConstantsTabComponent {
     preview(item: ConstantDef, monthTitle: string): string {
         const index = CONSTANT_MONTHS.indexOf(monthTitle as typeof CONSTANT_MONTHS[number]);
         const raw = item.months[index] ?? '';
-        if (!this.workbook.isFormula(raw)) {
-            return raw;
+        if (this.isPrevRef(raw) || this.workbook.isFormula(raw)) {
+            return this.format(this.workbook.constantAmount(item, monthTitle));
         }
-        return this.format(this.workbook.constantAmount(item, monthTitle));
+        return raw;
     }
 
     format(value: number): string {

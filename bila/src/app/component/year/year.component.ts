@@ -8,7 +8,7 @@ import {Month} from '../../model/Month';
 import {MonthRow} from '../../model/MonthRow';
 import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
-import {WorkbookService, YearView} from '../../service/workbook.service';
+import {CONSTANT_MONTHS, ConstantDef, WorkbookService, YearView} from '../../service/workbook.service';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
@@ -46,12 +46,13 @@ export class YearComponent implements OnInit {
 
     ngOnInit(): void {
         this.patchConstantCredit();
+        this.patchConstantPrevRow();
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
             if (id) {
-                this.yearName = this.archive.normalize(id);
+                this.yearName = this.archive.ensure(id).name;
                 const csv = this.archive.open(this.yearName);
                 if (csv) {
                     this.workbook.applyCsv(csv);
@@ -164,6 +165,44 @@ export class YearComponent implements OnInit {
             this.workbook.applyCsv(csvData);
             this.fillRows();
         });
+    }
+
+    private patchConstantPrevRow(): void {
+        const workbook = this.workbook;
+        const original = workbook.constantAmount.bind(workbook);
+        const months = CONSTANT_MONTHS;
+        const isPrev = (raw: string | null | undefined): boolean => {
+            const text = (raw ?? '').trim();
+            return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
+        };
+        const resolve = (item: ConstantDef, title: string): number => {
+            let index = months.indexOf(title as typeof months[number]);
+            const seen = new Set<number>();
+            while (index >= 0) {
+                if (seen.has(index)) {
+                    return 0;
+                }
+                seen.add(index);
+                if (isPrev(item.months[index])) {
+                    index -= 1;
+                    continue;
+                }
+                return original(item, months[index]);
+            }
+            return 0;
+        };
+        workbook.constantAmount = (item, title) => resolve(item, title);
+        workbook.constantAverage = (item) => {
+            const values = item.months
+                .map((raw, index) => ({raw, value: resolve(item, months[index])}))
+                .filter((entry) => entry.raw.trim() !== '');
+            if (!values.length) {
+                return 0;
+            }
+            return values.reduce((sum, entry) => sum + entry.value, 0) / values.length;
+        };
+        workbook.constantTotal = (item) =>
+            item.months.reduce((sum, _raw, index) => sum + resolve(item, months[index]), 0);
     }
 
     private patchConstantCredit(): void {

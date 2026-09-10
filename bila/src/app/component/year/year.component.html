@@ -23,8 +23,8 @@
             }
             @if (isCsv()) {
                 <div class="tab-content extra active csv-tab">
-                    <h2>Jahre und CSV</h2>
-                    <p>Jedes Jahr ist eine eigene CSV (z. B. <code>2026</code>). Die Übersicht aller Jahre steht im Home-Menü. Formeln bleiben roh (=A1).</p>
+                    <h2>CSV</h2>
+                    <p>Import und Export. Das Jahr wählst du oben im Menü. Formeln bleiben roh (=A1).</p>
                     <div class="csv-cards">
                         <article class="csv-card">
                             <h3>Als Jahr speichern</h3>
@@ -82,7 +82,6 @@
     </div>
 
     <div class="tabs">
-        <div class="tab-label year-name-tab">{{ yearName || 'Jahr' }}</div>
         <div class="tab-label start-tab"
              [class.active]="workbook.view() === 'start'"
              (click)="openView('start')">Start</div>
