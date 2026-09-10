@@ -2,7 +2,8 @@
     <div class="const-head">
         <div>
             <h2>Konstanten</h2>
-            <p>Spalten per Griff oder Pfeilen verschieben. Betrag oder Formel eintragen — am Handy mit der Taste «=».
+            <p>Spalten per Griff oder Pfeilen verschieben. Betrag oder Formel eintragen.
+                «↑» übernimmt den Wert der Vorzeile (Monat darüber).
                 Trifft Spalte D den Namen genau, geht der Monatsbetrag vom Buchungs-Person/Konto weg.
                 Person+Konto gesetzt: Gutschrift dort. Nur Konto gesetzt: Gutschrift bei der sendenden Person auf diesem Konto.</p>
         </div>
@@ -69,10 +70,12 @@
                     @for (item of constants(); track item.id) {
                         <td>
                             <div class="amount-row">
-                                <button type="button"
-                                        class="eq-btn"
-                                        (click)="insertEquals(item, monthIndex, input)"
-                                        title="Formel beginnen">=</button>
+                                @if (monthIndex > 0) {
+                                    <button type="button"
+                                            class="eq-btn"
+                                            (click)="insertPrev(item, monthIndex)"
+                                            title="Wert der Vorzeile">↑</button>
+                                }
                                 <input #input
                                        type="text"
                                        inputmode="text"
