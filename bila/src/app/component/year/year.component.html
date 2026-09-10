@@ -23,12 +23,15 @@
             }
             @if (isCsv()) {
                 <div class="tab-content extra active csv-tab">
-                    <h2>Daten sichern</h2>
-                    <p>CSV nimmt Personen und Konten inkl. Anzeigenamen, Spaltentitel/-typen, Startsaldi, Konstanten, Saldospalten und Layout (Titelhöhe, Textbreite) mit. Formeln bleiben roh (=A1).</p>
+                    <h2>Jahre und CSV</h2>
+                    <p>Jedes Jahr ist eine eigene CSV (z. B. <code>2026</code>). Die Übersicht aller Jahre steht im Home-Menü. Formeln bleiben roh (=A1).</p>
                     <div class="csv-cards">
                         <article class="csv-card">
-                            <h3>Im Browser speichern</h3>
-                            <p>Schreibt die Jahresübersicht auf diesem Gerät. Beim nächsten Öffnen wird dieser Stand geladen.</p>
+                            <h3>Als Jahr speichern</h3>
+                            <p>Name wie 2026. Liegt danach in der Jahresübersicht und im Browser.</p>
+                            <label class="year-label">Jahr
+                                <input class="year-input" type="text" [(ngModel)]="yearName" placeholder="2026"/>
+                            </label>
                             <button type="button" class="csv-btn" (click)="save()">Speichern</button>
                             @if (saveMessage) {
                                 <span class="csv-status">{{ saveMessage }}</span>
@@ -36,13 +39,27 @@
                         </article>
                         <article class="csv-card">
                             <h3>CSV-Datei exportieren</h3>
-                            <p>Download als <code>jahr.csv</code> zum Archivieren oder Weitergeben. Beim Import kommt derselbe Stand zurück.</p>
+                            <p>Download als <code>{{ yearName || '2026' }}.csv</code>.</p>
                             <button type="button" class="csv-btn secondary" (click)="exportToCSV()">CSV exportieren</button>
                         </article>
                     </div>
+                    @if (years().length) {
+                        <article class="csv-card import-card">
+                            <h3>Gespeicherte Jahre</h3>
+                            <ul class="year-list">
+                                @for (item of years(); track item.id) {
+                                    <li>
+                                        <button type="button" class="linkish" (click)="openYear(item.id)">{{ item.name }}</button>
+                                        <span class="year-date">{{ item.updated | date:'dd.MM.yyyy HH:mm' }}</span>
+                                        <button type="button" class="const-remove" (click)="deleteYear(item.id)">löschen</button>
+                                    </li>
+                                }
+                            </ul>
+                        </article>
+                    }
                     <article class="csv-card import-card">
                         <h3>CSV importieren</h3>
-                        <p>Datei ziehen oder Beispiel laden. Ersetzt die aktuelle Ansicht inklusive Einstellungen.</p>
+                        <p>Datei ziehen oder Beispiel laden. Danach unter einem Jahresnamen speichern.</p>
                         <bal-import (dataLoaded)="import($event)"></bal-import>
                     </article>
                 </div>
@@ -65,6 +82,7 @@
     </div>
 
     <div class="tabs">
+        <div class="tab-label year-name-tab">{{ yearName || 'Jahr' }}</div>
         <div class="tab-label start-tab"
              [class.active]="workbook.view() === 'start'"
              (click)="openView('start')">Start</div>
