@@ -105,6 +105,36 @@
 .csv-btn.secondary { background: #0f766e; color: #ffffff; }
 .csv-status { display: block; margin-top: 8px; color: #166534; font-size: 13px; }
 .import-card { grid-column: 1 / -1; }
+.year-label { display: block; margin-bottom: 8px; font-size: 13px; color: #334155; }
+.year-input {
+    display: block;
+    margin-top: 4px;
+    width: 100%;
+    max-width: 160px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    color: #0f172a;
+}
+.year-list { list-style: none; margin: 0; padding: 0; }
+.year-list li {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.linkish {
+    border: 0;
+    background: transparent;
+    color: #1d4ed8;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+}
+.year-date { color: #64748b; font-size: 12px; margin-left: auto; }
+.const-remove { border: 0; background: transparent; color: #64748b; cursor: pointer; }
 .tabs {
     display: flex;
     align-items: center;
@@ -140,6 +170,7 @@
     font-weight: bold;
     color: #111;
 }
+.tab-label.year-name-tab { background: #312e81; color: #fff; font-weight: 700; cursor: default; }
 .tab-label.start-tab { background: #fde68a; }
 .tab-label.constants-tab { background: #fbcfe8; }
 .tab-label.total-tab { background: #bbf7d0; }
