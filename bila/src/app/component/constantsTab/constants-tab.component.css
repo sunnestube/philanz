@@ -39,7 +39,7 @@ p { margin: 0; color: #475569; font-size: 13px; max-width: 720px; }
 .const-grid tbody th, .const-grid thead th:first-child {
     text-align: left;
     background: #f1f5f9;
-    font-weight: 600;
+    font-weight: 400;
     white-space: nowrap;
 }
 .const-grid thead th { background: #e2e8f0; vertical-align: middle; }
@@ -53,7 +53,7 @@ p { margin: 0; color: #475569; font-size: 13px; max-width: 720px; }
 }
 .const-grid .name-input { text-align: left; font-weight: 600; min-width: 96px; }
 .const-grid input.formula { font-style: italic; color: #1e3a8a; }
-.computed td, .computed th { background: #ecfeff; }
+.computed td, .computed th { background: #ecfeff; font-weight: 600}
 .total { font-weight: 700; }
 .const-grid select { text-align: left; }
 @media (prefers-color-scheme: dark) {

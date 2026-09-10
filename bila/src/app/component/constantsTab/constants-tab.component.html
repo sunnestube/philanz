@@ -26,7 +26,7 @@
             </thead>
             <tbody>
             <tr>
-                <th>1 Person Gutschrift</th>
+                <th>Person Gutschrift</th>
                 @for (item of constants(); track item.id) {
                     <td>
                         <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
@@ -39,7 +39,7 @@
                 }
             </tr>
             <tr>
-                <th>2 Konto Gutschrift</th>
+                <th>Konto Gutschrift</th>
                 @for (item of constants(); track item.id) {
                     <td>
                         <select [ngModel]="item.account" (ngModelChange)="workbook.setConstantAccount(item.id, $event)">
@@ -53,7 +53,7 @@
             </tr>
             @for (label of months; track label; let monthIndex = $index) {
                 <tr>
-                    <th>{{ monthIndex + 3 }} {{ label }}</th>
+                    <th>{{ label }}</th>
                     @for (item of constants(); track item.id) {
                         <td>
                             <input type="text"
@@ -68,13 +68,13 @@
                 </tr>
             }
             <tr class="computed">
-                <th>15 Durchschnitt</th>
+                <th>Durchschnitt</th>
                 @for (item of constants(); track item.id) {
                     <td class="total">{{ format(workbook.constantAverage(item)) }}</td>
                 }
             </tr>
             <tr class="computed">
-                <th>16 Total</th>
+                <th>Total</th>
                 @for (item of constants(); track item.id) {
                     <td class="total">{{ format(workbook.constantTotal(item)) }}</td>
                 }
