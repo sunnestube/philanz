@@ -5,3 +5,24 @@
     color: #4f46e5;
     background: #eef2ff;
 }
+.year-select {
+    margin-left: 4px;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 600;
+    font-size: 14px;
+}
+.year-add {
+    margin-left: 4px;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 700;
+    cursor: pointer;
+}

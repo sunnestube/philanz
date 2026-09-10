@@ -89,6 +89,23 @@ export class YearArchiveService {
         return this.activeId() || String(new Date().getFullYear());
     }
 
+    ensure(name: string): YearMeta {
+        const id = this.normalize(name);
+        const existing = this.years().find((item) => item.id === id);
+        if (existing) {
+            this.activeId.set(id);
+            localStorage.setItem(ACTIVE_KEY, id);
+            return existing;
+        }
+        const meta: YearMeta = {id, name: id, updated: Date.now()};
+        const list = [meta, ...this.years()].sort((a, b) => b.name.localeCompare(a.name, 'de'));
+        this.writeIndex(list);
+        this.years.set(list);
+        this.activeId.set(id);
+        localStorage.setItem(ACTIVE_KEY, id);
+        return meta;
+    }
+
     normalize(name: string): string {
         const clean = (name || '').trim().replace(/[^\dA-Za-z._-]+/g, '-').replace(/^-+|-+$/g, '');
         return clean || String(new Date().getFullYear());
