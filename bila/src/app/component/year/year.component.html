@@ -6,6 +6,11 @@
                     <bal-start-tab/>
                 </div>
             }
+            @if (workbook.view() === 'constants') {
+                <div class="tab-content extra active">
+                    <bal-constants-tab/>
+                </div>
+            }
             @if (workbook.view() === 'total') {
                 <div class="tab-content extra active fill-pane">
                     <bal-year-total/>
@@ -19,7 +24,7 @@
             @if (isCsv()) {
                 <div class="tab-content extra active csv-tab">
                     <h2>Daten sichern</h2>
-                    <p>CSV nimmt Personen und Konten inkl. Anzeigenamen, Spaltentitel/-typen, Startsaldi, Saldospalten und Layout (Titelhöhe, Textbreite) mit. Formeln bleiben roh (=A1).</p>
+                    <p>CSV nimmt Personen und Konten inkl. Anzeigenamen, Spaltentitel/-typen, Startsaldi, Konstanten, Saldospalten und Layout (Titelhöhe, Textbreite) mit. Formeln bleiben roh (=A1).</p>
                     <div class="csv-cards">
                         <article class="csv-card">
                             <h3>Im Browser speichern</h3>
@@ -63,6 +68,9 @@
         <div class="tab-label start-tab"
              [class.active]="workbook.view() === 'start'"
              (click)="openView('start')">Start</div>
+        <div class="tab-label constants-tab"
+             [class.active]="workbook.view() === 'constants'"
+             (click)="openView('constants')">Konstanten</div>
         @for (month of workbook.months(); track month) {
             <div class="tab-label"
                  [class]="month.label.background"

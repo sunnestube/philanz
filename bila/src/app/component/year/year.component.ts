@@ -9,6 +9,7 @@ import {ImportComponent} from '../import/import.component';
 import {WorkbookService, YearView} from '../../service/workbook.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
+import {ConstantsTabComponent} from '../constantsTab/constants-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
@@ -23,6 +24,7 @@ const MIN_ROWS = 36;
         ImportComponent,
         SaldoPanelComponent,
         StartTabComponent,
+        ConstantsTabComponent,
         YearTotalComponent,
         YearGrafComponent,
         NewRowButtonsComponent
