@@ -10,7 +10,6 @@ import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
 import {WorkbookService, YearView} from '../../service/workbook.service';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
-import '../../service/workbook-years.patch';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
 import {ConstantsTabComponent} from '../constantsTab/constants-tab.component';

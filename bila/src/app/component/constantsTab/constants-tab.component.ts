@@ -37,7 +37,22 @@ export class ConstantsTabComponent {
     }
 
     move(id: string, toIndex: number): void {
-        this.workbook.moveConstant(id, toIndex);
+        const list = [...this.workbook.constants()];
+        const from = list.findIndex((item) => item.id === id);
+        if (from < 0) {
+            return;
+        }
+        const target = Math.max(0, Math.min(list.length - 1, toIndex));
+        if (from === target) {
+            return;
+        }
+        const [item] = list.splice(from, 1);
+        list.splice(target, 0, item);
+        this.workbook.constants.set(list);
+        const first = list[0];
+        if (first) {
+            this.workbook.setConstantName(first.id, first.name);
+        }
     }
 
     onDragStart(event: DragEvent, id: string): void {
@@ -55,7 +70,7 @@ export class ConstantsTabComponent {
         event.preventDefault();
         const id = event.dataTransfer?.getData('text/plain');
         if (id) {
-            this.workbook.moveConstant(id, toIndex);
+            this.move(id, toIndex);
         }
     }
 
