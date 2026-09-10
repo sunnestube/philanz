@@ -8,6 +8,7 @@ export const routes: Routes = [
     {path: '', component: HomeComponent},
     {path: 'gpt', component: GptComponent},
     {path: 'year', component: YearComponent},
+    {path: 'year/:id', component: YearComponent},
     {
         path: 'biltanz',
         loadComponent: () =>

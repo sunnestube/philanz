@@ -1,0 +1,21 @@
+.year-home-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+}
+.year-home-btn {
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #312e81;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.year-home-btn.primary {
+    background: #4f46e5;
+    border-color: #4338ca;
+    color: #fff;
+}
