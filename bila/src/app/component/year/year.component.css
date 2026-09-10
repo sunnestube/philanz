@@ -141,6 +141,7 @@
     color: #111;
 }
 .tab-label.start-tab { background: #fde68a; }
+.tab-label.constants-tab { background: #fbcfe8; }
 .tab-label.total-tab { background: #bbf7d0; }
 .tab-label.graf-tab { background: #bfdbfe; }
 .tab-label.csv-tab-label { background: #e2e8f0; color: #111; }
@@ -160,6 +161,7 @@
     .tab-label { background: #4b4b4b; color: #f4f4f5; border-color: #5b5b5b; }
     .tab-label.active { background: #ececec; color: #111; }
     .tab-label.start-tab { background: #a16207; color: #fffbeb; }
+    .tab-label.constants-tab { background: #9d174d; color: #fce7f3; }
     .tab-label.total-tab { background: #166534; color: #dcfce7; }
     .tab-label.graf-tab { background: #1d4ed8; color: #dbeafe; }
     .tab-label.csv-tab-label { background: #64748b; color: #fff; }
