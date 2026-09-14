@@ -1,0 +1,30 @@
+<article class="const-card" [class.column-card]="kind() === 'column'"
+         draggable="true"
+         (dragstart)="dragStart.emit($event)"
+         (dragover)="dragOver.emit($event)"
+         (drop)="dropped.emit($event)">
+    <div class="name-row">
+        <span class="drag-handle">⋮⋮</span>
+        <input class="name-input" type="text" [value]="item().name" (change)="nameChange.emit($event)" [placeholder]="placeholder()"/>
+        <button type="button" class="move-btn" (click)="nudge.emit(-1)" [disabled]="first()">←</button>
+        <button type="button" class="move-btn" (click)="nudge.emit(1)" [disabled]="last()">→</button>
+        <button type="button" class="const-remove" (click)="removed.emit()">×</button>
+    </div>
+    <ng-content/>
+    <div class="month-grid">
+        @for (label of months; track label; let monthIndex = $index) {
+            <label>{{ label }}
+                <input type="text"
+                       inputmode="text"
+                       [class.formula]="isFormula(item().months[monthIndex])"
+                       [value]="item().months[monthIndex]"
+                       (change)="monthChange.emit({index: monthIndex, event: $event})"
+                       [title]="preview(label)"/>
+            </label>
+        }
+    </div>
+    <div class="const-foot">
+        <span>Ø {{ format(workbook().constantAverage(item())) }}</span>
+        <span>Σ {{ format(workbook().constantTotal(item())) }}</span>
+    </div>
+</article>
