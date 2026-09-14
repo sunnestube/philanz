@@ -1,4 +1,4 @@
-import {Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild} from '@angular/core';
+import {Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {Month} from '../../model/Month';
 import {MonthCell} from '../../model/MonthCell';
@@ -28,7 +28,8 @@ import {MonthTableSaldo} from './month-table-saldo';
         SaldoCellComponent,
         MonthTableFooterComponent
     ],
-    styleUrls: ['./monthTable.css']
+    styleUrls: ['./monthTable.css'],
+    encapsulation: ViewEncapsulation.None
 })
 export class MonthTable implements OnDestroy {
     private _month?: Month;
