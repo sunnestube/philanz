@@ -270,7 +270,10 @@ export class YearComponent implements OnInit {
             if (fillsTimer) {
                 clearTimeout(fillsTimer);
             }
-            fillsTimer = window.setTimeout(() => applyColumnFills(workbook), 250);
+            fillsTimer = window.setTimeout(() => {
+                const current = workbook.selectedMonth();
+                applyColumnFills(workbook, current ? [current] : undefined);
+            }, 250);
         };
     }
 }
