@@ -36,9 +36,6 @@ export class MonthTable implements OnDestroy {
     readonly edit: MonthTableEdit;
     readonly pointer: MonthTablePointer;
     readonly saldo: MonthTableSaldo;
-    viewStart = 0;
-    private readonly viewSize = 48;
-    private scrollTick = 0;
     readonly noOptions: string[] = [];
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
@@ -62,11 +59,6 @@ export class MonthTable implements OnDestroy {
             () => this.edit.refPickMode || this.edit.formulaMode
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
-        const focusRange = this.edit.range.focusCell.bind(this.edit.range);
-        this.edit.range.focusCell = (title, row, col) => {
-            this.ensureRowVisible(row);
-            queueMicrotask(() => focusRange(title, row, col));
-        };
         zone.runOutsideAngular(() => {
             document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
             document.addEventListener('pointerup', this.onWindowPanEnd);
@@ -109,7 +101,6 @@ export class MonthTable implements OnDestroy {
     @Input()
     set month(month: Month) {
         this._month = month;
-        this.viewStart = 0;
         this.saldo.invalidate();
     }
     get month(): Month | undefined {
@@ -136,34 +127,6 @@ export class MonthTable implements OnDestroy {
         return saldoColViews(this.saldo.combos(), (combo) => this.workbook.saldoTitleFor(combo));
     }
 
-    viewRows() {
-        const rows = this.month?.rows ?? [];
-        return rows.slice(this.viewStart, this.viewStart + this.viewSize);
-    }
-
-    padTop(): number {
-        return this.viewStart * 20;
-    }
-
-    padBottom(): number {
-        const total = this.month?.rows.length ?? 0;
-        return Math.max(0, total - this.viewStart - this.viewSize) * 20;
-    }
-
-    onTableScroll(): void {
-        if (this.scrollTick) {
-            return;
-        }
-        this.scrollTick = requestAnimationFrame(() => {
-            this.scrollTick = 0;
-            const top = this.scroller?.nativeElement.scrollTop ?? 0;
-            const next = Math.max(0, Math.floor(top / 20) - 6);
-            if (next !== this.viewStart) {
-                this.zone.run(() => { this.viewStart = next; });
-            }
-        });
-    }
-
     optionsFor(cell: MonthCell): string[] {
         if (cell.type.id === CELL_TYPE.select_person) {
             return ['', ...this.workbook.persons()];
@@ -172,19 +135,6 @@ export class MonthTable implements OnDestroy {
             return ['', ...this.workbook.accounts()];
         }
         return this.noOptions;
-    }
-
-    ensureRowVisible(row: number): void {
-        const pad = 4;
-        if (row < this.viewStart + 1) {
-            this.viewStart = Math.max(0, row - pad);
-        } else if (row >= this.viewStart + this.viewSize - 2) {
-            this.viewStart = Math.max(0, row - this.viewSize + pad + 2);
-        }
-        const scroller = this.scroller?.nativeElement;
-        if (scroller) {
-            scroller.scrollTop = this.viewStart * 20;
-        }
     }
 
     cellId(rowIndex: number, colIndex: number): string {
@@ -239,6 +189,7 @@ export class MonthTable implements OnDestroy {
 
     onSelectChange(cell: MonthCell, row: MonthRow): void {
         this.edit.applySelectSideEffects(cell, row, this.optionsFor(cell));
+        row.syncColor();
         this.workbook.touch();
     }
 
