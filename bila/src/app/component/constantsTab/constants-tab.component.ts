@@ -23,7 +23,14 @@ export class ConstantsTabComponent {
 
     columns(): RichConstant[] {
         this.workbook.revision();
-        return this.all().filter((item) => item.kind === 'column' || item.person === '§COL');
+        const order = this.numberColumns().map((column) => column.title);
+        return this.all()
+            .filter((item) => item.kind === 'column' || item.person === '§COL')
+            .sort((a, b) => {
+                const ai = order.indexOf((a.columnTitle || '').trim());
+                const bi = order.indexOf((b.columnTitle || '').trim());
+                return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+            });
     }
 
     addTransfer(): void {
@@ -43,6 +50,14 @@ export class ConstantsTabComponent {
                 kind: column.section === SECTION.EINGANG ? 'Einnahme' : 'Ausgabe'
             }))
             .filter((item) => !!item.title);
+    }
+
+    incomeColumns(): Array<{title: string; kind: string}> {
+        return this.numberColumns().filter((column) => column.kind === 'Einnahme');
+    }
+
+    expenseColumns(): Array<{title: string; kind: string}> {
+        return this.numberColumns().filter((column) => column.kind === 'Ausgabe');
     }
 
     addColumn(): void {

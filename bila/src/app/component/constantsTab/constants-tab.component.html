@@ -67,11 +67,18 @@
                 (dragOver)="onDragOver($event)"
                 (dropped)="onDrop($event, item.id, 'column')">
                 <label>Spalte
-                    <select [ngModel]="item.columnTitle" (ngModelChange)="setColumn(item, $event)">
-                        <option value="">— wählen</option>
-                        @for (col of numberColumns(); track col.title) {
-                            <option [value]="col.title">{{ col.title }} · {{ col.kind }}</option>
-                        }
+                    <select class="col-select" [ngModel]="item.columnTitle" (ngModelChange)="setColumn(item, $event)">
+                        <option value="">— wählen —</option>
+                        <optgroup label="Einnahmen">
+                            @for (col of incomeColumns(); track col.title) {
+                                <option [value]="col.title">{{ col.title }}</option>
+                            }
+                        </optgroup>
+                        <optgroup label="Ausgaben">
+                            @for (col of expenseColumns(); track col.title) {
+                                <option [value]="col.title">{{ col.title }}</option>
+                            }
+                        </optgroup>
                     </select>
                 </label>
             </bal-constants-card>
