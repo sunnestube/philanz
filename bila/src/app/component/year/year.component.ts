@@ -1,6 +1,4 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {DatePipe} from '@angular/common';
-import {FormsModule} from '@angular/forms';
 import {HttpClient} from '@angular/common/http';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
@@ -24,8 +22,6 @@ const MIN_ROWS = 36;
 @Component({
     templateUrl: './year.component.html',
     imports: [
-        FormsModule,
-        DatePipe,
         MonthComponent,
         ImportComponent,
         SaldoPanelComponent,
