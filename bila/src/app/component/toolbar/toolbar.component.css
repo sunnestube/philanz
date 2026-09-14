@@ -1,28 +1,99 @@
-.active-nav {
-    @apply bg-indigo-100 text-indigo-700 font-semibold shadow-sm;
+:host ::ng-deep .p-toolbar {
+    padding: 0;
+    min-height: 0;
+    border: 0;
+    background: linear-gradient(90deg, #eef2ff, #fff, #f0fdfa);
+    border-bottom: 1px solid #e2e8f0;
 }
-:host ::ng-deep .saldo-on.p-button {
-    color: #4f46e5;
-    background: #eef2ff;
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
 }
-.year-select {
-    margin-left: 4px;
-    border: 1px solid #c7d2fe;
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.brand-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #6366f1, #14b8a6);
+    color: #fff;
+    font: 700 13px/22px Georgia, serif;
+    text-align: center;
+}
+.brand-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #312e81;
+}
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-x: auto;
+}
+.nav a {
+    padding: 4px 8px;
     border-radius: 999px;
-    padding: 6px 10px;
-    background: #eef2ff;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13px;
+    white-space: nowrap;
+}
+.nav a.active,
+.nav a:hover {
+    background: #e0e7ff;
     color: #3730a3;
-    font-weight: 600;
-    font-size: 14px;
 }
-.year-add {
-    margin-left: 4px;
-    width: 32px;
-    height: 32px;
+.year-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 2px;
     border: 1px solid #c7d2fe;
     border-radius: 999px;
     background: #eef2ff;
+}
+.year-group a { padding: 2px 8px; }
+.year-select {
+    border: 0;
+    background: transparent;
     color: #3730a3;
     font-weight: 700;
+    font-size: 13px;
+    max-width: 7.5rem;
+    height: 24px;
+}
+.year-add {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 999px;
+    background: #c7d2fe;
+    color: #312e81;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 22px;
+}
+.tools { display: flex; gap: 4px; margin-left: auto; }
+.icon-btn {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #475569;
     cursor: pointer;
 }
+.icon-btn:hover,
+.icon-btn.on { background: #e0e7ff; color: #4338ca; }

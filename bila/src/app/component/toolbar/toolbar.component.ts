@@ -1,7 +1,6 @@
 import {Component, inject, Input} from '@angular/core';
 import {Router, RouterLink, RouterLinkActive} from '@angular/router';
 import {ToolbarModule} from 'primeng/toolbar';
-import {ButtonModule} from 'primeng/button';
 import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SettingsDialogComponent} from '../settingsDialog/settings-dialog.component';
@@ -14,7 +13,6 @@ import {installSaldoOrder} from '../../service/saldo-order';
         RouterLink,
         RouterLinkActive,
         ToolbarModule,
-        ButtonModule,
         SettingsDialogComponent
     ],
     templateUrl: './toolbar.component.html',
