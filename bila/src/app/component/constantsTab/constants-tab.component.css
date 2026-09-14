@@ -52,7 +52,23 @@ p { margin: 0; color: #475569; font-size: 12px; max-width: 640px; }
 }
 .const-card select {
     appearance: auto;
-    height: auto;
+    height: 26px;
+    line-height: 18px;
+    color: #0f172a;
+}
+.const-card select.col-select {
+    font-weight: 600;
+}
+.const-card select option,
+.const-card select optgroup {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #0f172a;
+    background: #fff;
+}
+.const-card select optgroup {
+    font-weight: 700;
+    color: #334155;
 }
 .month-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
 .month-grid label { margin: 0; font-size: 10px; color: #334155; }
