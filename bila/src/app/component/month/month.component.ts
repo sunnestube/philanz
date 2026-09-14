@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
 import {MonthTable} from '../monthTable/monthTable';
@@ -10,11 +10,13 @@ import {MonthTable} from '../monthTable/monthTable';
         FormsModule,
         MonthTable
     ],
-    styleUrls: ['./month.component.css']
+    styleUrls: ['./month.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MonthComponent {
 
     private _month: Month | undefined;
+    @Input() active = false;
 
     @Input()
     set month(value: Month) {

@@ -39,11 +39,13 @@
 }
 .tab-content.extra { padding: 12px; overflow: auto; }
 .tab-content.extra.fill-pane {
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
     min-height: 0;
     padding-bottom: 0;
+}
+.tab-content.extra.fill-pane.active {
+    display: flex;
+    flex-direction: column;
 }
 .tab-content.extra.fill-pane > * {
     display: flex;
@@ -149,8 +151,16 @@
     margin-left: auto;
     display: flex;
     align-items: center;
+    gap: 8px;
     padding: 4px 0 4px 12px;
     flex-shrink: 0;
+}
+.tab-version {
+    font-size: 10px;
+    line-height: 1;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
+    user-select: none;
 }
 .tab-label {
     padding: 6px 12px;

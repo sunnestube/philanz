@@ -1,34 +1,39 @@
 <div class="year-shell" [class.panel-open]="workbook.saldoPanelOpen()">
     <div class="year-body">
         <div class="tab-container">
-            @if (workbook.view() === 'start') {
-                <div class="tab-content extra active"><bal-start-tab/></div>
+            @if (isViewReady('start')) {
+                <div class="tab-content extra" [class.active]="workbook.view() === 'start'"><bal-start-tab/></div>
             }
-            @if (workbook.view() === 'constants') {
-                <div class="tab-content extra active"><bal-constants-tab/></div>
+            @if (isViewReady('constants')) {
+                <div class="tab-content extra" [class.active]="workbook.view() === 'constants'"><bal-constants-tab/></div>
             }
-            @if (workbook.view() === 'total') {
-                <div class="tab-content extra active fill-pane"><bal-year-total/></div>
+            @if (isViewReady('total')) {
+                <div class="tab-content extra fill-pane" [class.active]="workbook.view() === 'total'"><bal-year-total/></div>
             }
-            @if (workbook.view() === 'graf') {
-                <div class="tab-content extra active"><bal-year-graf/></div>
+            @if (isViewReady('graf')) {
+                <div class="tab-content extra" [class.active]="workbook.view() === 'graf'"><bal-year-graf/></div>
             }
-            @if (isCsv()) {
-                <bal-year-csv-tab
-                    [yearName]="yearName"
-                    [saveMessage]="saveMessage"
-                    [years]="years()"
-                    (yearNameChange)="yearName = $event"
-                    (save)="save()"
-                    (exportCsv)="exportToCSV()"
-                    (openYear)="openYear($event)"
-                    (deleteYear)="deleteYear($event)"
-                    (imported)="import($event)"/>
-            }
-            @if (workbook.view() === 'month' && workbook.selectedMonth(); as month) {
-                <div class="tab-content active month-content">
-                    <bal-month [month]="month"></bal-month>
+            @if (isViewReady('csv')) {
+                <div class="tab-content extra csv-tab" [class.active]="workbook.view() === 'csv'">
+                    <bal-year-csv-tab
+                        [yearName]="yearName"
+                        [saveMessage]="saveMessage"
+                        [years]="years()"
+                        (yearNameChange)="yearName = $event"
+                        (save)="save()"
+                        (exportCsv)="exportToCSV()"
+                        (openYear)="openYear($event)"
+                        (deleteYear)="deleteYear($event)"
+                        (imported)="import($event)"/>
                 </div>
+            }
+            @for (month of workbook.months(); track month.label.title) {
+                @if (isMonthReady(month)) {
+                    <div class="tab-content month-content"
+                         [class.active]="workbook.view() === 'month' && workbook.selectedMonth() === month">
+                        <bal-month [month]="month" [active]="workbook.view() === 'month' && workbook.selectedMonth() === month"></bal-month>
+                    </div>
+                }
             }
             @if (!workbook.months().length && !isCsv()) {
                 <div class="tab-content extra active">

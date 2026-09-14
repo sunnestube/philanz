@@ -36,8 +36,8 @@ export function columnFillAmount(
     return workbook.constantAmount(match, month.label.title);
 }
 
-export function applyColumnFills(workbook: WorkbookService): void {
-    workbook.months().forEach((month) => {
+export function applyColumnFills(workbook: WorkbookService, months?: Month[]): void {
+    (months ?? workbook.months()).forEach((month) => {
         month.rows.forEach((row) => {
             month.columns.forEach((_column, index) => {
                 const cell = row.cells[index];

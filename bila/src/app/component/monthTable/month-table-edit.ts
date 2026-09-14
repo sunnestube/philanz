@@ -9,6 +9,7 @@ import {WorkbookService} from '../../service/workbook.service';
 export class MonthTableEdit {
     editingRow: number | null = null;
     editingCol: number | null = null;
+    liveEdit = false;
     formulaMode = false;
     refPickMode = false;
     draft = '';
@@ -86,7 +87,7 @@ export class MonthTableEdit {
         this.refPickMode = (this.draft || '').trim().startsWith('=');
     }
 
-    startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
+    selectCell(rowIndex: number, colIndex: number, cell: MonthCell): void {
         if (this.refPickMode && (this.editingRow !== rowIndex || this.editingCol !== colIndex)) {
             queueMicrotask(() => this.focusBar());
             return;
@@ -96,14 +97,25 @@ export class MonthTableEdit {
         this.editOriginal = cell.raw ?? '';
         this.draft = cell.raw ?? '';
         this.activeAddress = this.formulaService.addressFor(colIndex, rowIndex);
-        this.formulaMode = this.formulaService.isFormula(this.draft);
+        this.formulaMode = false;
         this.refPickMode = false;
+        this.liveEdit = false;
+    }
+
+    startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
+        this.selectCell(rowIndex, colIndex, cell);
+        if (this.refPickMode) {
+            return;
+        }
+        this.liveEdit = true;
+        this.formulaMode = this.formulaService.isFormula(this.draft);
     }
 
     onCellInput(event: Event, cell: MonthCell): void {
         const value = (event.target as HTMLInputElement).value;
         this.draft = value;
         cell.raw = value;
+        this.liveEdit = true;
         this.formulaMode = value.trim().startsWith('=');
         if (this.formulaMode) {
             this.refPickMode = true;
@@ -123,15 +135,21 @@ export class MonthTableEdit {
 
     commitEdit(cell: MonthCell | null): void {
         if (!cell || this.suppressCommit || this.editingRow === null) {
+            this.liveEdit = false;
             return;
         }
-        cell.raw = this.draft;
-        this.formulaService.recalculateAll();
-        this.workbook.touch();
+        const next = this.draft ?? '';
+        const changed = next !== (this.editOriginal ?? '');
+        if (changed) {
+            cell.raw = next;
+        }
+        this.liveEdit = false;
         this.formulaMode = false;
         this.refPickMode = false;
-        this.editingRow = null;
-        this.editingCol = null;
+        if (changed) {
+            this.formulaService.recalculateAll();
+            this.workbook.touch();
+        }
     }
 
     exitFormula(): void {
@@ -142,12 +160,9 @@ export class MonthTableEdit {
         this.ignoreFormulaBlur = true;
         this.formulaMode = false;
         this.refPickMode = false;
-        this.editingRow = null;
-        this.editingCol = null;
-        this.draft = '';
+        this.liveEdit = false;
+        this.draft = this.editOriginal;
         this.blurBar();
-        this.formulaService.recalculateAll();
-        this.workbook.touch();
         queueMicrotask(() => { this.ignoreFormulaBlur = false; });
     }
 
@@ -193,6 +208,7 @@ export class MonthTableEdit {
         this.formulaMode = this.formulaService.isFormula(next);
         this.editingRow = rowIndex;
         this.editingCol = colIndex;
+        this.liveEdit = false;
         this.activeAddress = this.formulaService.addressFor(colIndex, rowIndex);
         this.formulaService.recalculateAll();
         this.workbook.touch();
@@ -213,6 +229,7 @@ export class MonthTableEdit {
         }
         if (event.key === 'F2') {
             event.preventDefault();
+            this.startEdit(rowIndex, colIndex, cell);
             this.formulaMode = true;
             this.refPickMode = true;
             queueMicrotask(() => this.focusBar());
@@ -222,7 +239,8 @@ export class MonthTableEdit {
             this.onFormulaKeydown(event);
             return;
         }
-        if (event.key === '=' && !this.draft) {
+        if (event.key === '=' && !this.liveEdit) {
+            this.startEdit(rowIndex, colIndex, cell);
             this.formulaMode = true;
             this.refPickMode = true;
             this.draft = '=';
@@ -231,10 +249,26 @@ export class MonthTableEdit {
             queueMicrotask(() => this.focusBar());
             return;
         }
-        if (event.key === 'Enter' || event.key === 'Tab' || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-            this.commitEdit(cell);
+        const moving = event.key === 'Enter' || event.key === 'Tab'
+            || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key);
+        if (moving) {
+            if (this.liveEdit) {
+                this.commitEdit(cell);
+            }
+            this.navigate(event, rowIndex, colIndex);
+            return;
         }
-        this.navigate(event, rowIndex, colIndex);
+        if (!this.liveEdit && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            event.preventDefault();
+            this.startEdit(rowIndex, colIndex, cell);
+            this.draft = event.key;
+            cell.raw = event.key;
+            this.formulaMode = event.key === '=';
+            if (this.formulaMode) {
+                this.refPickMode = true;
+                queueMicrotask(() => this.focusBar());
+            }
+        }
     }
 
     onFormulaKeydown(event: KeyboardEvent): void {
@@ -398,8 +432,7 @@ export class MonthTableEdit {
         this.suppressCommit = true;
         this.formulaMode = false;
         this.refPickMode = false;
-        this.editingRow = null;
-        this.editingCol = null;
+        this.liveEdit = false;
         this.draft = '';
         this.formulaService.recalculateAll();
         this.workbook.touch();

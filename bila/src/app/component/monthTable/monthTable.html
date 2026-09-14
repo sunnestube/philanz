@@ -18,8 +18,7 @@
          [class.dragging]="panning"
          (pointerdown)="pointer.onPanStart($event)"
          (pointerup)="edit.endDrag()"
-         (pointercancel)="edit.endDrag()"
-         (scroll)="onTableScroll()">
+         (pointercancel)="edit.endDrag()">
         <table class="data-table">
             <thead balMonthHeader
                    [columns]="columnViews()"
@@ -30,12 +29,7 @@
                    (headerResize)="pointer.onHeaderResizeStart($event)"
                    (textResize)="pointer.onTextResizeStart($event)"></thead>
             <tbody>
-                <tr class="virt-pad" aria-hidden="true">
-                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
-                        [style.height.px]="padTop()"></td>
-                </tr>
-                @for (row of viewRows(); track viewStart + $index; let offset = $index) {
-                    @let rowIndex = viewStart + offset;
+                @for (row of month.rows; track $index; let rowIndex = $index) {
                     <tr [class]="row.color">
                         @for (cell of row.cells; let colIndex = $index; track colIndex) {
                             <td balMonthCell
@@ -46,17 +40,18 @@
                                 [isFormula]="isFormula(cell)"
                                 [editing]="isEditing(rowIndex, colIndex)"
                                 [refTarget]="edit.refPickMode && !isEditing(rowIndex, colIndex)"
-                                [refColor]="edit.refColorAt(rowIndex, colIndex)"
+                                [refColor]="refColorFor(rowIndex, colIndex)"
                                 [display]="cellDisplay(cell, rowIndex, colIndex)"
                                 [cellId]="cellId(rowIndex, colIndex)"
-                                [options]="optionsFor(cell)"
+                                [options]="isSelect(cell) ? optionsFor(cell) : noOptions"
                                 [rowIndex]="rowIndex"
                                 [selected]="edit.inRange(rowIndex, colIndex)"
                                 (cellMouseDown)="edit.onCellMouseDown($event, rowIndex, colIndex)"
                                 (cellEnter)="edit.onCellEnter(rowIndex, colIndex)"
+                                (cellDblClick)="edit.startEdit(rowIndex, colIndex, cell)"
                                 (selectChange)="onSelectChange(cell, row)"
                                 (selectNavigate)="edit.onKeydown($event, rowIndex, colIndex, cell)"
-                                (valueFocus)="edit.startEdit(rowIndex, colIndex, cell)"
+                                (valueFocus)="edit.selectCell(rowIndex, colIndex, cell)"
                                 (valueInput)="edit.onCellInput($event, cell)"
                                 (valueBlur)="edit.onCellBlur(cell)"
                                 (valueKeydown)="edit.onKeydown($event, rowIndex, colIndex, cell)"
@@ -73,10 +68,6 @@
                         }
                     </tr>
                 }
-                <tr class="virt-pad" aria-hidden="true">
-                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
-                        [style.height.px]="padBottom()"></td>
-                </tr>
                 <tr class="foot-spacer" aria-hidden="true">
                     <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
                         [style.height.px]="saldo.footerRows().length * 20"></td>

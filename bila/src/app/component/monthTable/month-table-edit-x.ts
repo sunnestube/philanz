@@ -21,6 +21,17 @@ export class MonthTableEditX extends MonthTableEdit {
         this.range = new MonthTableRange(formulaService);
     }
 
+    override selectCell(rowIndex: number, colIndex: number, cell: MonthCell): void {
+        super.selectCell(rowIndex, colIndex, cell);
+        if (this.skipFocusReset) {
+            this.skipFocusReset = false;
+            return;
+        }
+        if (!this.range.rowMode && !this.range.dragging) {
+            this.range.reset(rowIndex, colIndex);
+        }
+    }
+
     override startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
         super.startEdit(rowIndex, colIndex, cell);
         if (this.skipFocusReset) {
@@ -55,9 +66,25 @@ export class MonthTableEditX extends MonthTableEdit {
     }
 
     override onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
-        if (event.key === 'Delete') {
+        const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
+        if (event.key === 'Delete' || (event.key === 'Backspace' && !typing)) {
             event.preventDefault();
             this.clearRange();
+            return;
+        }
+        if (event.key === 'Home' || event.key === 'End') {
+            event.preventDefault();
+            const nextCol = event.key === 'Home' ? this.letterCol('A') : this.letterCol('AF');
+            if (this.liveEdit) {
+                this.commitEdit(cell);
+            }
+            if (event.shiftKey) {
+                this.range.extend(rowIndex, nextCol);
+                this.skipFocusReset = true;
+            } else {
+                this.range.reset(rowIndex, nextCol);
+            }
+            this.range.focusCell(this.monthRef()?.label.title ?? '', rowIndex, nextCol);
             return;
         }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
@@ -130,6 +157,51 @@ export class MonthTableEditX extends MonthTableEdit {
         return this.monthRef()?.columns[colIndex]?.type === CELL_TYPE.index;
     }
 
+    private letterCol(letter: string): number {
+        const columns = this.monthRef()?.columns ?? [];
+        const raw = this.formulaRawIndex(letter, columns);
+        if (raw >= 0 && raw < columns.length) {
+            const type = columns[raw]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                return raw;
+            }
+        }
+        let last = 0;
+        for (let i = 0; i < columns.length; i++) {
+            const type = columns[i]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                if (letter.toUpperCase() === 'A') {
+                    return i;
+                }
+                last = i;
+            }
+        }
+        return last;
+    }
+
+    private formulaRawIndex(letter: string, columns: Array<{type: string}>): number {
+        const visible = this.lettersToVisible(letter);
+        let count = 0;
+        for (let i = 0; i < columns.length; i++) {
+            const type = columns[i]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                if (count === visible) {
+                    return i;
+                }
+                count++;
+            }
+        }
+        return visible;
+    }
+
+    private lettersToVisible(letters: string): number {
+        let n = 0;
+        for (const ch of letters.toUpperCase()) {
+            n = n * 26 + (ch.charCodeAt(0) - 64);
+        }
+        return n - 1;
+    }
+
     private clearRange(): void {
         const month = this.monthRef();
         if (!month) {
@@ -137,19 +209,25 @@ export class MonthTableEditX extends MonthTableEdit {
         }
         this.suppressCommit = true;
         for (let row = this.range.row0; row <= this.range.row1; row++) {
+            const line = month.rows[row];
+            if (!line) {
+                continue;
+            }
             for (let col = this.range.col0; col <= this.range.col1; col++) {
-                const cell = month.rows[row]?.cells[col];
+                const cell = line.cells[col];
                 if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
                     continue;
                 }
                 cell.raw = '';
+                cell.display = '';
+                cell.error = null;
                 if (cell.type.id.indexOf('select') !== -1) {
                     cell.value = '';
                 }
-                if (cell.type.id === CELL_TYPE.select_person) {
-                    month.rows[row].color = '';
-                }
             }
+            const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+            const code = (person?.value || person?.raw || '').trim();
+            line.color = code ? code.toLowerCase() : '';
         }
         this.draft = '';
         this.refresh();

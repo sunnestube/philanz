@@ -15,6 +15,9 @@ export class MonthTableSaldo {
     private cachedRev = -1;
     private cachedTitle = '';
     private cachedRunning: Array<Record<string, number>> = [];
+    private cachedFooterRev = -1;
+    private cachedFooterTitle = '';
+    private cachedFooter: FooterRowView[] | null = null;
 
     constructor(
         private readonly workbook: WorkbookService,
@@ -24,6 +27,8 @@ export class MonthTableSaldo {
 
     invalidate(): void {
         this.cachedRev = -1;
+        this.cachedFooterRev = -1;
+        this.cachedFooter = null;
     }
 
     combos(): SaldoCombo[] {
@@ -100,8 +105,15 @@ export class MonthTableSaldo {
     }
 
     footerViews(columns: ColumnView[], saldos: SaldoColView[]): FooterRowView[] {
+        const rev = this.workbook.revision();
+        const title = this.monthOf()?.label.title ?? '';
+        if (this.cachedFooter && this.cachedFooterRev === rev && this.cachedFooterTitle === title) {
+            return this.cachedFooter;
+        }
         const rows = this.footerRows();
-        return rows.map((foot, index) => ({
+        this.cachedFooterRev = rev;
+        this.cachedFooterTitle = title;
+        this.cachedFooter = rows.map((foot, index) => ({
             ...foot,
             offset: `${Math.max(0, rows.length - 1 - index) * 20}px`,
             cells: columns.map((column) => ({
@@ -122,6 +134,7 @@ export class MonthTableSaldo {
                 )
                 : null
         }));
+        return this.cachedFooter;
     }
 
     extraColCount(): number {

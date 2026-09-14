@@ -5,7 +5,6 @@ import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SettingsDialogComponent} from '../settingsDialog/settings-dialog.component';
 import {installSaldoOrder} from '../../service/saldo-order';
-import {APP_VERSION} from '../../version';
 
 @Component({
     selector: 'bal-toolbar',
@@ -21,7 +20,6 @@ import {APP_VERSION} from '../../version';
 })
 export class ToolbarComponent {
     @Input() title: string = 'Bilanz';
-    readonly version = APP_VERSION;
     readonly workbook = inject(WorkbookService);
     private readonly archive = inject(YearArchiveService);
     private readonly router = inject(Router);

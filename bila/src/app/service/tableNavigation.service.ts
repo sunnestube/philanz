@@ -18,7 +18,9 @@ export class TableNavigationService {
         rowIndex: number,
         colIndex: number,
         lastCol: number = colIndex,
-        monthTitle: string = ''
+        monthTitle: string = '',
+        homeCol: number = 0,
+        endCol: number = Math.max(0, lastCol - 1)
     ): void {
         switch (key) {
             case 'ArrowRight':
@@ -35,15 +37,15 @@ export class TableNavigationService {
                 TableNavigationService.setFocus(monthTitle, rowIndex - 1, colIndex);
                 break;
             case 'Home':
-                TableNavigationService.setFocus(monthTitle, rowIndex, 2);
+                TableNavigationService.setFocus(monthTitle, rowIndex, homeCol);
                 break;
             case 'End':
-                TableNavigationService.setFocus(monthTitle, rowIndex, lastCol - 1);
+                TableNavigationService.setFocus(monthTitle, rowIndex, endCol);
                 break;
         }
     }
 
-    private static setFocus(monthTitle: string, row: number, col: number): void {
+    static setFocus(monthTitle: string, row: number, col: number): void {
         const cell = document.getElementById(TableNavigationService.cellId(monthTitle, row, col));
         if (cell) {
             cell.focus();
