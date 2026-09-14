@@ -16,6 +16,7 @@ import {MonthTable} from '../monthTable/monthTable';
 export class MonthComponent {
 
     private _month: Month | undefined;
+    @Input() active = false;
 
     @Input()
     set month(value: Month) {
