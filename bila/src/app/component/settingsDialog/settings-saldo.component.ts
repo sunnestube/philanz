@@ -1,6 +1,7 @@
 import {Component, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {WorkbookService} from '../../service/workbook.service';
+import {installSaldoOrder, orderedSaldoCombos} from '../../service/saldo-order';
 
 @Component({
     selector: 'bal-settings-saldo',
@@ -11,6 +12,14 @@ import {WorkbookService} from '../../service/workbook.service';
 })
 export class SettingsSaldoComponent {
     readonly workbook = inject(WorkbookService);
+
+    constructor() {
+        installSaldoOrder(this.workbook);
+    }
+
+    combos() {
+        return orderedSaldoCombos(this.workbook);
+    }
 
     visible(key: string): boolean {
         return this.workbook.saldoColumnPrefs()[key]?.visible !== false;

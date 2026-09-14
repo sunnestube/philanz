@@ -4,7 +4,7 @@
     <tr><th></th><th>Anzeigen</th><th>Titel</th><th>Gruppe</th></tr>
     </thead>
     <tbody>
-        @for (combo of workbook.saldoCombos(); track combo.key; let index = $index) {
+        @for (combo of combos(); track combo.key; let index = $index) {
             <tr draggable="true"
                 (dragstart)="onDragStart($event, combo.key)"
                 (dragover)="onDragOver($event)"
@@ -12,7 +12,7 @@
                 <td class="col-actions">
                     <span class="drag-handle" title="Ziehen">⋮⋮</span>
                     <button type="button" (click)="workbook.moveSaldoCombo(combo.key, -1)" [disabled]="index === 0">↑</button>
-                    <button type="button" (click)="workbook.moveSaldoCombo(combo.key, 1)" [disabled]="index === workbook.saldoCombos().length - 1">↓</button>
+                    <button type="button" (click)="workbook.moveSaldoCombo(combo.key, 1)" [disabled]="index === combos().length - 1">↓</button>
                 </td>
                 <td>
                     <input type="checkbox"
