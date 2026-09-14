@@ -5,6 +5,7 @@ import {ButtonModule} from 'primeng/button';
 import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SettingsDialogComponent} from '../settingsDialog/settings-dialog.component';
+import {installSaldoOrder} from '../../service/saldo-order';
 
 @Component({
     selector: 'bal-toolbar',
@@ -24,6 +25,10 @@ export class ToolbarComponent {
     readonly workbook = inject(WorkbookService);
     private readonly archive = inject(YearArchiveService);
     private readonly router = inject(Router);
+
+    constructor() {
+        installSaldoOrder(this.workbook);
+    }
 
     openSettings(): void {
         this.workbook.openSettings();
