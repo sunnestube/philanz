@@ -4,8 +4,8 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+.year-shell { height: calc(100vh - 48px) !important; }
 
-/* PrimeNG Dialog: immer deckend, nie Glas/Transparent */
 .p-dialog-mask,
 .p-overlay-mask,
 .p-component-overlay,

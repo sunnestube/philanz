@@ -1,4 +1,36 @@
-.data-table select {
+select {
+    appearance: auto;
+    width: auto;
+    height: auto;
+    background: revert-layer;
+    padding: revert-layer;
+    color: inherit;
+    cursor: pointer;
+}
+
+bal-month-table {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+bal-month-table .table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: scroll !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable;
+    max-width: 100%;
+    width: 100%;
+}
+
+bal-month-table .table-scroll::-webkit-scrollbar {
+    height: 14px;
+    width: 14px;
+}
+
+bal-month-table .data-table select {
     appearance: none;
     background: none;
     padding: 2px;
