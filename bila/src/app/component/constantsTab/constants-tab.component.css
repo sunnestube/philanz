@@ -24,24 +24,35 @@ p { margin: 0; color: #475569; font-size: 12px; max-width: 640px; }
 .const-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .const-card {
     width: 156px;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
     background: #fff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     padding: 6px;
     font-size: 11px;
+    box-sizing: border-box;
 }
 .const-card.column-card { background: #f8fafc; border-color: #93c5fd; }
 .name-row { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .drag-handle { cursor: grab; color: #64748b; letter-spacing: -2px; user-select: none; }
 .name-input { flex: 1 1 auto; min-width: 0; border: 0; font-weight: 700; background: transparent; }
-.const-card label { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; color: #64748b; }
+.const-card label { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; color: #64748b; min-width: 0; }
 .const-card select, .const-card input {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
     background: #fff;
     font-size: 11px;
     padding: 2px 4px;
+}
+.const-card select {
+    appearance: auto;
+    height: auto;
 }
 .month-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
 .month-grid label { margin: 0; font-size: 10px; color: #334155; }
