@@ -16,7 +16,8 @@ import {StartTabComponent} from '../startTab/start-tab.component';
 import {ConstantsTabComponent} from '../constantsTab/constants-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
-import {NewRowButtonsComponent} from '../newRowButtons/newRowButtons.component';
+import {YearTabsComponent} from './year-tabs.component';
+import {YearCsvTabComponent} from './year-csv-tab.component';
 
 const MIN_ROWS = 36;
 
@@ -32,7 +33,8 @@ const MIN_ROWS = 36;
         ConstantsTabComponent,
         YearTotalComponent,
         YearGrafComponent,
-        NewRowButtonsComponent
+        YearTabsComponent,
+        YearCsvTabComponent
     ],
     styleUrls: ['./year.component.css']
 })
