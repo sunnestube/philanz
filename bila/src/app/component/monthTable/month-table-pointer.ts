@@ -49,7 +49,7 @@ export class MonthTablePointer {
             return;
         }
         const target = event.target as HTMLElement;
-        if (target.closest('button, textarea, a, .row-resizer, .col-resizer')) {
+        if (target.closest('button, textarea, a, .row-resizer, .col-resizer, [balMonthCell]')) {
             return;
         }
         const el = this.scroller()?.nativeElement;

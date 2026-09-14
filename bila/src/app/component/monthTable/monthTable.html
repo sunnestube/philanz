@@ -16,7 +16,9 @@
     <div class="table-scroll"
          #scroller
          [class.dragging]="panning"
-         (pointerdown)="pointer.onPanStart($event)">
+         (pointerdown)="pointer.onPanStart($event)"
+         (pointerup)="edit.endDrag()"
+         (pointercancel)="edit.endDrag()">
         <table class="data-table">
             <thead balMonthHeader
                    [columns]="columnViews()"
@@ -43,9 +45,11 @@
                                 [cellId]="cellId(rowIndex, colIndex)"
                                 [options]="optionsFor(cell)"
                                 [rowIndex]="rowIndex"
+                                [selected]="edit.inRange(rowIndex, colIndex)"
                                 (cellMouseDown)="edit.onCellMouseDown($event, rowIndex, colIndex)"
+                                (cellEnter)="edit.onCellEnter(rowIndex, colIndex)"
                                 (selectChange)="onSelectChange(cell, row)"
-                                (selectNavigate)="edit.navigate($event, rowIndex, colIndex)"
+                                (selectNavigate)="edit.onKeydown($event, rowIndex, colIndex, cell)"
                                 (valueFocus)="edit.startEdit(rowIndex, colIndex, cell)"
                                 (valueInput)="edit.onCellInput($event, cell)"
                                 (valueBlur)="edit.onCellBlur(cell)"
