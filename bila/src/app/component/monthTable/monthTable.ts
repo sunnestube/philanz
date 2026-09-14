@@ -1,4 +1,4 @@
-import {Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {Month} from '../../model/Month';
 import {MonthCell} from '../../model/MonthCell';
@@ -7,7 +7,6 @@ import {CELL_TYPE} from '../../model/CellType';
 import {TableNavigationService} from '../../service/tableNavigation.service';
 import {FormulaService} from '../../service/formula.service';
 import {WorkbookService} from '../../service/workbook.service';
-import {columnFillAmount} from '../../service/column-fill';
 import {FormulaBarComponent} from './formula-bar/formula-bar.component';
 import {MonthTableHeaderComponent} from './month-table-header/month-table-header.component';
 import {MonthTableCellComponent} from './month-table-cell/month-table-cell.component';
@@ -29,7 +28,8 @@ import {MonthTableSaldo} from './month-table-saldo';
         MonthTableFooterComponent
     ],
     styleUrls: ['./monthTable.css'],
-    encapsulation: ViewEncapsulation.None
+    encapsulation: ViewEncapsulation.None,
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MonthTable implements OnDestroy {
     private _month?: Month;
@@ -37,6 +37,9 @@ export class MonthTable implements OnDestroy {
     readonly pointer: MonthTablePointer;
     readonly saldo: MonthTableSaldo;
     readonly noOptions: string[] = [];
+    private personOptions: string[] = [''];
+    private accountOptions: string[] = [''];
+    private optionRev = -1;
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
@@ -128,13 +131,18 @@ export class MonthTable implements OnDestroy {
     }
 
     optionsFor(cell: MonthCell): string[] {
+        this.refreshOptions();
         if (cell.type.id === CELL_TYPE.select_person) {
-            return ['', ...this.workbook.persons()];
+            return this.personOptions;
         }
         if (cell.type.id === CELL_TYPE.select_account) {
-            return ['', ...this.workbook.accounts()];
+            return this.accountOptions;
         }
         return this.noOptions;
+    }
+
+    refColorFor(rowIndex: number, colIndex: number): number | null {
+        return this.edit.showRefColors() ? this.edit.refColorAt(rowIndex, colIndex) : null;
     }
 
     cellId(rowIndex: number, colIndex: number): string {
@@ -170,13 +178,6 @@ export class MonthTable implements OnDestroy {
         if (this.isEditing(rowIndex, colIndex)) {
             return this.edit.draft;
         }
-        if (this.month && cell.type.id === CELL_TYPE.number && !(cell.raw ?? '').trim()) {
-            const row = this.month.rows[rowIndex];
-            const filled = row ? columnFillAmount(this.workbook, this.month, row, colIndex) : null;
-            if (filled != null) {
-                return filled.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            }
-        }
         if (cell.error) {
             return cell.error;
         }
@@ -205,5 +206,15 @@ export class MonthTable implements OnDestroy {
         if (cell && this.edit.editingRow !== null && this.edit.editingCol !== null) {
             this.edit.onPaste(event, this.edit.editingRow, this.edit.editingCol, cell);
         }
+    }
+
+    private refreshOptions(): void {
+        const rev = this.workbook.revision();
+        if (this.optionRev === rev) {
+            return;
+        }
+        this.optionRev = rev;
+        this.personOptions = ['', ...this.workbook.persons()];
+        this.accountOptions = ['', ...this.workbook.accounts()];
     }
 }
