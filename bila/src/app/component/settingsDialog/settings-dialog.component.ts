@@ -1,42 +1,19 @@
 import {Component, inject} from '@angular/core';
-import {FormsModule} from '@angular/forms';
 import {Dialog} from 'primeng/dialog';
-import {Button} from 'primeng/button';
-import {CELL_TYPE} from '../../model/CellType';
-import {SECTION} from '../../model/Section';
-import {MonthColumn} from '../../model/MonthColumn';
 import {WorkbookService} from '../../service/workbook.service';
+import {SettingsCodesComponent} from './settings-codes.component';
+import {SettingsColumnsComponent} from './settings-columns.component';
+import {SettingsSaldoComponent} from './settings-saldo.component';
 
 @Component({
     selector: 'bal-settings-dialog',
     standalone: true,
-    imports: [FormsModule, Dialog, Button],
+    imports: [Dialog, SettingsCodesComponent, SettingsColumnsComponent, SettingsSaldoComponent],
     templateUrl: './settings-dialog.component.html',
     styleUrl: './settings-dialog.component.css'
 })
 export class SettingsDialogComponent {
     readonly workbook = inject(WorkbookService);
-
-    readonly types = [
-        {id: CELL_TYPE.number, label: 'Zahl'},
-        {id: CELL_TYPE.text, label: 'Text'},
-        {id: CELL_TYPE.date, label: 'Datum'},
-        {id: CELL_TYPE.select_person, label: 'Person'},
-        {id: CELL_TYPE.select_account, label: 'Konto'}
-    ];
-
-    readonly sections = [
-        {id: SECTION.AUSGANG, label: 'Ausgang (A)'},
-        {id: 'A2' as SECTION, label: 'Ausgang 2 (A2)'},
-        {id: SECTION.EINGANG, label: 'Eingang (E)'},
-        {id: SECTION.DEFAULT, label: 'Standard (D)'},
-        {id: SECTION.SALDO, label: 'Saldo (S)'}
-    ];
-
-    newPerson = '';
-    newPersonName = '';
-    newAccount = '';
-    newAccountName = '';
     tab: 'person' | 'account' | 'columns' | 'saldo' = 'person';
 
     get visible(): boolean {
@@ -45,111 +22,5 @@ export class SettingsDialogComponent {
 
     set visible(value: boolean) {
         this.workbook.settingsOpen.set(value);
-    }
-
-    columns(): MonthColumn[] {
-        return this.workbook.months()[0]?.columns ?? [];
-    }
-
-    addPerson(): void {
-        const code = this.newPerson.trim().toUpperCase();
-        if (!code) {
-            return;
-        }
-        this.workbook.setOptions({
-            person: [...this.workbook.persons(), code],
-            account: this.workbook.accounts()
-        });
-        if (this.newPersonName.trim()) {
-            this.workbook.setCodeName('person', code, this.newPersonName);
-        }
-        this.newPerson = '';
-        this.newPersonName = '';
-    }
-
-    removePerson(code: string): void {
-        this.workbook.setOptions({
-            person: this.workbook.persons().filter((item) => item !== code),
-            account: this.workbook.accounts()
-        });
-    }
-
-    addAccount(): void {
-        const code = this.newAccount.trim().toUpperCase();
-        if (!code) {
-            return;
-        }
-        this.workbook.setOptions({
-            person: this.workbook.persons(),
-            account: [...this.workbook.accounts(), code]
-        });
-        if (this.newAccountName.trim()) {
-            this.workbook.setCodeName('account', code, this.newAccountName);
-        }
-        this.newAccount = '';
-        this.newAccountName = '';
-    }
-
-    removeAccount(code: string): void {
-        this.workbook.setOptions({
-            person: this.workbook.persons(),
-            account: this.workbook.accounts().filter((item) => item !== code)
-        });
-    }
-
-    renamePerson(from: string, to: string): void {
-        this.workbook.renameCode('person', from, to);
-    }
-
-    renameAccount(from: string, to: string): void {
-        this.workbook.renameCode('account', from, to);
-    }
-
-    renamePersonName(code: string, name: string): void {
-        this.workbook.setCodeName('person', code, name);
-    }
-
-    renameAccountName(code: string, name: string): void {
-        this.workbook.setCodeName('account', code, name);
-    }
-
-    addColumn(): void {
-        this.workbook.addColumn();
-    }
-
-    insertColumn(index: number): void {
-        this.workbook.insertColumn(index);
-    }
-
-    removeColumn(index: number): void {
-        this.workbook.removeColumn(index);
-    }
-
-    renameColumn(index: number, title: string): void {
-        this.workbook.updateColumn(index, {title});
-    }
-
-    changeType(index: number, type: string): void {
-        this.workbook.updateColumn(index, {type: type as CELL_TYPE});
-    }
-
-    changeSection(index: number, section: string): void {
-        this.workbook.updateColumn(index, {section: section as SECTION});
-    }
-
-    prefVisible(key: string): boolean {
-        return this.workbook.saldoColumnPrefs()[key]?.visible !== false;
-    }
-
-    prefTitle(key: string, fallback: string): string {
-        return this.workbook.saldoColumnPrefs()[key]?.title || fallback;
-    }
-
-    toggleCombo(key: string, visible: boolean): void {
-        this.workbook.setSaldoColumnPref(key, {visible});
-    }
-
-    renameCombo(key: string, title: string): void {
-        this.workbook.setSaldoColumnPref(key, {title});
     }
 }
