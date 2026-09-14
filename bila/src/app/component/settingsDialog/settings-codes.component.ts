@@ -8,36 +8,7 @@ import {WorkbookService} from '../../service/workbook.service';
     standalone: true,
     imports: [FormsModule, Button],
     styleUrl: './settings-dialog.component.css',
-    template: `
-        <p class="hint">{{ hint() }}</p>
-        <table class="col-table name-table">
-            <thead>
-            <tr><th>Code</th><th>Anzeigename</th><th></th></tr>
-            </thead>
-            <tbody>
-                @for (code of codes(); track code) {
-                    <tr [class]="'person-' + code.toLowerCase()">
-                        <td>
-                            <input class="code-input" [ngModel]="code"
-                                   (change)="renameCode(code, $any($event.target).value)"
-                                   maxlength="2" [attr.aria-label]="kind() + '-Code'"/>
-                        </td>
-                        <td>
-                            <input [ngModel]="workbook.optionLabel(kind(), code)"
-                                   (change)="renameName(code, $any($event.target).value)"
-                                   [placeholder]="namePlaceholder()"/>
-                        </td>
-                        <td><button type="button" class="danger" (click)="remove(code)">Entfernen</button></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <div class="add-row">
-            <input class="code-input" [(ngModel)]="newCode" maxlength="2" placeholder="Code" (keydown.enter)="add()"/>
-            <input [(ngModel)]="newName" placeholder="Anzeigename" (keydown.enter)="add()"/>
-            <p-button label="Hinzufügen" size="small" (onClick)="add()"/>
-        </div>
-    `
+    templateUrl: './settings-codes.component.html'
 })
 export class SettingsCodesComponent {
     readonly workbook = inject(WorkbookService);
