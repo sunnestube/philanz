@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {Month} from '../../model/Month';
 import {MonthCell} from '../../model/MonthCell';
@@ -46,7 +46,8 @@ export class MonthTable implements OnDestroy {
     constructor(
         private readonly formulaService: FormulaService,
         readonly workbook: WorkbookService,
-        private readonly zone: NgZone
+        private readonly zone: NgZone,
+        private readonly cdr: ChangeDetectorRef
     ) {
         this.edit = new MonthTableEdit(
             formulaService,
@@ -108,6 +109,16 @@ export class MonthTable implements OnDestroy {
     }
     get month(): Month | undefined {
         return this._month;
+    }
+
+    @Input()
+    set active(value: boolean) {
+        if (value) {
+            this.cdr.reattach();
+            this.cdr.markForCheck();
+        } else {
+            this.cdr.detach();
+        }
     }
 
     ngOnDestroy(): void {
