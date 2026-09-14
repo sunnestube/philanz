@@ -3,22 +3,20 @@
 @tailwind utilities;
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; overflow: hidden; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .year-shell {
     height: calc(100vh - 48px) !important;
-    max-height: calc(100vh - 48px) !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
 }
 .tab-version {
-    font-size: 10px !important;
-    color: #94a3b8 !important;
+    font-size: 10px;
+    color: #94a3b8;
     font-weight: 500;
 }
 .year-body { flex: 1 1 auto !important; min-height: 0 !important; }
 bal-year-tabs {
-    display: block !important;
     flex: 0 0 auto !important;
     position: relative;
     z-index: 50;
@@ -26,7 +24,9 @@ bal-year-tabs {
 }
 
 select {
-    appearance: auto;
+    appearance: auto !important;
+    width: auto !important;
+    height: auto !important;
 }
 .const-card select {
     width: 100% !important;
