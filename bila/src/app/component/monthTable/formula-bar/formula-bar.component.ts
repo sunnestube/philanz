@@ -19,7 +19,7 @@ export class FormulaBarComponent {
     readonly formulaCopy = output<ClipboardEvent>();
     readonly formulaPaste = output<ClipboardEvent>();
     readonly formulaBlur = output<FocusEvent>();
-    private readonly field = viewChild<ElementRef<HTMLInputElement>>('formulaInput');
+    private readonly field = viewChild<ElementRef<HTMLInputElement>>('formulaField');
 
     focusEnd(): void {
         const inputEl = this.field()?.nativeElement;
