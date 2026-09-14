@@ -1,108 +1,106 @@
 <section class="const-tab">
     <div class="const-head">
         <div>
-            <h2>Konstanten</h2>
-            <p>Spalten per Griff oder Pfeilen verschieben. Betrag oder Formel eintragen.
-                «↑» übernimmt den Wert der Vorzeile (Monat darüber).
-                Trifft Spalte D den Namen genau, geht der Monatsbetrag vom Buchungs-Person/Konto weg.
-                Person+Konto gesetzt: Gutschrift dort. Nur Konto gesetzt: Gutschrift bei der sendenden Person auf diesem Konto.</p>
+            <h2>Umbuchungen</h2>
+            <p>Name in Spalte D trifft genau: Betrag weg beim Buchenden, Gutschrift auf Person/Konto.
+                Nur Konto: gleiche Person wie Sender. Jan startet bei 0, weitere Monate mit ↑ auf der Vorzeile.</p>
         </div>
-        <button type="button" class="const-add" (click)="workbook.addConstant()">+ Konstante</button>
+        <button type="button" class="const-add" (click)="addTransfer()">+ Umbuchung</button>
     </div>
-    <div class="const-scroll">
-        <table class="const-grid">
-            <thead>
-            <tr>
-                <th></th>
-                @for (item of constants(); track item.id; let index = $index) {
-                    <th draggable="true"
-                        (dragstart)="onDragStart($event, item.id)"
-                        (dragover)="onDragOver($event)"
-                        (drop)="onDrop($event, index)">
-                        <div class="name-row">
-                            <span class="drag-handle" title="Ziehen zum Verschieben">⋮⋮</span>
-                            <input class="name-input"
-                                   type="text"
-                                   [value]="item.name"
-                                   (change)="onName(item, $event)"
-                                   placeholder="Name"
-                                   [attr.aria-label]="'Konstante ' + item.name"/>
-                            <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)" title="Konstante entfernen">×</button>
-                        </div>
-                        <div class="move-row">
-                            <button type="button" class="move-btn" (click)="move(item.id, index - 1)" [disabled]="index === 0" title="Nach links">←</button>
-                            <button type="button" class="move-btn" (click)="move(item.id, index + 1)" [disabled]="index === constants().length - 1" title="Nach rechts">→</button>
-                        </div>
-                    </th>
-                }
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <th>Person Gutschrift</th>
-                @for (item of constants(); track item.id) {
-                    <td>
-                        <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
-                            <option value="">— wie Sender</option>
-                            @for (option of workbook.personCodes(); track option) {
-                                <option [value]="option">{{ workbook.optionLabel('person', option) }}</option>
-                            }
-                        </select>
-                    </td>
-                }
-            </tr>
-            <tr>
-                <th>Konto Gutschrift</th>
-                @for (item of constants(); track item.id) {
-                    <td>
-                        <select [ngModel]="item.account" (ngModelChange)="workbook.setConstantAccount(item.id, $event)">
-                            <option value="">— keine Gutschrift</option>
-                            @for (option of workbook.accountCodes(); track option) {
-                                <option [value]="option">{{ workbook.optionLabel('account', option) }}</option>
-                            }
-                        </select>
-                    </td>
-                }
-            </tr>
-            @for (label of months; track label; let monthIndex = $index) {
-                <tr>
-                    <th>{{ label }}</th>
-                    @for (item of constants(); track item.id) {
-                        <td>
-                            <div class="amount-row">
-                                @if (monthIndex > 0) {
-                                    <button type="button"
-                                            class="eq-btn"
-                                            (click)="insertPrev(item, monthIndex)"
-                                            title="Wert der Vorzeile">↑</button>
-                                }
-                                <input #input
-                                       type="text"
-                                       inputmode="text"
-                                       autocomplete="off"
-                                       [class.formula]="workbook.isFormula(item.months[monthIndex])"
-                                       [value]="item.months[monthIndex]"
-                                       (change)="onMonth(item, monthIndex, $event)"
-                                       [title]="preview(item, label)"
-                                       [attr.aria-label]="item.name + ' ' + label"/>
-                            </div>
-                        </td>
+    <div class="const-list">
+        @for (item of transfers(); track item.id; let index = $index) {
+            <article class="const-card" draggable="true"
+                     (dragstart)="onDragStart($event, item.id)"
+                     (dragover)="onDragOver($event)"
+                     (drop)="onDrop($event, item.id, 'transfer')">
+                <div class="name-row">
+                    <span class="drag-handle">⋮⋮</span>
+                    <input class="name-input" type="text" [value]="item.name" (change)="onName(item, $event)" placeholder="Name"/>
+                    <button type="button" class="move-btn" (click)="nudge(item.id, -1, 'transfer')" [disabled]="index === 0">←</button>
+                    <button type="button" class="move-btn" (click)="nudge(item.id, 1, 'transfer')" [disabled]="index === transfers().length - 1">→</button>
+                    <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)">×</button>
+                </div>
+                <label>Person
+                    <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
+                        <option value="">— wie Sender</option>
+                        @for (option of workbook.personCodes(); track option) {
+                            <option [value]="option">{{ workbook.optionLabel('person', option) }}</option>
+                        }
+                    </select>
+                </label>
+                <label>Konto
+                    <select [ngModel]="item.account" (ngModelChange)="workbook.setConstantAccount(item.id, $event)">
+                        <option value="">— keine Gutschrift</option>
+                        @for (option of workbook.accountCodes(); track option) {
+                            <option [value]="option">{{ workbook.optionLabel('account', option) }}</option>
+                        }
+                    </select>
+                </label>
+                <div class="month-grid">
+                    @for (label of months; track label; let monthIndex = $index) {
+                        <label>{{ label }}
+                            <input type="text"
+                                   inputmode="text"
+                                   [class.formula]="workbook.isFormula(item.months[monthIndex]) || isPrevRef(item.months[monthIndex])"
+                                   [value]="item.months[monthIndex]"
+                                   (change)="onMonth(item, monthIndex, $event)"
+                                   [title]="preview(item, label)"/>
+                        </label>
                     }
-                </tr>
-            }
-            <tr class="computed">
-                <th>Durchschnitt</th>
-                @for (item of constants(); track item.id) {
-                    <td class="total">{{ format(workbook.constantAverage(item)) }}</td>
-                }
-            </tr>
-            <tr class="computed">
-                <th>Total</th>
-                @for (item of constants(); track item.id) {
-                    <td class="total">{{ format(workbook.constantTotal(item)) }}</td>
-                }
-            </tr>
-            </tbody>
-        </table>
+                </div>
+                <div class="const-foot">
+                    <span>Ø {{ format(workbook.constantAverage(item)) }}</span>
+                    <span>Σ {{ format(workbook.constantTotal(item)) }}</span>
+                </div>
+            </article>
+        }
+    </div>
+
+    <div class="const-head second">
+        <div>
+            <h2>Spaltenwerte</h2>
+            <p>Zum Beispiel Lohn. Name in Spalte D trifft genau: die gewählte Zahlenspalte erhält den Monatswert.</p>
+        </div>
+        <button type="button" class="const-add" (click)="addColumn()">+ Spaltenwert</button>
+    </div>
+    <div class="const-list">
+        @for (item of columns(); track item.id; let index = $index) {
+            <article class="const-card column-card" draggable="true"
+                     (dragstart)="onDragStart($event, item.id)"
+                     (dragover)="onDragOver($event)"
+                     (drop)="onDrop($event, item.id, 'column')">
+                <div class="name-row">
+                    <span class="drag-handle">⋮⋮</span>
+                    <input class="name-input" type="text" [value]="item.name" (change)="onName(item, $event)" placeholder="z.B. Lohn"/>
+                    <button type="button" class="move-btn" (click)="nudge(item.id, -1, 'column')" [disabled]="index === 0">←</button>
+                    <button type="button" class="move-btn" (click)="nudge(item.id, 1, 'column')" [disabled]="index === columns().length - 1">→</button>
+                    <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)">×</button>
+                </div>
+                <label>Spalte
+                    <select [ngModel]="item.columnTitle" (ngModelChange)="setColumn(item, $event)">
+                        <option value="">— wählen</option>
+                        @for (title of numberTitles(); track title) {
+                            <option [value]="title">{{ title }}</option>
+                        }
+                    </select>
+                </label>
+                <div class="month-grid">
+                    @for (label of months; track label; let monthIndex = $index) {
+                        <label>{{ label }}
+                            <input type="text"
+                                   inputmode="text"
+                                   [class.formula]="workbook.isFormula(item.months[monthIndex]) || isPrevRef(item.months[monthIndex])"
+                                   [value]="item.months[monthIndex]"
+                                   (change)="onMonth(item, monthIndex, $event)"
+                                   [title]="preview(item, label)"/>
+                        </label>
+                    }
+                </div>
+                <div class="const-foot">
+                    <span>Ø {{ format(workbook.constantAverage(item)) }}</span>
+                    <span>Σ {{ format(workbook.constantTotal(item)) }}</span>
+                </div>
+            </article>
+        }
     </div>
 </section>
