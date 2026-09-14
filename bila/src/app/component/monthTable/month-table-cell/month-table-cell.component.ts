@@ -1,4 +1,4 @@
-import {Component, input, output} from '@angular/core';
+import {Component, effect, ElementRef, input, output, viewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MonthCell} from '../../../model/MonthCell';
 
@@ -38,6 +38,16 @@ export class MonthTableCellComponent {
     readonly valueKeydown = output<KeyboardEvent>();
     readonly copy = output<ClipboardEvent>();
     readonly paste = output<ClipboardEvent>();
+    private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
+
+    constructor() {
+        effect(() => {
+            const inputEl = this.editInput();
+            if (this.editing() && inputEl) {
+                queueMicrotask(() => inputEl.nativeElement.focus());
+            }
+        });
+    }
 
     hostClass(): string {
         return [

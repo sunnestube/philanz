@@ -19,17 +19,28 @@
          (keydown)="valueKeydown.emit($event)"
          (copy)="copy.emit($event)"
          (paste)="paste.emit($event)">{{ rowIndex() + 1 }}</div>
-} @else {
+} @else if (editing()) {
     <input
+        #editInput
         [id]="cellId()"
         tabindex="0"
         [title]="isFormula() ? cell().raw : cell().type.id"
         [value]="display()"
-        (focus)="valueFocus.emit()"
         (input)="valueInput.emit($event)"
         (blur)="valueBlur.emit()"
         (keydown)="valueKeydown.emit($event)"
         (copy)="copy.emit($event)"
         (paste)="paste.emit($event)"
     />
+} @else {
+    <span
+        class="cell-read"
+        [id]="cellId()"
+        tabindex="0"
+        [title]="isFormula() ? cell().raw : cell().type.id"
+        (focus)="valueFocus.emit()"
+        (keydown)="valueKeydown.emit($event)"
+        (copy)="copy.emit($event)"
+        (paste)="paste.emit($event)"
+    >{{ display() }}</span>
 }
