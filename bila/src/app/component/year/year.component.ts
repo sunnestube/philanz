@@ -9,6 +9,7 @@ import {MonthRow} from '../../model/MonthRow';
 import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
 import {CONSTANT_MONTHS, ConstantDef, WorkbookService, YearView} from '../../service/workbook.service';
+import {applyColumnFills, isColumnConstant} from '../../service/column-fill';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
@@ -47,6 +48,7 @@ export class YearComponent implements OnInit {
     ngOnInit(): void {
         this.patchConstantCredit();
         this.patchConstantPrevRow();
+        this.patchColumnConstants();
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.route.paramMap.subscribe((params) => {
@@ -249,6 +251,24 @@ export class YearComponent implements OnInit {
                 month.rows.push(row);
             }
         });
+        applyColumnFills(this.workbook);
         this.workbook.touch();
+    }
+
+    private patchColumnConstants(): void {
+        const workbook = this.workbook;
+        const originalMatch = workbook.matchConstant.bind(workbook);
+        workbook.matchConstant = (month, row) => {
+            const match = originalMatch(month, row);
+            if (match && isColumnConstant(match)) {
+                return null;
+            }
+            return match;
+        };
+        const originalTouch = workbook.touch.bind(workbook);
+        workbook.touch = () => {
+            applyColumnFills(workbook);
+            originalTouch();
+        };
     }
 }
