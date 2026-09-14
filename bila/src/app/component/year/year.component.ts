@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
@@ -34,7 +34,7 @@ const MIN_ROWS = 36;
     ],
     styleUrls: ['./year.component.css']
 })
-export class YearComponent implements OnInit {
+export class YearComponent implements OnInit, OnDestroy {
     readonly workbook = inject(WorkbookService);
     readonly archive = inject(YearArchiveService);
     private readonly http = inject(HttpClient);
@@ -42,6 +42,10 @@ export class YearComponent implements OnInit {
     private readonly router = inject(Router);
     saveMessage = '';
     yearName = '';
+    warmGen = 0;
+    private readonly warmedMonths = new Set<string>();
+    private readonly warmedViews = new Set<YearView>();
+    private warmTimer = 0;
 
     ngOnInit(): void {
         this.patchConstantCredit();
@@ -90,15 +94,35 @@ export class YearComponent implements OnInit {
     }
 
     protected selectTab(month: Month): void {
+        this.ensureMonth(month);
         this.workbook.selectMonth(month);
         this.workbook.setView('month');
     }
 
     protected openView(view: YearView): void {
+        this.ensureView(view);
         this.workbook.setView(view);
     }
 
+    protected isMonthReady(month: Month): boolean {
+        this.warmGen;
+        return this.warmedMonths.has(month.label.title);
+    }
+
+    protected isViewReady(view: YearView): boolean {
+        this.warmGen;
+        return this.warmedViews.has(view);
+    }
+
+    ngOnDestroy(): void {
+        if (this.warmTimer) {
+            clearTimeout(this.warmTimer);
+            this.warmTimer = 0;
+        }
+    }
+
     protected openCsv(): void {
+        this.ensureView('csv');
         this.workbook.setView('csv');
     }
 
@@ -234,6 +258,7 @@ export class YearComponent implements OnInit {
     }
 
     private fillRows(min = MIN_ROWS): void {
+        this.resetWarm();
         this.workbook.months().forEach((month) => {
             while (month.rows.length < min) {
                 const rowIndex = month.rows.length;
@@ -251,6 +276,87 @@ export class YearComponent implements OnInit {
         });
         applyColumnFills(this.workbook);
         this.workbook.touch();
+        this.afterDataReady();
+    }
+
+    private afterDataReady(): void {
+        const current = this.workbook.selectedMonth();
+        if (current) {
+            this.ensureMonth(current);
+        }
+        this.ensureView(this.workbook.view());
+        this.scheduleWarm();
+    }
+
+    private resetWarm(): void {
+        this.warmedMonths.clear();
+        this.warmedViews.clear();
+        this.warmGen++;
+        if (this.warmTimer) {
+            clearTimeout(this.warmTimer);
+            this.warmTimer = 0;
+        }
+    }
+
+    private ensureMonth(month: Month): void {
+        const key = month.label.title;
+        if (this.warmedMonths.has(key)) {
+            return;
+        }
+        this.warmedMonths.add(key);
+        this.warmGen++;
+    }
+
+    private ensureView(view: YearView): void {
+        if (this.warmedViews.has(view)) {
+            return;
+        }
+        this.warmedViews.add(view);
+        this.warmGen++;
+    }
+
+    private scheduleWarm(): void {
+        if (this.warmTimer) {
+            return;
+        }
+        this.warmTimer = window.setTimeout(() => {
+            this.warmTimer = 0;
+            this.warmNext();
+        }, 50);
+    }
+
+    private warmNext(): void {
+        const months = this.workbook.months();
+        const selected = this.workbook.selectedMonth();
+        const selectedIdx = selected ? months.indexOf(selected) : -1;
+        const order: Month[] = [];
+        if (selectedIdx >= 0) {
+            if (months[selectedIdx + 1]) {
+                order.push(months[selectedIdx + 1]);
+            }
+            if (selectedIdx > 0) {
+                order.push(months[selectedIdx - 1]);
+            }
+            months.forEach((month, index) => {
+                if (index !== selectedIdx && index !== selectedIdx + 1 && index !== selectedIdx - 1) {
+                    order.push(month);
+                }
+            });
+        } else {
+            order.push(...months);
+        }
+        const pending = order.find((month) => !this.warmedMonths.has(month.label.title));
+        if (pending) {
+            this.ensureMonth(pending);
+            this.scheduleWarm();
+            return;
+        }
+        const extra: YearView[] = ['start', 'constants', 'csv', 'total', 'graf'];
+        const nextView = extra.find((view) => !this.warmedViews.has(view));
+        if (nextView) {
+            this.ensureView(nextView);
+            this.scheduleWarm();
+        }
     }
 
     private patchColumnConstants(): void {
