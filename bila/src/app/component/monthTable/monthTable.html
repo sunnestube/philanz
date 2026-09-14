@@ -1,186 +1,77 @@
 @if (month) {
-    <div class="formula-bar" [class.active]="formulaMode || refPickMode">
-        <div class="formula-address" title="Zellenadresse">
-            {{ activeAddress || '—' }}
-        </div>
-        <div class="formula-fx">fx</div>
-        <div class="formula-input-wrap" [class.colorize]="showRefColors()">
-            @if (showRefColors()) {
-                <div class="formula-color-layer" aria-hidden="true">
-                    @for (tok of formulaTokens(); track $index) {
-                        <span [class]="tok.color === null ? 'tok-plain' : 'tok-' + tok.color">{{ tok.text }}</span>
-                    }
-                </div>
-            }
-            <input
-                #formulaInput
-                class="formula-input"
-                type="text"
-                [value]="draft"
-                [placeholder]="refPickMode ? 'Formel eingeben, Zelle anklicken für Bezug' : 'Zelle wählen – F2 oder hier klicken für Bezüge'"
-                (focus)="enterRefPick()"
-                (input)="onFormulaInput($event, activeCell())"
-                (keydown)="activeCell() && onFormulaKeydown($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (copy)="activeCell() && onCopy($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (paste)="activeCell() && onPaste($event, editingRow ?? 0, editingCol ?? 0, activeCell()!)"
-                (blur)="onFormulaBlur($event)"
-            />
-        </div>
-    </div>
+    <bal-formula-bar
+        [draft]="edit.draft"
+        [activeAddress]="edit.activeAddress"
+        [active]="edit.formulaMode || edit.refPickMode"
+        [colorize]="edit.showRefColors()"
+        [placeholder]="edit.formulaPlaceholder()"
+        [tokens]="edit.formulaTokens()"
+        (formulaFocus)="edit.enterRefPick()"
+        (formulaInput)="edit.onFormulaInput($event)"
+        (formulaKeydown)="edit.onFormulaKeydown($event)"
+        (formulaCopy)="onBarCopy($event)"
+        (formulaPaste)="onBarPaste($event)"
+        (formulaBlur)="edit.onFormulaBlur()"
+    />
     <div class="table-scroll"
          #scroller
          [class.dragging]="panning"
-         (pointerdown)="onPanStart($event)">
-    <table class="data-table">
-        <thead>
-        <tr class="letter-row">
-            @for (column of month.columns; track $index) {
-                <th class="{{column.type.split('_')[0]}} {{column.section}} letter-cell"
-                    [attr.title]="columnLetter($index) + ' · ' + column.type">
-                    {{ columnLetter($index) }}
-                </th>
-            }
-            @if (workbook.saldoColumnsOpen()) {
-                @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                    <th class="number S person-{{combo.person.toLowerCase()}} letter-cell"
-                        [class.saldo-start]="first"></th>
-                }
-                @if (saldoTotalVisible() && saldoCombos().length) {
-                    <th class="number S total-col letter-cell"></th>
-                }
-            }
-        </tr>
-        <tr class="title-row">
-            @for (column of month.columns; track $index) {
-                <th class="{{column.type.split('_')[0]}} {{column.section}}"
-                    title="{{ columnLetter($index) }} · {{ column.type }}">
-                    <div class="title-pack"><span>{{ column.title }}</span></div>
-                    @if (column.type === 'text') {
-                        <span class="col-resizer" (pointerdown)="onTextResizeStart($event)" title="Textspalte breiter ziehen"></span>
-                    }
-                    <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
-                </th>
-            }
-            @if (workbook.saldoColumnsOpen()) {
-                @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                    <th class="number S person-{{combo.person.toLowerCase()}}"
-                        [class.saldo-start]="first"
-                        title="Saldo {{ saldoTitle(combo) }}">
-                        <div class="title-pack"><span>{{ saldoTitle(combo) }}</span></div>
-                        <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
-                    </th>
-                }
-                @if (saldoTotalVisible() && saldoCombos().length) {
-                    <th class="number S total-col" title="Saldo {{ saldoTotalTitle() }}">
-                        <div class="title-pack"><span>{{ saldoTotalTitle() }}</span></div>
-                        <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
-                    </th>
-                }
-            }
-        </tr>
-        </thead>
-        <tbody>
-            @for (row of month.rows; let rowIndex = $index; track $index) {
-                <tr [class]="row.color">
-                    @for (cell of row.cells; let colIndex = $index; track $index) {
-                        <td [class]="cell.type.id.split('_')[0]"
-                            [class.formula]="isFormula(cell)"
-                            [class.editing]="editingRow === rowIndex && editingCol === colIndex"
-                            [class.ref-target]="refPickMode && !(editingRow === rowIndex && editingCol === colIndex)"
-                            [attr.data-ref]="refColorAt(rowIndex, colIndex)"
-                            (mousedown)="onCellMouseDown($event, rowIndex, colIndex)">
-                            @if (cell.type.id.indexOf('select') !== -1) {
-                                <select [(ngModel)]="cell.value"
-                                        (change)="onSelectChange(cell, row)"
-                                        (keydown)="$event.key.startsWith('Arrow') && $event.preventDefault()"
-                                        (keyup)="$event.key.startsWith('Arrow') && navigate($event, rowIndex, colIndex)"
-                                        (paste)="onPaste($event, rowIndex, colIndex, cell)"
-                                        (copy)="onCopy($event, rowIndex, colIndex, cell)"
-                                        [id]="cellId(rowIndex, colIndex)"
-                                        tabindex="0"
-                                        [ngModelOptions]="{standalone: true}">
-                                    @for (option of optionsFor(cell); track option) {
-                                        <option [value]="option">
-                                            {{ option }}
-                                        </option>
-                                    }
-                                </select>
-                            } @else {
-                                @if (cell.type.id === 'index') {
-                                    <div>{{ rowIndex + 1 }}</div>
-                                } @else {
-                                    <input
-                                        [id]="cellId(rowIndex, colIndex)"
-                                        tabindex="0"
-                                        title="{{ isFormula(cell) ? cell.raw : cell.type.id }}"
-                                        [value]="editingRow === rowIndex && editingCol === colIndex ? draft : displayValue(cell)"
-                                        (focus)="startEdit(rowIndex, colIndex, cell)"
-                                        (input)="onCellInput($event, cell)"
-                                        (blur)="!refPickMode && commitEdit(cell)"
-                                        (keydown)="onKeydown($event, rowIndex, colIndex, cell)"
-                                        (copy)="onCopy($event, rowIndex, colIndex, cell)"
-                                        (paste)="onPaste($event, rowIndex, colIndex, cell)"
-                                    />
-                                }
+         (pointerdown)="pointer.onPanStart($event)">
+        <table class="data-table">
+            <thead balMonthHeader
+                   [columns]="columnViews()"
+                   [saldos]="saldoHeader()"
+                   [showSaldo]="showSaldo()"
+                   [showTotal]="workbook.saldoTotalVisible()"
+                   [totalTitle]="workbook.saldoTotalTitle()"
+                   (headerResize)="pointer.onHeaderResizeStart($event)"
+                   (textResize)="pointer.onTextResizeStart($event)"></thead>
+            <tbody>
+                @for (row of month.rows; let rowIndex = $index; track rowIndex) {
+                    <tr [class]="row.color">
+                        @for (cell of row.cells; let colIndex = $index; track colIndex) {
+                            <td balMonthCell
+                                [cell]="cell"
+                                [cssType]="cellCss(cell)"
+                                [isSelect]="isSelect(cell)"
+                                [isIndex]="isIndex(cell)"
+                                [isFormula]="isFormula(cell)"
+                                [editing]="isEditing(rowIndex, colIndex)"
+                                [refTarget]="edit.refPickMode && !isEditing(rowIndex, colIndex)"
+                                [refColor]="edit.refColorAt(rowIndex, colIndex)"
+                                [display]="cellDisplay(cell, rowIndex, colIndex)"
+                                [cellId]="cellId(rowIndex, colIndex)"
+                                [options]="optionsFor(cell)"
+                                [rowIndex]="rowIndex"
+                                (cellMouseDown)="edit.onCellMouseDown($event, rowIndex, colIndex)"
+                                (selectChange)="onSelectChange(cell, row)"
+                                (selectNavigate)="edit.navigate($event, rowIndex, colIndex)"
+                                (valueFocus)="edit.startEdit(rowIndex, colIndex, cell)"
+                                (valueInput)="edit.onCellInput($event, cell)"
+                                (valueBlur)="edit.onCellBlur(cell)"
+                                (valueKeydown)="edit.onKeydown($event, rowIndex, colIndex, cell)"
+                                (copy)="edit.onCopy($event, rowIndex, colIndex, cell)"
+                                (paste)="edit.onPaste($event, rowIndex, colIndex, cell)"></td>
+                        }
+                        @if (showSaldo()) {
+                            @for (item of saldo.rowSaldos(saldoHeader(), rowIndex); track item.key) {
+                                <td balSaldoCell [vm]="item"></td>
                             }
-                        </td>
-                    }
-                    @if (workbook.saldoColumnsOpen()) {
-                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                            <td class="number S person-{{combo.person.toLowerCase()}}"
-                                [class.saldo-start]="first"
-                                [class.up]="saldoDelta(rowIndex, combo.key) > 0"
-                                [class.down]="saldoDelta(rowIndex, combo.key) < 0"
-                                [class.neg]="saldoAt(rowIndex, combo.key) < 0"
-                                [class.zero]="saldoAt(rowIndex, combo.key) === 0">
-                                {{ formatSaldo(saldoAt(rowIndex, combo.key)) }}
-                            </td>
+                            @if (saldo.rowTotal(rowIndex); as total) {
+                                <td balSaldoCell [vm]="total"></td>
+                            }
                         }
-                        @if (saldoTotalVisible() && saldoCombos().length) {
-                            <td class="number S total-col"
-                                [class.up]="saldoTotalDelta(rowIndex) > 0"
-                                [class.down]="saldoTotalDelta(rowIndex) < 0"
-                                [class.neg]="saldoTotal(rowIndex) < 0"
-                                [class.zero]="saldoTotal(rowIndex) === 0">
-                                {{ formatSaldo(saldoTotal(rowIndex)) }}
-                            </td>
-                        }
-                    }
+                    </tr>
+                }
+                <tr class="foot-spacer" aria-hidden="true">
+                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
+                        [style.height.px]="saldo.footerRows().length * 20"></td>
                 </tr>
-            }
-            <tr class="foot-spacer" aria-hidden="true">
-                <td [attr.colspan]="month.columns.length + extraColCount()"
-                    [style.height.px]="footerRows().length * 20"></td>
-            </tr>
-        </tbody>
-        <tfoot>
-            @for (foot of footerRows(); track foot.label; let footIndex = $index) {
-                <tr class="foot-row {{foot.color}}" [style.--foot-y]="footerOffset(footIndex) + 'px'">
-                    @for (column of month.columns; let colIndex = $index; track $index) {
-                        <td class="{{column.type.split('_')[0]}} {{column.section}}">
-                            {{ footerValue(foot.person, colIndex) }}
-                        </td>
-                    }
-                    @if (workbook.saldoColumnsOpen()) {
-                        @for (combo of saldoCombos(); track combo.key; let first = $first) {
-                            <td class="number S person-{{combo.person.toLowerCase()}}"
-                                [class.saldo-start]="first"
-                                [class.zero]="footerSaldo(foot.person, combo.key) === 0">
-                                @if (footerSaldo(foot.person, combo.key) !== null) {
-                                    {{ formatSaldo(footerSaldo(foot.person, combo.key) ?? 0) }}
-                                }
-                            </td>
-                        }
-                        @if (saldoTotalVisible() && saldoCombos().length) {
-                            <td class="number S total-col"
-                                [class.zero]="footerSaldoTotal(foot.person) === 0">
-                                {{ formatSaldo(footerSaldoTotal(foot.person)) }}
-                            </td>
-                        }
-                    }
-                </tr>
-            }
-        </tfoot>
-    </table>
+            </tbody>
+            <tfoot balMonthFooter
+                   [rows]="saldo.footerViews(columnViews(), saldoHeader())"
+                   [showSaldo]="showSaldo()"
+                   [showTotal]="workbook.saldoTotalVisible()"></tfoot>
+        </table>
     </div>
 }
