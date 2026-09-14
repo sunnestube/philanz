@@ -1,0 +1,30 @@
+@if (isSelect()) {
+    <select [(ngModel)]="cell().value"
+            (change)="selectChange.emit()"
+            (keydown)="onSelectArrowDown($event)"
+            (keyup)="onSelectArrowUp($event)"
+            (paste)="paste.emit($event)"
+            (copy)="copy.emit($event)"
+            [id]="cellId()"
+            tabindex="0"
+            [ngModelOptions]="{standalone: true}">
+        @for (option of options(); track option) {
+            <option [value]="option">{{ option }}</option>
+        }
+    </select>
+} @else if (isIndex()) {
+    <div>{{ rowIndex() + 1 }}</div>
+} @else {
+    <input
+        [id]="cellId()"
+        tabindex="0"
+        [title]="isFormula() ? cell().raw : cell().type.id"
+        [value]="display()"
+        (focus)="valueFocus.emit()"
+        (input)="valueInput.emit($event)"
+        (blur)="valueBlur.emit()"
+        (keydown)="valueKeydown.emit($event)"
+        (copy)="copy.emit($event)"
+        (paste)="paste.emit($event)"
+    />
+}
