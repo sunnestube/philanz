@@ -1,0 +1,43 @@
+<p class="hint">Virtuelle Saldospalten. Reihenfolge gilt in der Monatstabelle. Ohne eigenen Titel gilt Personname + Kontoname.</p>
+<table class="col-table">
+    <thead>
+    <tr><th></th><th>Anzeigen</th><th>Titel</th><th>Gruppe</th></tr>
+    </thead>
+    <tbody>
+        @for (combo of workbook.saldoCombos(); track combo.key; let index = $index) {
+            <tr draggable="true"
+                (dragstart)="onDragStart($event, combo.key)"
+                (dragover)="onDragOver($event)"
+                (drop)="onDrop($event, combo.key)">
+                <td class="col-actions">
+                    <span class="drag-handle" title="Ziehen">⋮⋮</span>
+                    <button type="button" (click)="workbook.moveSaldoCombo(combo.key, -1)" [disabled]="index === 0">↑</button>
+                    <button type="button" (click)="workbook.moveSaldoCombo(combo.key, 1)" [disabled]="index === workbook.saldoCombos().length - 1">↓</button>
+                </td>
+                <td>
+                    <input type="checkbox"
+                           [checked]="visible(combo.key)"
+                           (change)="workbook.setSaldoColumnPref(combo.key, {visible: $any($event.target).checked})"/>
+                </td>
+                <td>
+                    <input [ngModel]="title(combo.key, workbook.saldoTitleFor(combo))"
+                           (ngModelChange)="workbook.setSaldoColumnPref(combo.key, {title: $event})"/>
+                </td>
+                <td>{{ workbook.personLabel(combo.person) }} · {{ workbook.accountLabel(combo.account) }}</td>
+            </tr>
+        }
+        <tr>
+            <td></td>
+            <td>
+                <input type="checkbox"
+                       [checked]="workbook.saldoTotalPref().visible"
+                       (change)="workbook.setSaldoTotalPref({visible: $any($event.target).checked})"/>
+            </td>
+            <td>
+                <input [ngModel]="workbook.saldoTotalPref().title"
+                       (ngModelChange)="workbook.setSaldoTotalPref({title: $event})"/>
+            </td>
+            <td>Total (immer rechts)</td>
+        </tr>
+    </tbody>
+</table>
