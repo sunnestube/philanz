@@ -2,6 +2,9 @@ import {Component, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CONSTANT_MONTHS, ConstantDef, WorkbookService} from '../../service/workbook.service';
 
+type ConstantKind = 'transfer' | 'column';
+type RichConstant = ConstantDef & {kind?: ConstantKind; columnTitle?: string};
+
 @Component({
     selector: 'bal-constants-tab',
     standalone: true,
@@ -13,9 +16,39 @@ export class ConstantsTabComponent {
     readonly workbook = inject(WorkbookService);
     readonly months = CONSTANT_MONTHS;
 
-    constants(): ConstantDef[] {
+    transfers(): RichConstant[] {
         this.workbook.revision();
-        return this.workbook.constants();
+        return this.all().filter((item) => (item.kind || 'transfer') !== 'column');
+    }
+
+    columns(): RichConstant[] {
+        this.workbook.revision();
+        return this.all().filter((item) => item.kind === 'column' || item.person === '§COL');
+    }
+
+    addTransfer(): void {
+        this.workbook.addConstant('');
+        this.patchLast({kind: 'transfer', months: ['0', ...Array.from({length: 11}, () => '↑')]});
+    }
+
+    numberTitles(): string[] {
+        const month = this.workbook.months()[0];
+        if (!month) {
+            return [];
+        }
+        return month.columns
+            .filter((column) => column.type === 'number' || String(column.type).includes('number'))
+            .map((column) => column.title)
+            .filter((title) => !!title && title !== 'Saldo');
+    }
+
+    addColumn(): void {
+        this.workbook.addConstant('');
+        this.patchLast({kind: 'column', person: '§COL', columnTitle: '', months: ['0', ...Array.from({length: 11}, () => '↑')]});
+    }
+
+    setColumn(item: RichConstant, title: string): void {
+        this.patch(item.id, {columnTitle: title});
     }
 
     onName(item: ConstantDef, event: Event): void {
@@ -26,35 +59,18 @@ export class ConstantsTabComponent {
         this.workbook.setConstantMonth(item.id, index, (event.target as HTMLInputElement).value);
     }
 
-    insertPrev(item: ConstantDef, index: number): void {
-        if (index <= 0) {
-            return;
-        }
-        this.workbook.setConstantMonth(item.id, index, '↑');
-    }
-
     isPrevRef(raw: string | null | undefined): boolean {
         const text = (raw ?? '').trim();
         return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
     }
 
-    move(id: string, toIndex: number): void {
-        const list = [...this.workbook.constants()];
+    nudge(id: string, delta: number, kind: ConstantKind): void {
+        const list = kind === 'column' ? this.columns() : this.transfers();
         const from = list.findIndex((item) => item.id === id);
         if (from < 0) {
             return;
         }
-        const target = Math.max(0, Math.min(list.length - 1, toIndex));
-        if (from === target) {
-            return;
-        }
-        const [item] = list.splice(from, 1);
-        list.splice(target, 0, item);
-        this.workbook.constants.set(list);
-        const first = list[0];
-        if (first) {
-            this.workbook.setConstantName(first.id, first.name);
-        }
+        this.moveInKind(id, from + delta, kind);
     }
 
     onDragStart(event: DragEvent, id: string): void {
@@ -68,12 +84,15 @@ export class ConstantsTabComponent {
         event.preventDefault();
     }
 
-    onDrop(event: DragEvent, toIndex: number): void {
+    onDrop(event: DragEvent, targetId: string, kind: ConstantKind): void {
         event.preventDefault();
         const id = event.dataTransfer?.getData('text/plain');
-        if (id) {
-            this.move(id, toIndex);
+        if (!id) {
+            return;
         }
+        const list = kind === 'column' ? this.columns() : this.transfers();
+        const toIndex = list.findIndex((item) => item.id === targetId);
+        this.moveInKind(id, toIndex, kind);
     }
 
     preview(item: ConstantDef, monthTitle: string): string {
@@ -90,5 +109,42 @@ export class ConstantsTabComponent {
             return '';
         }
         return value.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    private all(): RichConstant[] {
+        return this.workbook.constants() as RichConstant[];
+    }
+
+    private patchLast(patch: Partial<RichConstant>): void {
+        const list = this.all();
+        const last = list[list.length - 1];
+        if (!last) {
+            return;
+        }
+        this.patch(last.id, patch);
+    }
+
+    private patch(id: string, patch: Partial<RichConstant>): void {
+        const list = this.all().map((item) => item.id === id ? {...item, ...patch} : item);
+        this.workbook.constants.set(list);
+        const item = list.find((entry) => entry.id === id);
+        if (item) {
+            this.workbook.setConstantName(item.id, item.name);
+        }
+    }
+
+    private moveInKind(id: string, toIndex: number, kind: ConstantKind): void {
+        const all = this.all();
+        const group = kind === 'column' ? this.columns() : this.transfers();
+        const from = group.findIndex((item) => item.id === id);
+        if (from < 0 || toIndex < 0 || toIndex >= group.length || from === toIndex) {
+            return;
+        }
+        const nextGroup = [...group];
+        const [item] = nextGroup.splice(from, 1);
+        nextGroup.splice(toIndex, 0, item);
+        const other = all.filter((entry) => !group.some((member) => member.id === entry.id));
+        this.workbook.constants.set(kind === 'column' ? [...other, ...nextGroup] : [...nextGroup, ...other]);
+        this.workbook.setConstantName(item.id, item.name);
     }
 }

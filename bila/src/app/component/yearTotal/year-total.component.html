@@ -1,7 +1,7 @@
 @if (report(); as data) {
 <section class="year-total">
     <h2>Total</h2>
-    <p>Ausgaben pro Monat, Person und Spalte. Jahrestotal plus Monats- und Tagesdurchschnitt.</p>
+    <p>Spaltennamen einmal oben, vertikal und klebrig. Darunter Monat für Monat.</p>
     <div class="cards">
         <div class="card"><span>Jahr Ausgaben</span><strong>{{ format(data.yearExpense) }}</strong></div>
         <div class="card"><span>Jahr Einnahmen</span><strong>{{ format(data.yearIncome) }}</strong></div>
@@ -12,22 +12,25 @@
          #scroller
          [class.dragging]="panning"
          (pointerdown)="onPanStart($event)">
-        @for (block of data.months; track block.title) {
-            <h3>{{ block.title }}</h3>
-            <table>
-                <thead>
-                <tr>
-                    <th>Person</th>
-                    @for (col of data.columns; track col.title) {
-                        <th>{{ col.title }}</th>
-                    }
-                    <th>Σ</th>
-                </tr>
-                </thead>
-                <tbody>
-                    @for (person of data.persons; track person) {
+        <table>
+            <thead>
+            <tr class="title-row">
+                <th class="sticky-col month-col">Monat</th>
+                <th class="sticky-col person-col">Person</th>
+                @for (col of data.columns; track col.title) {
+                    <th><div class="title-pack"><span>{{ col.title }}</span></div></th>
+                }
+                <th><div class="title-pack"><span>Σ</span></div></th>
+            </tr>
+            </thead>
+            <tbody>
+                @for (block of data.months; track block.title) {
+                    @for (person of data.persons; track person; let first = $first) {
                         <tr class="person-{{person.toLowerCase()}}">
-                            <th>{{ workbook.personLabel(person) }}</th>
+                            @if (first) {
+                                <th class="sticky-col month-col" [attr.rowspan]="data.persons.length + 1">{{ block.title }}</th>
+                            }
+                            <th class="sticky-col person-col">{{ workbook.personLabel(person) }}</th>
                             @for (col of data.columns; track col.title) {
                                 <td>{{ format(block.byPerson[person][col.title]) }}</td>
                             }
@@ -35,30 +38,19 @@
                         </tr>
                     }
                     <tr class="sum">
-                        <th>Σ</th>
+                        <th class="sticky-col person-col">Σ</th>
                         @for (col of data.columns; track col.title) {
                             <td class="total">{{ format(block.byColumn[col.title]) }}</td>
                         }
                         <td class="total">{{ format(block.total) }}</td>
                     </tr>
-                </tbody>
-            </table>
-        }
-        <h3>Jahr / Ø Monat / Ø Tag</h3>
-        <table>
-            <thead>
-            <tr>
-                <th></th>
-                @for (col of data.columns; track col.title) {
-                    <th>{{ col.title }}</th>
                 }
-                <th>Σ</th>
-            </tr>
-            </thead>
-            <tbody>
-                @for (row of data.summaryRows; track row.label) {
-                    <tr>
-                        <th>{{ row.label }}</th>
+                @for (row of data.summaryRows; track row.label; let first = $first) {
+                    <tr class="summary">
+                        @if (first) {
+                            <th class="sticky-col month-col" [attr.rowspan]="data.summaryRows.length">Jahr</th>
+                        }
+                        <th class="sticky-col person-col">{{ row.label }}</th>
                         @for (col of data.columns; track col.title) {
                             <td>{{ format(row.byColumn[col.title]) }}</td>
                         }

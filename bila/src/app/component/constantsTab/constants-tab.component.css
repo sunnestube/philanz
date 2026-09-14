@@ -1,87 +1,59 @@
 :host { display: block; min-height: 0; }
-.const-tab { color: #111; }
+.const-tab { color: #111; overflow-x: hidden; }
 .const-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
-h2 { margin: 0 0 6px; font-size: 18px; }
-p { margin: 0; color: #475569; font-size: 13px; max-width: 720px; }
-.const-add, .const-remove {
-    border: 0;
-    cursor: pointer;
-}
+.const-head.second { margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+h2 { margin: 0 0 4px; font-size: 15px; }
+p { margin: 0; color: #475569; font-size: 12px; max-width: 640px; }
+.const-add, .const-remove, .move-btn { border: 0; cursor: pointer; }
 .const-add {
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     background: #1d4ed8;
     color: #fff;
     font-weight: 600;
     flex-shrink: 0;
-}
-.const-remove {
-    margin-left: 4px;
-    background: transparent;
-    color: #64748b;
-    font-size: 16px;
-    line-height: 1;
-}
-.const-scroll { overflow: auto; }
-.const-grid { border-collapse: collapse; min-width: 420px; }
-.const-grid th, .const-grid td {
-    border: 1px solid #cbd5e1;
-    padding: 3px 5px;
-    text-align: right;
-    background: #fff;
-}
-.const-grid tbody th, .const-grid thead th:first-child {
-    text-align: left;
-    background: #f1f5f9;
-    font-weight: 400;
-    white-space: nowrap;
-}
-.const-grid thead th { background: #e2e8f0; vertical-align: middle; }
-.const-grid input, .const-grid select {
-    width: 100%;
-    min-width: 88px;
-    border: 0;
-    background: transparent;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-.const-grid .name-input { text-align: left; font-weight: 600; min-width: 72px; }
-.const-grid input.formula { font-style: italic; color: #1e3a8a; }
-.name-row, .amount-row, .move-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.drag-handle {
-    cursor: grab;
-    color: #64748b;
     font-size: 12px;
-    letter-spacing: -2px;
-    user-select: none;
 }
-.move-row { justify-content: flex-end; margin-top: 2px; }
-.move-btn, .eq-btn {
+.const-remove { background: transparent; color: #64748b; font-size: 16px; line-height: 1; }
+.const-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.const-card {
+    width: 156px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 11px;
+}
+.const-card.column-card { background: #f8fafc; border-color: #93c5fd; }
+.name-row { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
+.drag-handle { cursor: grab; color: #64748b; letter-spacing: -2px; user-select: none; }
+.name-input { flex: 1 1 auto; min-width: 0; border: 0; font-weight: 700; background: transparent; }
+.const-card label { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; color: #64748b; }
+.const-card select, .const-card input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 11px;
+    padding: 2px 4px;
+}
+.month-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.month-grid label { margin: 0; }
+.month-grid input { text-align: right; font-variant-numeric: tabular-nums; }
+input.formula { font-style: italic; color: #1e3a8a; }
+.move-btn {
     border: 1px solid #cbd5e1;
     background: #f8fafc;
-    color: #0f172a;
-    border-radius: 6px;
-    min-width: 28px;
-    height: 26px;
-    cursor: pointer;
-    font-weight: 700;
+    border-radius: 4px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
 }
 .move-btn:disabled { opacity: 0.35; cursor: default; }
-.eq-btn { flex-shrink: 0; }
-.amount-row input { flex: 1 1 auto; }
-.computed td, .computed th { background: #ecfeff; font-weight: 600}
-.total { font-weight: 700; }
-.const-grid select { text-align: left; }
-@media (prefers-color-scheme: dark) {
-    .const-tab { color: #111; }
-}
+.const-foot { display: flex; justify-content: space-between; margin-top: 4px; color: #334155; font-weight: 600; }

@@ -25,46 +25,82 @@ p { margin: 0 0 12px; color: #475569; font-size: 13px; }
 }
 .card span { display: block; font-size: 11px; color: #64748b; }
 .card strong { font-size: 16px; font-weight: 500; }
-h3 { margin: 16px 0 6px; font-size: 14px; }
 .total-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-x: scroll;
-    overflow-y: auto;
+    overflow: auto;
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     cursor: grab;
+    background: #fff;
 }
-.total-scroll::-webkit-scrollbar {
-    height: 14px;
-    width: 14px;
-}
-.total-scroll::-webkit-scrollbar-track {
-    background: #cbd5e1;
-}
-.total-scroll::-webkit-scrollbar-thumb {
-    background: #64748b;
-    border-radius: 8px;
-    border: 2px solid #cbd5e1;
-}
-.total-scroll.dragging {
-    cursor: grabbing;
-    user-select: none;
-}
+.total-scroll.dragging { cursor: grabbing; user-select: none; }
 table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 11px;
     font-variant-numeric: tabular-nums;
-    width: max-content;
-    min-width: 100%;
-    margin-bottom: 8px;
 }
-th, td { border: 1px solid #cbd5e1; padding: 3px 6px; text-align: right; white-space: nowrap; }
-tbody th, thead th:first-child { text-align: left; }
-.total, .sum td { font-weight: 400; }
+th, td {
+    border: 1px solid #cbd5e1;
+    padding: 3px 5px;
+    text-align: right;
+    background: #fff;
+}
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #e2e8f0;
+    height: 84px;
+    min-width: 28px;
+    max-width: 36px;
+    vertical-align: bottom;
+}
+thead th.sticky-col {
+    z-index: 4;
+    min-width: 52px;
+    max-width: 72px;
+    text-align: left;
+    height: 84px;
+}
+.title-pack {
+    display: flex;
+    justify-content: center;
+    height: 76px;
+}
+.title-pack > span {
+    display: block;
+    width: 14px;
+    height: 100%;
+    writing-mode: sideways-lr;
+    text-align: start;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 14px;
+}
+@supports not (writing-mode: sideways-lr) {
+    .title-pack > span {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+    }
+}
+.sticky-col {
+    position: sticky;
+    background: #f8fafc;
+    text-align: left;
+    z-index: 2;
+}
+.month-col { left: 0; min-width: 44px; }
+.person-col { left: 44px; min-width: 72px; }
+.total, .sum td { font-weight: 600; }
 tr.person-p td, tr.person-p th { background: #dbeafe; }
 tr.person-l td, tr.person-l th { background: #e0e7ff; }
 tr.person-h td, tr.person-h th { background: #fef3c7; }
 tr.person-a td, tr.person-a th,
 tr.person-e td, tr.person-e th { background: #ffedd5; }
+tr.sum td, tr.sum th { background: #ecfeff; }
+tr.summary td, tr.summary th { background: #f1f5f9; font-weight: 600; }
