@@ -264,9 +264,13 @@ export class YearComponent implements OnInit {
             return match;
         };
         const originalTouch = workbook.touch.bind(workbook);
+        let fillsTimer = 0;
         workbook.touch = () => {
-            applyColumnFills(workbook);
             originalTouch();
+            if (fillsTimer) {
+                clearTimeout(fillsTimer);
+            }
+            fillsTimer = window.setTimeout(() => applyColumnFills(workbook), 250);
         };
     }
 }
