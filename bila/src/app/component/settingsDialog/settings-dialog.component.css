@@ -6,12 +6,33 @@
 .add-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .add-row input, .col-table input, .col-table select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; }
 .code-input { width: 3.2rem; text-transform: uppercase; font-weight: 700; }
-.col-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-.col-table th, .col-table td { border-bottom: 1px solid #e2e8f0; padding: 6px; text-align: left; }
+.col-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; table-layout: fixed; }
+.col-table th, .col-table td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 4px 6px;
+    text-align: left;
+    height: 44px;
+    vertical-align: middle;
+}
+.col-table input,
+.col-table select {
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    box-sizing: border-box;
+}
 .name-table input:not(.code-input) { width: 100%; min-width: 140px; }
-.danger { border: 0; background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-.col-actions { display: flex; gap: 6px; align-items: center; }
-.col-actions button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+.danger { border: 0; background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 0 8px; cursor: pointer; height: 32px; }
+.col-actions { display: flex; gap: 6px; align-items: center; height: 32px; }
+.col-actions button {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0 8px;
+    cursor: pointer;
+    height: 32px;
+    line-height: 30px;
+}
 .drag-handle { cursor: grab; color: #64748b; user-select: none; letter-spacing: -2px; }
 @media (prefers-color-scheme: dark) {
     .settings-tabs button { background: #1e293b; color: #e2e8f0; border-color: #334155; }
