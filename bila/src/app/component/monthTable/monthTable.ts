@@ -36,6 +36,9 @@ export class MonthTable implements OnDestroy {
     readonly edit: MonthTableEdit;
     readonly pointer: MonthTablePointer;
     readonly saldo: MonthTableSaldo;
+    viewStart = 0;
+    private readonly viewSize = 48;
+    private scrollTick = 0;
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
@@ -99,12 +102,9 @@ export class MonthTable implements OnDestroy {
 
     @Input()
     set month(month: Month) {
-        month?.rows.forEach((row) => {
-            row.cells.forEach((cell) => this.edit.applySelectSideEffects(cell, row, this.optionsFor(cell)));
-        });
         this._month = month;
+        this.viewStart = 0;
         this.saldo.invalidate();
-        this.formulaService.recalculateAll();
     }
     get month(): Month | undefined {
         return this._month;
@@ -130,8 +130,35 @@ export class MonthTable implements OnDestroy {
         return saldoColViews(this.saldo.combos(), (combo) => this.workbook.saldoTitleFor(combo));
     }
 
+    viewRows() {
+        const rows = this.month?.rows ?? [];
+        return rows.slice(this.viewStart, this.viewStart + this.viewSize);
+    }
+
+    padTop(): number {
+        return this.viewStart * 20;
+    }
+
+    padBottom(): number {
+        const total = this.month?.rows.length ?? 0;
+        return Math.max(0, total - this.viewStart - this.viewSize) * 20;
+    }
+
+    onTableScroll(): void {
+        if (this.scrollTick) {
+            return;
+        }
+        this.scrollTick = requestAnimationFrame(() => {
+            this.scrollTick = 0;
+            const top = this.scroller?.nativeElement.scrollTop ?? 0;
+            const next = Math.max(0, Math.floor(top / 20) - 6);
+            if (next !== this.viewStart) {
+                this.zone.run(() => { this.viewStart = next; });
+            }
+        });
+    }
+
     optionsFor(cell: MonthCell): string[] {
-        this.workbook.revision();
         if (cell.type.id === CELL_TYPE.select_person) {
             return this.workbook.persons();
         }
