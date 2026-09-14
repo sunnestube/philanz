@@ -1,7 +1,15 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+}
 .year-shell {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 128px);
+    flex: 1 1 auto;
+    height: 100%;
     min-height: 0;
     width: 100%;
     overflow: hidden;
@@ -74,7 +82,7 @@
 .csv-tab .csv-btn.secondary {
     color: #ffffff;
 }
-.month-content { padding: 0; }
+.month-content { padding: 0; min-height: 0; height: 100%; }
 .csv-tab h2 { margin: 0 0 6px; color: #0f172a; }
 .csv-tab p { margin: 0 0 10px; color: #334155; }
 .csv-cards {
