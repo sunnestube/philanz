@@ -55,7 +55,8 @@ export class MonthTableEditX extends MonthTableEdit {
     }
 
     override onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
-        if (event.key === 'Delete') {
+        const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
+        if (event.key === 'Delete' || (event.key === 'Backspace' && !typing)) {
             event.preventDefault();
             this.clearRange();
             return;
@@ -137,19 +138,25 @@ export class MonthTableEditX extends MonthTableEdit {
         }
         this.suppressCommit = true;
         for (let row = this.range.row0; row <= this.range.row1; row++) {
+            const line = month.rows[row];
+            if (!line) {
+                continue;
+            }
             for (let col = this.range.col0; col <= this.range.col1; col++) {
-                const cell = month.rows[row]?.cells[col];
+                const cell = line.cells[col];
                 if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
                     continue;
                 }
                 cell.raw = '';
+                cell.display = '';
+                cell.error = null;
                 if (cell.type.id.indexOf('select') !== -1) {
                     cell.value = '';
                 }
-                if (cell.type.id === CELL_TYPE.select_person) {
-                    month.rows[row].color = '';
-                }
             }
+            const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+            const code = (person?.value || person?.raw || '').trim();
+            line.color = code ? code.toLowerCase() : '';
         }
         this.draft = '';
         this.refresh();
