@@ -42,7 +42,7 @@ export class MonthTable implements OnDestroy {
     constructor(
         private readonly formulaService: FormulaService,
         readonly workbook: WorkbookService,
-        zone: NgZone
+        private readonly zone: NgZone
     ) {
         this.edit = new MonthTableEdit(
             formulaService,
@@ -69,10 +69,15 @@ export class MonthTable implements OnDestroy {
     private readonly onWindowPanMove = (event: PointerEvent) => this.pointer.onPanMove(event);
     private readonly onWindowPanEnd = () => this.pointer.onPanEnd();
     private readonly onWindowEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape' && (this.edit.formulaMode || this.edit.refPickMode || this.edit.editingRow !== null)) {
-            event.preventDefault();
-            this.edit.exitFormula();
+        if (event.key !== 'Escape') {
+            return;
         }
+        if (!(this.edit.formulaMode || this.edit.refPickMode || this.edit.editingRow !== null)) {
+            return;
+        }
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        this.zone.run(() => this.edit.exitFormula());
     };
 
     @HostBinding('style.--title-h.px')
@@ -166,7 +171,7 @@ export class MonthTable implements OnDestroy {
         if (this.isEditing(rowIndex, colIndex)) {
             return this.edit.draft;
         }
-        if (this.month && cell.type.id === CELL_TYPE.number) {
+        if (this.month && cell.type.id === CELL_TYPE.number && !(cell.raw ?? '').trim()) {
             const row = this.month.rows[rowIndex];
             const filled = row ? columnFillAmount(this.workbook, this.month, row, colIndex) : null;
             if (filled != null) {
