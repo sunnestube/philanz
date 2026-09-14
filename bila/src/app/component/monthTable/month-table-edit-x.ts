@@ -146,6 +146,9 @@ export class MonthTableEditX extends MonthTableEdit {
                 if (cell.type.id.indexOf('select') !== -1) {
                     cell.value = '';
                 }
+                if (cell.type.id === CELL_TYPE.select_person) {
+                    month.rows[row].color = '';
+                }
             }
         }
         this.draft = '';
