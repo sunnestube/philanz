@@ -4,7 +4,7 @@ import {SaldoCellView} from '../month-table.vm';
 @Component({
     selector: 'td[balSaldoCell]',
     standalone: true,
-    template: '{{ vm().text }}',
+    templateUrl: './saldo-cell.component.html',
     host: {
         '[class]': 'hostClass()'
     }
