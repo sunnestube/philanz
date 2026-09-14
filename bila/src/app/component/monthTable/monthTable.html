@@ -18,8 +18,7 @@
          [class.dragging]="panning"
          (pointerdown)="pointer.onPanStart($event)"
          (pointerup)="edit.endDrag()"
-         (pointercancel)="edit.endDrag()"
-         (scroll)="onTableScroll()">
+         (pointercancel)="edit.endDrag()">
         <table class="data-table">
             <thead balMonthHeader
                    [columns]="columnViews()"
@@ -30,12 +29,7 @@
                    (headerResize)="pointer.onHeaderResizeStart($event)"
                    (textResize)="pointer.onTextResizeStart($event)"></thead>
             <tbody>
-                <tr class="virt-pad" aria-hidden="true">
-                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
-                        [style.height.px]="padTop()"></td>
-                </tr>
-                @for (row of viewRows(); track viewStart + $index; let offset = $index) {
-                    @let rowIndex = viewStart + offset;
+                @for (row of month.rows; track $index; let rowIndex = $index) {
                     <tr [class]="row.color">
                         @for (cell of row.cells; let colIndex = $index; track colIndex) {
                             <td balMonthCell
@@ -73,10 +67,6 @@
                         }
                     </tr>
                 }
-                <tr class="virt-pad" aria-hidden="true">
-                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
-                        [style.height.px]="padBottom()"></td>
-                </tr>
                 <tr class="foot-spacer" aria-hidden="true">
                     <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
                         [style.height.px]="saldo.footerRows().length * 20"></td>
