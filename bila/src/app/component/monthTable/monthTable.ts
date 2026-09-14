@@ -76,7 +76,7 @@ export class MonthTable implements OnDestroy {
         if (event.key !== 'Escape') {
             return;
         }
-        if (!(this.edit.formulaMode || this.edit.refPickMode || this.edit.editingRow !== null)) {
+        if (!(this.edit.formulaMode || this.edit.refPickMode || this.edit.liveEdit)) {
             return;
         }
         event.preventDefault();
@@ -159,7 +159,7 @@ export class MonthTable implements OnDestroy {
     }
 
     isEditing(rowIndex: number, colIndex: number): boolean {
-        return this.edit.editingRow === rowIndex && this.edit.editingCol === colIndex;
+        return this.edit.liveEdit && this.edit.editingRow === rowIndex && this.edit.editingCol === colIndex;
     }
 
     cellCss(cell: MonthCell): string {
