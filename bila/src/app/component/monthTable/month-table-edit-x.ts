@@ -21,6 +21,17 @@ export class MonthTableEditX extends MonthTableEdit {
         this.range = new MonthTableRange(formulaService);
     }
 
+    override selectCell(rowIndex: number, colIndex: number, cell: MonthCell): void {
+        super.selectCell(rowIndex, colIndex, cell);
+        if (this.skipFocusReset) {
+            this.skipFocusReset = false;
+            return;
+        }
+        if (!this.range.rowMode && !this.range.dragging) {
+            this.range.reset(rowIndex, colIndex);
+        }
+    }
+
     override startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
         super.startEdit(rowIndex, colIndex, cell);
         if (this.skipFocusReset) {
