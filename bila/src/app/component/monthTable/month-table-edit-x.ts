@@ -72,6 +72,21 @@ export class MonthTableEditX extends MonthTableEdit {
             this.clearRange();
             return;
         }
+        if (event.key === 'Home' || event.key === 'End') {
+            event.preventDefault();
+            const nextCol = event.key === 'Home' ? this.colByLetter('A') : this.colByLetter('AF');
+            if (this.liveEdit) {
+                this.commitEdit(cell);
+            }
+            if (event.shiftKey) {
+                this.range.extend(rowIndex, nextCol);
+                this.skipFocusReset = true;
+            } else {
+                this.range.reset(rowIndex, nextCol);
+            }
+            this.range.focusCell(this.monthRef()?.label.title ?? '', rowIndex, nextCol);
+            return;
+        }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
             && (event.shiftKey || event.ctrlKey || event.metaKey)) {
             event.preventDefault();
