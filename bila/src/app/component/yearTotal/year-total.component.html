@@ -1,7 +1,7 @@
 @if (report(); as data) {
 <section class="year-total">
     <h2>Total</h2>
-    <p>Spaltennamen einmal oben, vertikal und klebrig. Darunter Monat für Monat.</p>
+    <p>Spaltennamen einmal oben, vertikal und klebrig. Darunter Monat für Monat. Einnahmenspalten grün.</p>
     <div class="cards">
         <div class="card"><span>Jahr Ausgaben</span><strong>{{ format(data.yearExpense) }}</strong></div>
         <div class="card"><span>Jahr Einnahmen</span><strong>{{ format(data.yearIncome) }}</strong></div>
@@ -18,9 +18,16 @@
                 <th class="sticky-col month-col">Monat</th>
                 <th class="sticky-col person-col">Person</th>
                 @for (col of data.columns; track col.title) {
-                    <th><div class="title-pack"><span>{{ col.title }}</span></div></th>
+                    <th [class.income]="columnKind(col.title) === 'Einnahme'"
+                        [title]="col.title + ' · ' + columnKind(col.title)">
+                        <div class="title-pack"><span>{{ col.title }}</span></div>
+                        <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
+                    </th>
                 }
-                <th><div class="title-pack"><span>Σ</span></div></th>
+                <th>
+                    <div class="title-pack"><span>Σ</span></div>
+                    <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
+                </th>
             </tr>
             </thead>
             <tbody>
