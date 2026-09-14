@@ -4,7 +4,19 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-.year-shell { height: calc(100vh - 48px) !important; }
+.year-shell {
+    height: calc(100vh - 48px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+.year-body { flex: 1 1 auto !important; min-height: 0 !important; }
+bal-year-tabs {
+    flex: 0 0 auto !important;
+    position: relative;
+    z-index: 50;
+    background: #e2e8f0;
+}
 
 select {
     appearance: auto !important;
@@ -61,6 +73,33 @@ bal-month-table .data-table select {
     -webkit-backdrop-filter: none !important;
     box-shadow: 0 16px 48px rgba(2, 6, 23, 0.45) !important;
 }
+.settings-dialog tr,
+.settings-dialog td,
+.settings-dialog th {
+    background: transparent !important;
+    height: auto !important;
+    max-height: none !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    border-right: 0 !important;
+    padding: 6px !important;
+}
+.settings-dialog input,
+.settings-dialog select {
+    appearance: auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 32px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+}
+.settings-dialog .code-input { width: 3.2rem !important; }
+.settings-dialog .name-table input:not(.code-input) { width: 100% !important; min-width: 140px !important; }
+
 @media (prefers-color-scheme: dark) {
     .settings-dialog,
     .settings-dialog.p-dialog,
@@ -70,6 +109,18 @@ bal-month-table .data-table select {
     .settings-dialog .p-dialog-footer,
     .settings-dialog .p-dialog-titlebar {
         background: #0f172a !important;
+        color: #e2e8f0 !important;
+    }
+    .settings-dialog input,
+    .settings-dialog select {
+        background: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+    .settings-dialog tr,
+    .settings-dialog td,
+    .settings-dialog th {
+        background: transparent !important;
         color: #e2e8f0 !important;
     }
 }

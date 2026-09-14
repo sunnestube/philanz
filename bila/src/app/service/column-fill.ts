@@ -40,19 +40,15 @@ export function applyColumnFills(workbook: WorkbookService): void {
     workbook.months().forEach((month) => {
         month.rows.forEach((row) => {
             month.columns.forEach((_column, index) => {
+                const cell = row.cells[index];
+                if (!cell || (cell.raw ?? '').trim()) {
+                    return;
+                }
                 const filled = columnFillAmount(workbook, month, row, index);
                 if (filled == null) {
                     return;
                 }
-                const cell = row.cells[index];
-                if (!cell) {
-                    return;
-                }
-                const text = String(filled);
-                if (cell.raw !== text) {
-                    cell.raw = text;
-                    cell.display = text;
-                }
+                cell.display = String(filled);
             });
         });
     });
