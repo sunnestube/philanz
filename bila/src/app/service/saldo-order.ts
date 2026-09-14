@@ -1,5 +1,7 @@
 import {SaldoColumnPref, SaldoCombo, WorkbookService} from './workbook.service';
 
+type OrderedPref = SaldoColumnPref & {order?: number};
+
 declare module './workbook.service' {
     interface WorkbookService {
         moveSaldoCombo(key: string, delta: number): void;
@@ -8,7 +10,7 @@ declare module './workbook.service' {
 }
 
 export function orderedSaldoCombos(book: WorkbookService): SaldoCombo[] {
-    const prefs = book.saldoColumnPrefs();
+    const prefs = book.saldoColumnPrefs() as Record<string, OrderedPref>;
     return book.saldoCombos()
         .map((combo, index) => ({combo, index, order: prefs[combo.key]?.order ?? index}))
         .sort((left, right) => left.order - right.order || left.index - right.index)
@@ -28,12 +30,12 @@ export function installSaldoOrder(workbook: WorkbookService): void {
     };
 
     const setPref = book.setSaldoColumnPref.bind(book);
-    book.setSaldoColumnPref = (key: string, patch: Partial<SaldoColumnPref>) => {
+    book.setSaldoColumnPref = (key: string, patch: Partial<SaldoColumnPref> & {order?: number}) => {
         setPref(key, patch);
         if (patch.order === undefined) {
             return;
         }
-        const current = book.saldoColumnPrefs();
+        const current = book.saldoColumnPrefs() as Record<string, OrderedPref>;
         const fallback = current[key] ?? {visible: true, title: key.replace('|', ' ')};
         book.saldoColumnPrefs.set({
             ...current,
@@ -41,7 +43,7 @@ export function installSaldoOrder(workbook: WorkbookService): void {
                 visible: patch.visible ?? fallback.visible,
                 title: patch.title ?? fallback.title,
                 order: patch.order
-            }
+            } as SaldoColumnPref
         });
         raw.persistSettings();
         raw.touch();
@@ -81,12 +83,12 @@ function reorder(book: {
     const next = [...list];
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
-    const prefs = {...book.saldoColumnPrefs()};
+    const prefs = {...book.saldoColumnPrefs()} as Record<string, OrderedPref>;
     next.forEach((combo, index) => {
         const current = prefs[combo.key] ?? {visible: true, title: `${combo.person} ${combo.account}`};
         prefs[combo.key] = {...current, order: index};
     });
-    book.saldoColumnPrefs.set(prefs);
+    book.saldoColumnPrefs.set(prefs as Record<string, SaldoColumnPref>);
     book.persistSettings();
     book.touch();
 }
