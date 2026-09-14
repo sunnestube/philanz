@@ -79,8 +79,8 @@
                 <label>Spalte
                     <select [ngModel]="item.columnTitle" (ngModelChange)="setColumn(item, $event)">
                         <option value="">— wählen</option>
-                        @for (title of numberTitles(); track title) {
-                            <option [value]="title">{{ title }}</option>
+                        @for (col of numberColumns(); track col.title) {
+                            <option [value]="col.title">{{ col.title }} · {{ col.kind }}</option>
                         }
                     </select>
                 </label>
