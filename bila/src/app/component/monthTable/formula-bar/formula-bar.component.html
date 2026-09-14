@@ -1,0 +1,28 @@
+<div class="formula-bar" [class.active]="active()">
+    <div class="formula-address" title="Zellenadresse">
+        {{ activeAddress() || '—' }}
+    </div>
+    <div class="formula-fx">fx</div>
+    <div class="formula-input-wrap" [class.colorize]="colorize()">
+        @if (colorize()) {
+            <div class="formula-color-layer" aria-hidden="true">
+                @for (tok of tokens(); track $index) {
+                    <span [class]="tok.color === null ? 'tok-plain' : 'tok-' + tok.color">{{ tok.text }}</span>
+                }
+            </div>
+        }
+        <input
+            #formulaInput
+            class="formula-input"
+            type="text"
+            [value]="draft()"
+            [placeholder]="placeholder()"
+            (focus)="formulaFocus.emit()"
+            (input)="formulaInput.emit($event)"
+            (keydown)="formulaKeydown.emit($event)"
+            (copy)="formulaCopy.emit($event)"
+            (paste)="formulaPaste.emit($event)"
+            (blur)="formulaBlur.emit($event)"
+        />
+    </div>
+</div>
