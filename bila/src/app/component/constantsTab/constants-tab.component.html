@@ -9,17 +9,20 @@
     </div>
     <div class="const-list">
         @for (item of transfers(); track item.id; let index = $index) {
-            <article class="const-card" draggable="true"
-                     (dragstart)="onDragStart($event, item.id)"
-                     (dragover)="onDragOver($event)"
-                     (drop)="onDrop($event, item.id, 'transfer')">
-                <div class="name-row">
-                    <span class="drag-handle">⋮⋮</span>
-                    <input class="name-input" type="text" [value]="item.name" (change)="onName(item, $event)" placeholder="Name"/>
-                    <button type="button" class="move-btn" (click)="nudge(item.id, -1, 'transfer')" [disabled]="index === 0">←</button>
-                    <button type="button" class="move-btn" (click)="nudge(item.id, 1, 'transfer')" [disabled]="index === transfers().length - 1">→</button>
-                    <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)">×</button>
-                </div>
+            <bal-constants-card
+                [item]="item"
+                kind="transfer"
+                [first]="index === 0"
+                [last]="index === transfers().length - 1"
+                placeholder="Name"
+                [workbook]="workbook"
+                (nameChange)="onName(item, $event)"
+                (monthChange)="onMonth(item, $event.index, $event.event)"
+                (nudge)="nudge(item.id, $event, 'transfer')"
+                (removed)="workbook.removeConstant(item.id)"
+                (dragStart)="onDragStart($event, item.id)"
+                (dragOver)="onDragOver($event)"
+                (dropped)="onDrop($event, item.id, 'transfer')">
                 <label>Person
                     <select [ngModel]="item.person" (ngModelChange)="workbook.setConstantPerson(item.id, $event)">
                         <option value="">— wie Sender</option>
@@ -36,23 +39,7 @@
                         }
                     </select>
                 </label>
-                <div class="month-grid">
-                    @for (label of months; track label; let monthIndex = $index) {
-                        <label>{{ label }}
-                            <input type="text"
-                                   inputmode="text"
-                                   [class.formula]="workbook.isFormula(item.months[monthIndex]) || isPrevRef(item.months[monthIndex])"
-                                   [value]="item.months[monthIndex]"
-                                   (change)="onMonth(item, monthIndex, $event)"
-                                   [title]="preview(item, label)"/>
-                        </label>
-                    }
-                </div>
-                <div class="const-foot">
-                    <span>Ø {{ format(workbook.constantAverage(item)) }}</span>
-                    <span>Σ {{ format(workbook.constantTotal(item)) }}</span>
-                </div>
-            </article>
+            </bal-constants-card>
         }
     </div>
 
@@ -65,17 +52,20 @@
     </div>
     <div class="const-list">
         @for (item of columns(); track item.id; let index = $index) {
-            <article class="const-card column-card" draggable="true"
-                     (dragstart)="onDragStart($event, item.id)"
-                     (dragover)="onDragOver($event)"
-                     (drop)="onDrop($event, item.id, 'column')">
-                <div class="name-row">
-                    <span class="drag-handle">⋮⋮</span>
-                    <input class="name-input" type="text" [value]="item.name" (change)="onName(item, $event)" placeholder="z.B. Lohn"/>
-                    <button type="button" class="move-btn" (click)="nudge(item.id, -1, 'column')" [disabled]="index === 0">←</button>
-                    <button type="button" class="move-btn" (click)="nudge(item.id, 1, 'column')" [disabled]="index === columns().length - 1">→</button>
-                    <button type="button" class="const-remove" (click)="workbook.removeConstant(item.id)">×</button>
-                </div>
+            <bal-constants-card
+                [item]="item"
+                kind="column"
+                [first]="index === 0"
+                [last]="index === columns().length - 1"
+                placeholder="z.B. Lohn"
+                [workbook]="workbook"
+                (nameChange)="onName(item, $event)"
+                (monthChange)="onMonth(item, $event.index, $event.event)"
+                (nudge)="nudge(item.id, $event, 'column')"
+                (removed)="workbook.removeConstant(item.id)"
+                (dragStart)="onDragStart($event, item.id)"
+                (dragOver)="onDragOver($event)"
+                (dropped)="onDrop($event, item.id, 'column')">
                 <label>Spalte
                     <select [ngModel]="item.columnTitle" (ngModelChange)="setColumn(item, $event)">
                         <option value="">— wählen</option>
@@ -84,23 +74,7 @@
                         }
                     </select>
                 </label>
-                <div class="month-grid">
-                    @for (label of months; track label; let monthIndex = $index) {
-                        <label>{{ label }}
-                            <input type="text"
-                                   inputmode="text"
-                                   [class.formula]="workbook.isFormula(item.months[monthIndex]) || isPrevRef(item.months[monthIndex])"
-                                   [value]="item.months[monthIndex]"
-                                   (change)="onMonth(item, monthIndex, $event)"
-                                   [title]="preview(item, label)"/>
-                        </label>
-                    }
-                </div>
-                <div class="const-foot">
-                    <span>Ø {{ format(workbook.constantAverage(item)) }}</span>
-                    <span>Σ {{ format(workbook.constantTotal(item)) }}</span>
-                </div>
-            </article>
+            </bal-constants-card>
         }
     </div>
 </section>
