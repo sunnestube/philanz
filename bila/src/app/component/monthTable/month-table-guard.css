@@ -1,0 +1,9 @@
+.data-table select {
+    appearance: none;
+    background: none;
+    padding: 2px;
+    color: inherit;
+    cursor: pointer;
+    width: 100%;
+    height: 18px;
+}
