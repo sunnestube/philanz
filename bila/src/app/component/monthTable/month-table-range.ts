@@ -10,6 +10,7 @@ export class MonthTableRange {
     dragging = false;
     copyRow = 0;
     copyCol = 0;
+    rowMode = false;
 
     constructor(private readonly formula: FormulaService) {}
 
@@ -19,11 +20,27 @@ export class MonthTableRange {
         this.focusRow = row;
         this.focusCol = col;
         this.dragging = false;
+        this.rowMode = false;
     }
 
     extend(row: number, col: number): void {
         this.focusRow = row;
         this.focusCol = col;
+        if (this.rowMode) {
+            this.anchorCol = 0;
+            this.focusCol = col;
+        }
+    }
+
+    selectRows(row: number, lastCol: number, extend = false): void {
+        this.rowMode = true;
+        this.dragging = true;
+        if (!extend) {
+            this.anchorRow = row;
+            this.anchorCol = 0;
+        }
+        this.focusRow = row;
+        this.focusCol = lastCol;
     }
 
     get row0(): number {
