@@ -63,13 +63,13 @@ export class MonthTableCellComponent {
     }
 
     onSelectArrowDown(event: KeyboardEvent): void {
-        if (event.key.startsWith('Arrow')) {
+        if (event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End') {
             event.preventDefault();
         }
     }
 
     onSelectArrowUp(event: KeyboardEvent): void {
-        if (event.key.startsWith('Arrow')) {
+        if (event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End') {
             this.selectNavigate.emit(event);
         }
     }

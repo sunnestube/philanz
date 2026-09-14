@@ -68,9 +68,17 @@ thead th.sticky-col {
     height: var(--title-h, 84px);
 }
 .title-pack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    bottom: 6px;
     display: flex;
-    justify-content: center;
-    height: calc(var(--title-h, 84px) - 8px);
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    overflow: hidden;
+    pointer-events: none;
 }
 .row-resizer {
     position: absolute;
@@ -84,7 +92,8 @@ thead th.sticky-col {
 .title-pack > span {
     display: block;
     width: 14px;
-    height: 100%;
+    height: auto;
+    max-height: 100%;
     writing-mode: sideways-lr;
     text-align: start;
     overflow: hidden;
