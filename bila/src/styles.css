@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; overflow: hidden; }
 .year-shell {
-    height: 100% !important;
+    height: calc(100vh - 48px) !important;
+    max-height: calc(100vh - 48px) !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
@@ -17,6 +18,7 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 .year-body { flex: 1 1 auto !important; min-height: 0 !important; }
 bal-year-tabs {
+    display: block !important;
     flex: 0 0 auto !important;
     position: relative;
     z-index: 50;
@@ -58,6 +60,20 @@ bal-month-table .data-table select {
     height: 18px !important;
     background: none;
     padding: 2px;
+}
+bal-month-table .cell-read {
+    display: block;
+    height: 18px;
+    line-height: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
+    box-sizing: border-box;
+}
+bal-month-table td.number .cell-read {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .p-dialog-mask,
