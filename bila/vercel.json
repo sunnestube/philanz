@@ -3,6 +3,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/bila/browser",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!assets/|favicon\\.(svg|ico)|.*\\..*).*)", "destination": "/index.html" }
   ]
 }

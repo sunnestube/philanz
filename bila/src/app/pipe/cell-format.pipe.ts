@@ -45,8 +45,8 @@ export class CellFormatPipe implements PipeTransform {
         if (!Number.isFinite(day) || day <= 0) {
             return value;
         }
-        const monthNumber = CellFormatPipe.monthNumber(monthLabel.title);
-        return monthNumber ? `${day}.${monthNumber}` : value;
+        const monthName = CellFormatPipe.monthName(monthLabel.title);
+        return monthName ? `${day}. ${monthName}` : value;
     }
 
     static monthNumber(title: string): number {
@@ -61,7 +61,13 @@ export class CellFormatPipe implements PipeTransform {
         if (!Number.isFinite(day) || day <= 0) {
             return value;
         }
-        const monthNumber = CellFormatPipe.monthNumber(monthTitle);
-        return monthNumber ? `${day}.${monthNumber}` : value;
+        const monthName = CellFormatPipe.monthName(monthTitle);
+        return monthName ? `${day}. ${monthName}` : value;
+    }
+
+    static monthName(title: string): string {
+        const order = Object.values(MonthKey);
+        const match = order.find((key) => key.toLowerCase() === String(title).toLowerCase());
+        return match || '';
     }
 }
