@@ -1,3 +1,4 @@
+import {CELL_TYPE} from '../../model/CellType';
 import {MonthCell} from '../../model/MonthCell';
 import {FormulaService} from '../../service/formula.service';
 import {WorkbookService} from '../../service/workbook.service';
@@ -27,11 +28,13 @@ export class MonthTableEditX extends MonthTableEdit {
             this.skipFocusReset = false;
             return;
         }
-        this.range.reset(rowIndex, colIndex);
+        if (!this.range.rowMode) {
+            this.range.reset(rowIndex, colIndex);
+        }
     }
 
     override onCopy(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
-        if (this.range.multi()) {
+        if (this.range.multi() || this.range.rowMode) {
             event.preventDefault();
             event.clipboardData?.setData('text/plain', this.range.copyTsv(this.monthRef()));
             return;
@@ -39,7 +42,24 @@ export class MonthTableEditX extends MonthTableEdit {
         super.onCopy(event, rowIndex, colIndex, cell);
     }
 
+    override onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        const clip = event.clipboardData?.getData('text/plain') ?? '';
+        const grid = this.parseClipboardGrid(clip);
+        const block = grid.length > 1 || (grid[0]?.length ?? 0) > 1;
+        if (block && (this.range.rowMode || this.isIndexCol(colIndex))) {
+            event.preventDefault();
+            this.pasteGrid(grid, rowIndex, this.range.copyCol);
+            return;
+        }
+        super.onPaste(event, rowIndex, colIndex, cell);
+    }
+
     override onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (event.key === 'Delete') {
+            event.preventDefault();
+            this.clearRange();
+            return;
+        }
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
             && (event.shiftKey || event.ctrlKey || event.metaKey)) {
             event.preventDefault();
@@ -48,7 +68,11 @@ export class MonthTableEditX extends MonthTableEdit {
                 ? from.jump(this.monthRef(), from.focusRow, from.focusCol, event.key)
                 : from.step(this.monthRef(), from.focusRow, from.focusCol, event.key);
             if (event.shiftKey) {
-                from.extend(next.row, next.col);
+                if (from.rowMode) {
+                    from.selectRows(next.row, this.lastCol(), true);
+                } else {
+                    from.extend(next.row, next.col);
+                }
                 this.skipFocusReset = true;
             } else {
                 this.commitEdit(cell);
@@ -61,6 +85,11 @@ export class MonthTableEditX extends MonthTableEdit {
     }
 
     override onCellMouseDown(event: MouseEvent, rowIndex: number, colIndex: number): void {
+        if (this.isIndexCol(colIndex)) {
+            event.preventDefault();
+            this.range.selectRows(rowIndex, this.lastCol(), event.shiftKey);
+            return;
+        }
         if (!this.refPickMode) {
             if (event.shiftKey) {
                 event.preventDefault();
@@ -75,9 +104,14 @@ export class MonthTableEditX extends MonthTableEdit {
     }
 
     onCellEnter(rowIndex: number, colIndex: number): void {
-        if (this.range.dragging && !this.refPickMode) {
-            this.range.extend(rowIndex, colIndex);
+        if (!this.range.dragging || this.refPickMode) {
+            return;
         }
+        if (this.range.rowMode) {
+            this.range.selectRows(rowIndex, this.lastCol(), true);
+            return;
+        }
+        this.range.extend(rowIndex, colIndex);
     }
 
     endDrag(): void {
@@ -86,5 +120,36 @@ export class MonthTableEditX extends MonthTableEdit {
 
     inRange(rowIndex: number, colIndex: number): boolean {
         return this.range.contains(rowIndex, colIndex);
+    }
+
+    private lastCol(): number {
+        return Math.max(0, (this.monthRef()?.columns.length ?? 1) - 1);
+    }
+
+    private isIndexCol(colIndex: number): boolean {
+        return this.monthRef()?.columns[colIndex]?.type === CELL_TYPE.index;
+    }
+
+    private clearRange(): void {
+        const month = this.monthRef();
+        if (!month) {
+            return;
+        }
+        this.suppressCommit = true;
+        for (let row = this.range.row0; row <= this.range.row1; row++) {
+            for (let col = this.range.col0; col <= this.range.col1; col++) {
+                const cell = month.rows[row]?.cells[col];
+                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+                    continue;
+                }
+                cell.raw = '';
+                if (cell.type.id.indexOf('select') !== -1) {
+                    cell.value = '';
+                }
+            }
+        }
+        this.draft = '';
+        this.refresh();
+        queueMicrotask(() => { this.suppressCommit = false; });
     }
 }

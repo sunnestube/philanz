@@ -13,7 +13,12 @@
         }
     </select>
 } @else if (isIndex()) {
-    <div>{{ rowIndex() + 1 }}</div>
+    <div [id]="cellId()"
+         tabindex="0"
+         class="row-head"
+         (keydown)="valueKeydown.emit($event)"
+         (copy)="copy.emit($event)"
+         (paste)="paste.emit($event)">{{ rowIndex() + 1 }}</div>
 } @else {
     <input
         [id]="cellId()"
