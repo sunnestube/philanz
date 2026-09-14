@@ -15,6 +15,7 @@ export class MonthTableEdit {
     activeAddress = '';
     private editOriginal = '';
     private ignoreFormulaBlur = false;
+    protected suppressCommit = false;
     private readonly refTokenPattern = /(?:[A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+/g;
 
     constructor(
@@ -81,8 +82,8 @@ export class MonthTableEdit {
     }
 
     enterRefPick(): void {
-        this.refPickMode = true;
         this.formulaMode = true;
+        this.refPickMode = (this.draft || '').trim().startsWith('=');
     }
 
     startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
@@ -121,7 +122,7 @@ export class MonthTableEdit {
     }
 
     commitEdit(cell: MonthCell | null): void {
-        if (!cell) {
+        if (!cell || this.suppressCommit || this.editingRow === null) {
             return;
         }
         cell.raw = this.draft;
@@ -151,7 +152,10 @@ export class MonthTableEdit {
     }
 
     onFormulaBlur(): void {
-        if (this.ignoreFormulaBlur || this.refPickMode) {
+        if (this.ignoreFormulaBlur) {
+            return;
+        }
+        if (this.refPickMode) {
             queueMicrotask(() => this.focusBar());
             return;
         }
@@ -355,7 +359,7 @@ export class MonthTableEdit {
         return {row, col};
     }
 
-    private parseClipboardGrid(text: string): string[][] {
+    protected parseClipboardGrid(text: string): string[][] {
         const lines = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
         while (lines.length && lines[lines.length - 1] === '') {
             lines.pop();
@@ -363,7 +367,12 @@ export class MonthTableEdit {
         return lines.length ? lines.map((line) => line.split('\t')) : [['']];
     }
 
-    private pasteGrid(grid: string[][], startRow: number, startCol: number): void {
+    protected refresh(): void {
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+    }
+
+    protected pasteGrid(grid: string[][], startRow: number, startCol: number): void {
         const month = this.monthOf();
         if (!month) {
             return;
@@ -386,6 +395,7 @@ export class MonthTableEdit {
                 }
             });
         });
+        this.suppressCommit = true;
         this.formulaMode = false;
         this.refPickMode = false;
         this.editingRow = null;
@@ -393,6 +403,7 @@ export class MonthTableEdit {
         this.draft = '';
         this.formulaService.recalculateAll();
         this.workbook.touch();
+        queueMicrotask(() => { this.suppressCommit = false; });
     }
 
     private appendEmptyRow(month: Month): void {
