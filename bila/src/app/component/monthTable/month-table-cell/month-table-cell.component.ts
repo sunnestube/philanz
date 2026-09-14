@@ -1,4 +1,4 @@
-import {Component, effect, ElementRef, input, output, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, ElementRef, input, output, viewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MonthCell} from '../../../model/MonthCell';
 
@@ -7,11 +7,13 @@ import {MonthCell} from '../../../model/MonthCell';
     standalone: true,
     imports: [FormsModule],
     templateUrl: './month-table-cell.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
         '[class]': 'hostClass()',
         '[attr.data-ref]': 'refColor()',
         '(mousedown)': 'cellMouseDown.emit($event)',
-        '(mouseenter)': 'cellEnter.emit()'
+        '(mouseenter)': 'cellEnter.emit()',
+        '(dblclick)': 'cellDblClick.emit()'
     }
 })
 export class MonthTableCellComponent {
@@ -30,6 +32,7 @@ export class MonthTableCellComponent {
     readonly selected = input(false);
     readonly cellMouseDown = output<MouseEvent>();
     readonly cellEnter = output();
+    readonly cellDblClick = output();
     readonly selectChange = output();
     readonly selectNavigate = output<KeyboardEvent>();
     readonly valueFocus = output();
