@@ -49,7 +49,7 @@
                                 [refColor]="edit.refColorAt(rowIndex, colIndex)"
                                 [display]="cellDisplay(cell, rowIndex, colIndex)"
                                 [cellId]="cellId(rowIndex, colIndex)"
-                                [options]="optionsFor(cell)"
+                                [options]="isSelect(cell) ? optionsFor(cell) : noOptions"
                                 [rowIndex]="rowIndex"
                                 [selected]="edit.inRange(rowIndex, colIndex)"
                                 (cellMouseDown)="edit.onCellMouseDown($event, rowIndex, colIndex)"
