@@ -1,5 +1,7 @@
 import {Component, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {CELL_TYPE} from '../../model/CellType';
+import {SECTION} from '../../model/Section';
 import {CONSTANT_MONTHS, ConstantDef, WorkbookService} from '../../service/workbook.service';
 
 type ConstantKind = 'transfer' | 'column';
@@ -31,15 +33,18 @@ export class ConstantsTabComponent {
         this.patchLast({kind: 'transfer', months: ['0', ...Array.from({length: 11}, () => '↑')]});
     }
 
-    numberTitles(): string[] {
+    numberColumns(): Array<{title: string; kind: string}> {
         const month = this.workbook.months()[0];
         if (!month) {
             return [];
         }
         return month.columns
-            .filter((column) => column.type === 'number' || String(column.type).includes('number'))
-            .map((column) => column.title)
-            .filter((title) => !!title && title !== 'Saldo');
+            .filter((column) => column.type === CELL_TYPE.number && column.section !== SECTION.SALDO)
+            .map((column) => ({
+                title: column.title,
+                kind: column.section === SECTION.EINGANG ? 'Einnahme' : 'Ausgabe'
+            }))
+            .filter((item) => !!item.title);
     }
 
     addColumn(): void {
