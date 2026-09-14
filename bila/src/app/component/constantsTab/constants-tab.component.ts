@@ -3,14 +3,12 @@ import {FormsModule} from '@angular/forms';
 import {CELL_TYPE} from '../../model/CellType';
 import {SECTION} from '../../model/Section';
 import {CONSTANT_MONTHS, ConstantDef, WorkbookService} from '../../service/workbook.service';
-
-type ConstantKind = 'transfer' | 'column';
-type RichConstant = ConstantDef & {kind?: ConstantKind; columnTitle?: string};
+import {ConstantKind, ConstantsCardComponent, RichConstant} from './constants-card.component';
 
 @Component({
     selector: 'bal-constants-tab',
     standalone: true,
-    imports: [FormsModule],
+    imports: [FormsModule, ConstantsCardComponent],
     templateUrl: './constants-tab.component.html',
     styleUrl: './constants-tab.component.css'
 })
@@ -64,11 +62,6 @@ export class ConstantsTabComponent {
         this.workbook.setConstantMonth(item.id, index, (event.target as HTMLInputElement).value);
     }
 
-    isPrevRef(raw: string | null | undefined): boolean {
-        const text = (raw ?? '').trim();
-        return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
-    }
-
     nudge(id: string, delta: number, kind: ConstantKind): void {
         const list = kind === 'column' ? this.columns() : this.transfers();
         const from = list.findIndex((item) => item.id === id);
@@ -98,22 +91,6 @@ export class ConstantsTabComponent {
         const list = kind === 'column' ? this.columns() : this.transfers();
         const toIndex = list.findIndex((item) => item.id === targetId);
         this.moveInKind(id, toIndex, kind);
-    }
-
-    preview(item: ConstantDef, monthTitle: string): string {
-        const index = CONSTANT_MONTHS.indexOf(monthTitle as typeof CONSTANT_MONTHS[number]);
-        const raw = item.months[index] ?? '';
-        if (this.isPrevRef(raw) || this.workbook.isFormula(raw)) {
-            return this.format(this.workbook.constantAmount(item, monthTitle));
-        }
-        return raw;
-    }
-
-    format(value: number): string {
-        if (!value) {
-            return '';
-        }
-        return value.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     private all(): RichConstant[] {
