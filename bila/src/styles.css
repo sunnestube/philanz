@@ -41,6 +41,9 @@ bal-month-table .table-scroll::-webkit-scrollbar {
     height: 14px;
     width: 14px;
 }
+bal-month-table .data-table td.selected {
+    background: #dbeafe !important;
+}
 bal-month-table .data-table select {
     appearance: none !important;
     width: 100% !important;

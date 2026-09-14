@@ -10,7 +10,8 @@ import {MonthCell} from '../../../model/MonthCell';
     host: {
         '[class]': 'hostClass()',
         '[attr.data-ref]': 'refColor()',
-        '(mousedown)': 'cellMouseDown.emit($event)'
+        '(mousedown)': 'cellMouseDown.emit($event)',
+        '(mouseenter)': 'cellEnter.emit()'
     }
 })
 export class MonthTableCellComponent {
@@ -26,7 +27,9 @@ export class MonthTableCellComponent {
     readonly cellId = input('');
     readonly options = input<string[]>([]);
     readonly rowIndex = input(0);
+    readonly selected = input(false);
     readonly cellMouseDown = output<MouseEvent>();
+    readonly cellEnter = output();
     readonly selectChange = output();
     readonly selectNavigate = output<KeyboardEvent>();
     readonly valueFocus = output();
@@ -41,7 +44,8 @@ export class MonthTableCellComponent {
             this.cssType(),
             this.isFormula() ? 'formula' : '',
             this.editing() ? 'editing' : '',
-            this.refTarget() ? 'ref-target' : ''
+            this.refTarget() ? 'ref-target' : '',
+            this.selected() ? 'selected' : ''
         ].filter(Boolean).join(' ');
     }
 
