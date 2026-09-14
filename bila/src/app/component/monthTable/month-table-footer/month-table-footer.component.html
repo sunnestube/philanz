@@ -1,0 +1,15 @@
+@for (foot of rows(); track foot.label) {
+    <tr class="foot-row {{foot.color}}" [style.--foot-y]="foot.offset">
+        @for (cell of foot.cells; track $index) {
+            <td class="{{cell.cssType}} {{cell.section}}">{{ cell.text }}</td>
+        }
+        @if (showSaldo()) {
+            @for (saldo of foot.saldos; track saldo.key) {
+                <td balSaldoCell [vm]="saldo"></td>
+            }
+            @if (showTotal() && foot.total) {
+                <td balSaldoCell [vm]="foot.total"></td>
+            }
+        }
+    </tr>
+}

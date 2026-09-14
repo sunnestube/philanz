@@ -1,0 +1,45 @@
+<tr class="letter-row">
+    @for (column of columns(); track column.index) {
+        <th class="{{column.cssType}} {{column.section}} letter-cell"
+            [attr.title]="column.letter + ' · ' + column.type">
+            {{ column.letter }}
+        </th>
+    }
+    @if (showSaldo()) {
+        @for (col of saldos(); track col.key) {
+            <th class="number S person-{{col.personClass}} letter-cell"
+                [class.saldo-start]="col.first"></th>
+        }
+        @if (showTotal() && saldos().length) {
+            <th class="number S total-col letter-cell"></th>
+        }
+    }
+</tr>
+<tr class="title-row">
+    @for (column of columns(); track column.index) {
+        <th class="{{column.cssType}} {{column.section}}"
+            [attr.title]="column.letter + ' · ' + column.type">
+            <div class="title-pack"><span>{{ column.title }}</span></div>
+            @if (column.isText) {
+                <span class="col-resizer" (pointerdown)="textResize.emit($event)" title="Textspalte breiter ziehen"></span>
+            }
+            <span class="row-resizer" (pointerdown)="headerResize.emit($event)" title="Titelzeile höher ziehen"></span>
+        </th>
+    }
+    @if (showSaldo()) {
+        @for (col of saldos(); track col.key) {
+            <th class="number S person-{{col.personClass}}"
+                [class.saldo-start]="col.first"
+                [attr.title]="'Saldo ' + col.title">
+                <div class="title-pack"><span>{{ col.title }}</span></div>
+                <span class="row-resizer" (pointerdown)="headerResize.emit($event)" title="Titelzeile höher ziehen"></span>
+            </th>
+        }
+        @if (showTotal() && saldos().length) {
+            <th class="number S total-col" [attr.title]="'Saldo ' + totalTitle()">
+                <div class="title-pack"><span>{{ totalTitle() }}</span></div>
+                <span class="row-resizer" (pointerdown)="headerResize.emit($event)" title="Titelzeile höher ziehen"></span>
+            </th>
+        }
+    }
+</tr>
