@@ -74,7 +74,7 @@ export class MonthTableEditX extends MonthTableEdit {
         }
         if (event.key === 'Home' || event.key === 'End') {
             event.preventDefault();
-            const nextCol = event.key === 'Home' ? this.colByLetter('A') : this.colByLetter('AF');
+            const nextCol = event.key === 'Home' ? this.letterCol('A') : this.letterCol('AF');
             if (this.liveEdit) {
                 this.commitEdit(cell);
             }
@@ -85,27 +85,6 @@ export class MonthTableEditX extends MonthTableEdit {
                 this.range.reset(rowIndex, nextCol);
             }
             this.range.focusCell(this.monthRef()?.label.title ?? '', rowIndex, nextCol);
-            return;
-        }
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
-            && (event.shiftKey || event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            const from = this.range;
-            const next = (event.ctrlKey || event.metaKey)
-                ? from.jump(this.monthRef(), from.focusRow, from.focusCol, event.key)
-                : from.step(this.monthRef(), from.focusRow, from.focusCol, event.key);
-            if (event.shiftKey) {
-                if (from.rowMode) {
-                    from.selectRows(next.row, this.lastCol(), true);
-                } else {
-                    from.extend(next.row, next.col);
-                }
-                this.skipFocusReset = true;
-            } else {
-                this.commitEdit(cell);
-                from.reset(next.row, next.col);
-            }
-            from.focusCell(this.monthRef()?.label.title ?? '', next.row, next.col);
             return;
         }
         super.onKeydown(event, rowIndex, colIndex, cell);
@@ -155,6 +134,51 @@ export class MonthTableEditX extends MonthTableEdit {
 
     private isIndexCol(colIndex: number): boolean {
         return this.monthRef()?.columns[colIndex]?.type === CELL_TYPE.index;
+    }
+
+    private letterCol(letter: string): number {
+        const columns = this.monthRef()?.columns ?? [];
+        const raw = this.formulaRawIndex(letter, columns);
+        if (raw >= 0 && raw < columns.length) {
+            const type = columns[raw]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                return raw;
+            }
+        }
+        let last = 0;
+        for (let i = 0; i < columns.length; i++) {
+            const type = columns[i]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                if (letter.toUpperCase() === 'A') {
+                    return i;
+                }
+                last = i;
+            }
+        }
+        return last;
+    }
+
+    private formulaRawIndex(letter: string, columns: Array<{type: string}>): number {
+        const visible = this.lettersToVisible(letter);
+        let count = 0;
+        for (let i = 0; i < columns.length; i++) {
+            const type = columns[i]?.type;
+            if (type && type !== CELL_TYPE.none && type !== CELL_TYPE.index) {
+                if (count === visible) {
+                    return i;
+                }
+                count++;
+            }
+        }
+        return visible;
+    }
+
+    private lettersToVisible(letters: string): number {
+        let n = 0;
+        for (const ch of letters.toUpperCase()) {
+            n = n * 26 + (ch.charCodeAt(0) - 64);
+        }
+        return n - 1;
     }
 
     private clearRange(): void {
