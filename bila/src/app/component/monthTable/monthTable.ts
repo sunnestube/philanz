@@ -14,7 +14,7 @@ import {MonthTableCellComponent} from './month-table-cell/month-table-cell.compo
 import {SaldoCellComponent} from './saldo-cell/saldo-cell.component';
 import {MonthTableFooterComponent} from './month-table-footer/month-table-footer.component';
 import {columnViews, cssTypeOf, saldoColViews} from './month-table.vm';
-import {MonthTableEdit} from './month-table-edit';
+import {MonthTableEditX as MonthTableEdit} from './month-table-edit-x';
 import {MonthTablePointer} from './month-table-pointer';
 import {MonthTableSaldo} from './month-table-saldo';
 
@@ -67,7 +67,10 @@ export class MonthTable implements OnDestroy {
     }
 
     private readonly onWindowPanMove = (event: PointerEvent) => this.pointer.onPanMove(event);
-    private readonly onWindowPanEnd = () => this.pointer.onPanEnd();
+    private readonly onWindowPanEnd = () => {
+        this.pointer.onPanEnd();
+        this.edit.endDrag();
+    };
     private readonly onWindowEscape = (event: KeyboardEvent) => {
         if (event.key !== 'Escape') {
             return;
