@@ -39,6 +39,7 @@ export class MonthTable implements OnDestroy {
     viewStart = 0;
     private readonly viewSize = 48;
     private scrollTick = 0;
+    readonly noOptions: string[] = [];
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
@@ -61,6 +62,11 @@ export class MonthTable implements OnDestroy {
             () => this.edit.refPickMode || this.edit.formulaMode
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
+        const focusRange = this.edit.range.focusCell.bind(this.edit.range);
+        this.edit.range.focusCell = (title, row, col) => {
+            this.ensureRowVisible(row);
+            queueMicrotask(() => focusRange(title, row, col));
+        };
         zone.runOutsideAngular(() => {
             document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
             document.addEventListener('pointerup', this.onWindowPanEnd);
@@ -160,12 +166,25 @@ export class MonthTable implements OnDestroy {
 
     optionsFor(cell: MonthCell): string[] {
         if (cell.type.id === CELL_TYPE.select_person) {
-            return this.workbook.persons();
+            return ['', ...this.workbook.persons()];
         }
         if (cell.type.id === CELL_TYPE.select_account) {
-            return this.workbook.accounts();
+            return ['', ...this.workbook.accounts()];
         }
-        return [''];
+        return this.noOptions;
+    }
+
+    ensureRowVisible(row: number): void {
+        const pad = 4;
+        if (row < this.viewStart + 1) {
+            this.viewStart = Math.max(0, row - pad);
+        } else if (row >= this.viewStart + this.viewSize - 2) {
+            this.viewStart = Math.max(0, row - this.viewSize + pad + 2);
+        }
+        const scroller = this.scroller?.nativeElement;
+        if (scroller) {
+            scroller.scrollTop = this.viewStart * 20;
+        }
     }
 
     cellId(rowIndex: number, colIndex: number): string {
