@@ -198,7 +198,7 @@ export class MonthTableEdit {
         const clip = event.clipboardData?.getData('text/plain') ?? '';
         const grid = this.parseClipboardGrid(clip);
         if (grid.length > 1 || (grid[0]?.length ?? 0) > 1) {
-            this.pasteGrid(grid, rowIndex, colIndex);
+            this.pasteGrid(grid, rowIndex, colIndex, clip);
             return;
         }
         const next = this.formulaService.pasteFormula(colIndex, rowIndex, clip);
@@ -406,11 +406,13 @@ export class MonthTableEdit {
         this.workbook.touch();
     }
 
-    protected pasteGrid(grid: string[][], startRow: number, startCol: number): void {
+    protected pasteGrid(grid: string[][], startRow: number, startCol: number, clipboardText?: string): void {
         const month = this.monthOf();
         if (!month) {
             return;
         }
+        const tsv = clipboardText ?? grid.map((line) => line.join('\t')).join('\n');
+        const origin = this.formulaService.pasteSource(tsv);
         grid.forEach((line, rowOffset) => {
             const rowIndex = startRow + rowOffset;
             while (month.rows.length <= rowIndex) {
@@ -418,11 +420,22 @@ export class MonthTableEdit {
             }
             const row = month.rows[rowIndex];
             line.forEach((value, colOffset) => {
-                const target = row.cells[startCol + colOffset];
+                const colIndex = startCol + colOffset;
+                const target = row.cells[colIndex];
                 if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
                     return;
                 }
-                target.raw = value;
+                if (this.formulaService.isFormula(value) && origin) {
+                    target.raw = this.formulaService.adjustFormula(
+                        value,
+                        origin.col + colOffset,
+                        origin.row + rowOffset,
+                        colIndex,
+                        rowIndex
+                    );
+                } else {
+                    target.raw = value;
+                }
                 if (target.type.id.indexOf('select') !== -1) {
                     target.value = value.trim().toUpperCase();
                     this.applySelectSideEffects(target, row, [target.value, '']);
