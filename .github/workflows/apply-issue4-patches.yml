@@ -22,7 +22,6 @@ jobs:
             echo "Applying $p"
             git apply "$p"
           done
-          # cleanup helpers
           rm -rf .github/patches/issue4
           rm -f .github/patches/issue4-workbook.b64 \
                 .github/patches/issue4-workbook.b64.a \
@@ -37,12 +36,5 @@ jobs:
             echo "Nothing to commit"
             exit 0
           fi
-          git commit -m "$(cat <<'MSG'
-feat(table): MonthTableEdit undo/redo + Workbook history (Issue #4)
-
-Command/inverse-diff TableHistoryService wiring: commit, paste, clear-range, select.
-Ctrl/Cmd+Z undo; Ctrl/Cmd+Y and Ctrl/Cmd+Shift+Z redo. Depth 50, current month.
-Native field undo while typing in cell/formula-bar.
-MSG
-)"
+          git commit -m "feat(table): MonthTableEdit undo/redo + Workbook history (Issue #4)"
           git push origin HEAD:fix/issue-2-month-table-virtualization-paste
