@@ -17,6 +17,11 @@ import {MonthTableEditX as MonthTableEdit} from './month-table-edit-x';
 import {MonthTablePointer} from './month-table-pointer';
 import {MonthTableSaldo} from './month-table-saldo';
 
+/** Must match `.data-table tbody tr { height }` in monthTable.css — prior virt used 20 and drifted. */
+const ROW_HEIGHT = 18;
+const VIEW_OVERSCAN = 8;
+const VIEW_SIZE = 64;
+
 @Component({
     selector: 'bal-month-table',
     templateUrl: './monthTable.html',
@@ -40,6 +45,10 @@ export class MonthTable implements OnDestroy {
     private personOptions: string[] = [''];
     private accountOptions: string[] = [''];
     private optionRev = -1;
+    /** First data-row index rendered in the virtual window. */
+    viewStart = 0;
+    private scrollTick = 0;
+    private navHook: ((monthTitle: string, row: number, col: number) => void) | null = null;
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
     @ViewChild('scroller') scroller?: ElementRef<HTMLDivElement>;
 
@@ -63,6 +72,18 @@ export class MonthTable implements OnDestroy {
             () => this.edit.refPickMode || this.edit.formulaMode
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
+        this.edit.range.beforeFocus = (row) => this.ensureRowVisible(row);
+        this.navHook = (title, row) => {
+            if (!this._month) {
+                return;
+            }
+            if (title && title !== this._month.label.title) {
+                return;
+            }
+            this.ensureRowVisible(row);
+        };
+        // beforeFocus is installed only while [active]=true (see setter) so
+        // background-warmed months do not steal the navigation hook.
         zone.runOutsideAngular(() => {
             document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
             document.addEventListener('pointerup', this.onWindowPanEnd);
@@ -105,6 +126,7 @@ export class MonthTable implements OnDestroy {
     @Input()
     set month(month: Month) {
         this._month = month;
+        this.viewStart = 0;
         this.saldo.invalidate();
     }
     get month(): Month | undefined {
@@ -114,9 +136,13 @@ export class MonthTable implements OnDestroy {
     @Input()
     set active(value: boolean) {
         if (value) {
+            TableNavigationService.beforeFocus = this.navHook;
             this.cdr.reattach();
             this.cdr.markForCheck();
         } else {
+            if (TableNavigationService.beforeFocus === this.navHook) {
+                TableNavigationService.beforeFocus = null;
+            }
             this.cdr.detach();
         }
     }
@@ -126,7 +152,14 @@ export class MonthTable implements OnDestroy {
         document.removeEventListener('pointerup', this.onWindowPanEnd);
         document.removeEventListener('pointercancel', this.onWindowPanEnd);
         document.removeEventListener('keydown', this.onWindowEscape);
+        if (TableNavigationService.beforeFocus === this.navHook) {
+            TableNavigationService.beforeFocus = null;
+        }
         this.pointer.destroy();
+        if (this.scrollTick) {
+            cancelAnimationFrame(this.scrollTick);
+            this.scrollTick = 0;
+        }
     }
 
     showSaldo(): boolean {
@@ -139,6 +172,53 @@ export class MonthTable implements OnDestroy {
 
     saldoHeader() {
         return saldoColViews(this.saldo.combos(), (combo) => this.workbook.saldoTitleFor(combo));
+    }
+
+    /** Visible slice only — track by row object so scroll does not churn identities. */
+    viewRows(): MonthRow[] {
+        const rows = this.month?.rows ?? [];
+        return rows.slice(this.viewStart, this.viewStart + VIEW_SIZE);
+    }
+
+    padTop(): number {
+        return this.viewStart * ROW_HEIGHT;
+    }
+
+    padBottom(): number {
+        const total = this.month?.rows.length ?? 0;
+        return Math.max(0, total - this.viewStart - VIEW_SIZE) * ROW_HEIGHT;
+    }
+
+    onTableScroll(): void {
+        if (this.scrollTick) {
+            return;
+        }
+        this.scrollTick = requestAnimationFrame(() => {
+            this.scrollTick = 0;
+            this.syncViewFromScroll();
+        });
+    }
+
+    /**
+     * Keep keyboard / range focus inside the rendered window without fighting scroll.
+     * Scrolls the real scroller; viewStart follows via syncViewFromScroll.
+     */
+    ensureRowVisible(row: number): void {
+        const scroller = this.scroller?.nativeElement;
+        const total = this.month?.rows.length ?? 0;
+        if (!scroller || row < 0 || row >= total) {
+            return;
+        }
+        const top = row * ROW_HEIGHT;
+        const bottom = top + ROW_HEIGHT;
+        const viewTop = scroller.scrollTop;
+        const viewBottom = viewTop + scroller.clientHeight;
+        if (top < viewTop) {
+            scroller.scrollTop = top;
+        } else if (bottom > viewBottom) {
+            scroller.scrollTop = bottom - scroller.clientHeight;
+        }
+        this.syncViewFromScroll(true);
     }
 
     optionsFor(cell: MonthCell): string[] {
@@ -178,7 +258,7 @@ export class MonthTable implements OnDestroy {
     }
 
     isEditing(rowIndex: number, colIndex: number): boolean {
-        return this.edit.liveEdit && this.edit.editingRow === rowIndex && this.edit.editingCol === colIndex;
+        return this.edit.liveEdit && this.edit.editingRow === rowIndex && this.edit.editingCol === rowIndex;
     }
 
     cellCss(cell: MonthCell): string {
@@ -216,6 +296,26 @@ export class MonthTable implements OnDestroy {
         const cell = this.edit.activeCell();
         if (cell && this.edit.editingRow !== null && this.edit.editingCol !== null) {
             this.edit.onPaste(event, this.edit.editingRow, this.edit.editingCol, cell);
+        }
+    }
+
+    private syncViewFromScroll(forceDetect = false): void {
+        const top = this.scroller?.nativeElement.scrollTop ?? 0;
+        const next = Math.max(0, Math.floor(top / ROW_HEIGHT) - VIEW_OVERSCAN);
+        if (next === this.viewStart) {
+            if (forceDetect) {
+                this.cdr.detectChanges();
+            }
+            return;
+        }
+        const apply = () => {
+            this.viewStart = next;
+            this.cdr.detectChanges();
+        };
+        if (NgZone.isInAngularZone()) {
+            apply();
+        } else {
+            this.zone.run(apply);
         }
     }
 
