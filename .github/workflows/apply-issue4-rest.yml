@@ -1,0 +1,36 @@
+name: apply-issue4-rest
+on:
+  push:
+    paths:
+      - '.github/patches/issue4-rest.b64'
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2-month-table-virtualization-paste
+          fetch-depth: 0
+      - name: Extract files and commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          base64 -d .github/patches/issue4-rest.b64 | tar xzf -
+          rm -f .github/patches/issue4-rest.b64 .github/workflows/apply-issue4-rest.yml
+          rmdir .github/patches 2>/dev/null || true
+          # remove empty workflows dir only if empty
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "$(cat <<'EOF'
+feat(table): wire undo/redo into month table + workbook (Issue #4)
+
+Expose TableHistoryService on WorkbookService; record commit/paste/clear/select.
+EOF
+)"
+          git push origin HEAD:fix/issue-2-month-table-virtualization-paste
