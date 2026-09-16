@@ -5,6 +5,9 @@ import {Injectable} from '@angular/core';
 })
 export class TableNavigationService {
 
+    /** Optional hook (e.g. virtualization) invoked before focusing a cell. */
+    static beforeFocus: ((monthTitle: string, row: number, col: number) => void) | null = null;
+
     static cellId(monthTitle: string, rowIndex: number, colIndex: number): string {
         return `cell_${TableNavigationService.monthKey(monthTitle)}_${rowIndex}_${colIndex}`;
     }
@@ -46,9 +49,9 @@ export class TableNavigationService {
     }
 
     static setFocus(monthTitle: string, row: number, col: number): void {
-        const cell = document.getElementById(TableNavigationService.cellId(monthTitle, row, col));
-        if (cell) {
-            cell.focus();
-        }
+        TableNavigationService.beforeFocus?.(monthTitle, row, col);
+        queueMicrotask(() => {
+            document.getElementById(TableNavigationService.cellId(monthTitle, row, col))?.focus();
+        });
     }
 }
