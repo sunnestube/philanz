@@ -1,0 +1,33 @@
+diff --git a/bila/src/app/component/monthTable/month-table-edit.ts b/bila/src/app/component/monthTable/month-table-edit.ts
+index e0f0a53..c4bd174 100644
+--- a/bila/src/app/component/monthTable/month-table-edit.ts
++++ b/bila/src/app/component/monthTable/month-table-edit.ts
+@@ -413,11 +460,28 @@ export class MonthTableEdit {
+         }
+         const tsv = clipboardText ?? grid.map((line) => line.join('\t')).join('\n');
+         const origin = this.formulaService.pasteSource(tsv);
++        const coords: Array<{row: number; col: number}> = [];
++        const colorRows: number[] = [];
+         grid.forEach((line, rowOffset) => {
+             const rowIndex = startRow + rowOffset;
+             while (month.rows.length <= rowIndex) {
+                 this.appendEmptyRow(month);
+             }
++            colorRows.push(rowIndex);
++            line.forEach((_value, colOffset) => {
++                const colIndex = startCol + colOffset;
++                const target = month.rows[rowIndex]?.cells[colIndex];
++                if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
++                    return;
++                }
++                coords.push({row: rowIndex, col: colIndex});
++            });
++        });
++        const history = this.workbook.history;
++        const before = history.captureCells(month, coords);
++        const beforeColors = history.captureColors(month, colorRows);
++        grid.forEach((line, rowOffset) => {
++            const rowIndex = startRow + rowOffset;
+             const row = month.rows[rowIndex];
+             line.forEach((value, colOffset) => {
+                 const colIndex = startCol + colOffset;
