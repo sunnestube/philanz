@@ -282,6 +282,9 @@ export class MonthTable implements OnDestroy {
     onSelectChange(cell: MonthCell, row: MonthRow): void {
         this.edit.applySelectSideEffects(cell, row, this.optionsFor(cell));
         row.syncColor();
+        if (this.edit.editingRow !== null && this.edit.editingCol !== null) {
+            this.edit.recordSelectChange(cell, row, this.edit.editingRow, this.edit.editingCol);
+        }
         this.workbook.touch();
     }
 
