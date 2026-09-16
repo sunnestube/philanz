@@ -1,0 +1,129 @@
+--- bila/src/app/service/workbook.service.ts
++++ bila/src/app/service/workbook.service.ts
+@@ -8,6 +8,7 @@
+ import {CsvExportService} from './csv-export.service';
+ import {FormulaService} from './formula.service';
+ import {CsvImportService} from './csv-import.service';
++import {applyColumnFills, isColumnConstant} from './column-fill';
+ 
+ export interface WorkbookOptions {
+     person: string[];
+@@ -248,17 +249,32 @@
+         return this.formulaService.isFormula(raw);
+     }
+ 
++    /**
++     * Amount for a constant in a month. Markers `↑` / `=↑` / `=vorzeile` walk
++     * to the previous month (explicit API; formerly YearComponent monkey-patch).
++     */
+     constantAmount(item: ConstantDef, monthTitle: string): number {
+-        const index = CONSTANT_MONTHS.indexOf(monthTitle as typeof CONSTANT_MONTHS[number]);
+-        if (index < 0) {
+-            return 0;
+-        }
+-        return this.evaluateAmount(item.months[index] ?? '', monthTitle);
++        const months = CONSTANT_MONTHS;
++        let index = months.indexOf(monthTitle as typeof months[number]);
++        const seen = new Set<number>();
++        while (index >= 0) {
++            if (seen.has(index)) {
++                return 0;
++            }
++            seen.add(index);
++            const raw = item.months[index] ?? '';
++            if (this.isPrevMonthMarker(raw)) {
++                index -= 1;
++                continue;
++            }
++            return this.evaluateAmount(raw, months[index]);
++        }
++        return 0;
+     }
+ 
+     constantAverage(item: ConstantDef): number {
+         const values = item.months
+-            .map((raw) => ({raw, value: this.evaluateAmount(raw)}))
++            .map((raw, index) => ({raw, value: this.constantAmount(item, CONSTANT_MONTHS[index])}))
+             .filter((entry) => entry.raw.trim() !== '');
+         if (!values.length) {
+             return 0;
+@@ -267,9 +283,16 @@
+     }
+ 
+     constantTotal(item: ConstantDef): number {
+-        return item.months.reduce((sum, raw) => sum + this.evaluateAmount(raw), 0);
+-    }
+-
++        return item.months.reduce(
++            (sum, _raw, index) => sum + this.constantAmount(item, CONSTANT_MONTHS[index]),
++            0
++        );
++    }
++
++    /**
++     * Account-only constants credit the row payer's account
++     * (explicit API; formerly YearComponent monkey-patch).
++     */
+     constantHit(month: Month, row: MonthRow): {amount: number; debitKey: string | null; creditKey: string | null} | null {
+         const match = this.matchConstant(month, row);
+         if (!match) {
+@@ -284,10 +307,16 @@
+         const payer = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+         const payerAccount = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+         const debitKey = payer && payerAccount ? `${payer}|${payerAccount}` : null;
+-        const creditKey = match.person && match.account ? `${match.person}|${match.account}` : null;
++        let creditKey: string | null = null;
++        if (match.person && match.account) {
++            creditKey = `${match.person}|${match.account}`;
++        } else if (!match.person && match.account) {
++            creditKey = payer ? `${payer}|${match.account.trim().toUpperCase()}` : null;
++        }
+         return {amount, debitKey, creditKey};
+     }
+ 
++    /** Row-label constants only — column-fill constants are handled separately. */
+     matchConstant(month: Month, row: MonthRow): ConstantDef | null {
+         const textIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.text);
+         if (textIdx < 0) {
+@@ -298,6 +327,9 @@
+         const display = (cell?.display ?? '').trim();
+         const labels = raw.startsWith('=') ? [display] : [raw, display];
+         return this.constants().find((item) => {
++            if (isColumnConstant(item)) {
++                return false;
++            }
+             const name = item.name.trim();
+             return !!name && labels.some((label) => label === name);
+         }) ?? null;
+@@ -344,8 +376,31 @@
+         this.touch();
+     }
+ 
++    private fillsTimer = 0;
++
+     touch(): void {
+         this.revision.update((value) => value + 1);
++        this.scheduleColumnFills();
++    }
++
++    /** Debounced column-constant fills for the active month (explicit; was Year monkey-patch). */
++    private scheduleColumnFills(): void {
++        if (typeof window === 'undefined') {
++            return;
++        }
++        if (this.fillsTimer) {
++            clearTimeout(this.fillsTimer);
++        }
++        this.fillsTimer = window.setTimeout(() => {
++            this.fillsTimer = 0;
++            const current = this.selectedMonth();
++            applyColumnFills(this, current ? [current] : undefined);
++        }, 250);
++    }
++
++    private isPrevMonthMarker(raw: string | null | undefined): boolean {
++        const text = (raw ?? '').trim();
++        return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
+     }
+ 
+     openSettings(): void {
