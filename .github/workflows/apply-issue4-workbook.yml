@@ -13,12 +13,12 @@ jobs:
         with:
           ref: fix/issue-2-month-table-virtualization-paste
           fetch-depth: 0
-      - name: Extract workbook and commit
+      - name: Extract and commit
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          base64 -d .github/patches/issue4-workbook.b64 | tar xzf -
+          tr -d '\n\r ' < .github/patches/issue4-workbook.b64 | base64 -d | tar xzf -
           rm -f .github/patches/issue4-workbook.b64 \
                 .github/workflows/apply-issue4-workbook.yml \
                 .github/workflows/apply-issue4-rest.yml \
@@ -31,5 +31,5 @@ jobs:
             echo "Nothing to commit"
             exit 0
           fi
-          git commit -m "feat(table): expose TableHistoryService on WorkbookService (Issue #4)"
+          git commit -m "feat(table): MonthTableEdit undo/redo + Workbook history (Issue #4)"
           git push origin HEAD:fix/issue-2-month-table-virtualization-paste
