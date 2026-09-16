@@ -1,6 +1,7 @@
 import {describe, it, expect, beforeEach} from 'vitest';
 import {ConstantDef, WorkbookService} from './workbook.service';
 import {FormulaService} from './formula.service';
+import {TableHistoryService} from './table-history.service';
 import {Month} from '../model/Month';
 import {MonthLabel, MonthKey} from '../model/MonthLabel';
 import {MonthColumn} from '../model/MonthColumn';
@@ -12,7 +13,7 @@ describe('WorkbookService constant API (ex-Year patches)', () => {
     let workbook: WorkbookService;
 
     beforeEach(() => {
-        workbook = new WorkbookService(new FormulaService());
+        workbook = new WorkbookService(new FormulaService(), new TableHistoryService());
     });
 
     it('resolves ↑ to the previous month amount', () => {
