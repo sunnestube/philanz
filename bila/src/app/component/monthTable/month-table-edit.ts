@@ -406,11 +406,21 @@ export class MonthTableEdit {
         this.workbook.touch();
     }
 
+    /**
+     * Pastes a grid of cells with relative formula adjustment.
+     * When pasting formulas, cell references are adjusted relative to paste position.
+     * Absolute references ($A$1, $A1, A$1) are preserved according to Excel conventions.
+     *
+     * @param grid 2D array of cell values from clipboard
+     * @param startRow Starting row index for paste
+     * @param startCol Starting column index for paste
+     */
     protected pasteGrid(grid: string[][], startRow: number, startCol: number): void {
         const month = this.monthOf();
         if (!month) {
             return;
         }
+
         grid.forEach((line, rowOffset) => {
             const rowIndex = startRow + rowOffset;
             while (month.rows.length <= rowIndex) {
@@ -418,17 +428,33 @@ export class MonthTableEdit {
             }
             const row = month.rows[rowIndex];
             line.forEach((value, colOffset) => {
-                const target = row.cells[startCol + colOffset];
+                const colIndex = startCol + colOffset;
+                const target = row.cells[colIndex];
                 if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
                     return;
                 }
-                target.raw = value;
+
+                // Adjust formulas with relative cell references (like Excel)
+                if (this.formulaService.isFormula(value)) {
+                    // Use source position from first cell in clipboard (startRow + 0, startCol + 0)
+                    target.raw = this.formulaService.adjustFormula(
+                        value,
+                        startCol,  // fromCol: where formula was copied from (first column)
+                        startRow,  // fromRow: where formula was copied from (first row)
+                        colIndex,  // toCol: where formula is pasted
+                        rowIndex   // toRow: where formula is pasted
+                    );
+                } else {
+                    target.raw = value;
+                }
+
                 if (target.type.id.indexOf('select') !== -1) {
                     target.value = value.trim().toUpperCase();
                     this.applySelectSideEffects(target, row, [target.value, '']);
                 }
             });
         });
+
         this.suppressCommit = true;
         this.formulaMode = false;
         this.refPickMode = false;
