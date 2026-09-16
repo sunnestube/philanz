@@ -258,7 +258,7 @@ export class MonthTable implements OnDestroy {
     }
 
     isEditing(rowIndex: number, colIndex: number): boolean {
-        return this.edit.liveEdit && this.edit.editingRow === rowIndex && this.edit.editingCol === rowIndex;
+        return this.edit.liveEdit && this.edit.editingRow === rowIndex && this.edit.editingCol === colIndex;
     }
 
     cellCss(cell: MonthCell): string {
