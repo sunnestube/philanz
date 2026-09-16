@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/patches/issue4-rest.b64'
+      - '.github/patches/issue4-rest.b64.a'
 jobs:
   apply:
     runs-on: ubuntu-latest
@@ -18,10 +19,14 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          base64 -d .github/patches/issue4-rest.b64 | tar xzf -
-          rm -f .github/patches/issue4-rest.b64 .github/workflows/apply-issue4-rest.yml
+          if [ -f .github/patches/issue4-rest.b64.a ]; then
+            cat .github/patches/issue4-rest.b64.a .github/patches/issue4-rest.b64.b > /tmp/issue4.b64
+          else
+            cp .github/patches/issue4-rest.b64 /tmp/issue4.b64
+          fi
+          base64 -d /tmp/issue4.b64 | tar xzf -
+          rm -f .github/patches/issue4-rest.b64 .github/patches/issue4-rest.b64.a .github/patches/issue4-rest.b64.b .github/workflows/apply-issue4-rest.yml
           rmdir .github/patches 2>/dev/null || true
-          # remove empty workflows dir only if empty
           git add -A
           if git diff --cached --quiet; then
             echo "Nothing to commit"
