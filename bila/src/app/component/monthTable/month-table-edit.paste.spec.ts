@@ -2,6 +2,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {MonthTableEdit} from './month-table-edit';
 import {FormulaService} from '../../service/formula.service';
 import {WorkbookService} from '../../service/workbook.service';
+import {TableHistoryService} from '../../service/table-history.service';
 import {Month} from '../../model/Month';
 import {MonthLabel, MonthKey} from '../../model/MonthLabel';
 import {MonthColumn} from '../../model/MonthColumn';
@@ -42,7 +43,8 @@ describe('MonthTableEdit paste / clear', () => {
         month = buildMonth();
         formula.setMonths([month]);
         const workbook = {
-            touch: vi.fn()
+            touch: vi.fn(),
+            history: new TableHistoryService()
         } as unknown as WorkbookService;
         edit = new EditProbe(formula, workbook, () => month, () => undefined, () => undefined);
     });

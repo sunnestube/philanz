@@ -2,6 +2,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {MonthTableEditX} from './month-table-edit-x';
 import {FormulaService} from '../../service/formula.service';
 import {WorkbookService} from '../../service/workbook.service';
+import {TableHistoryService} from '../../service/table-history.service';
 import {Month} from '../../model/Month';
 import {MonthLabel, MonthKey} from '../../model/MonthLabel';
 import {MonthColumn} from '../../model/MonthColumn';
@@ -34,7 +35,7 @@ describe('MonthTableEditX clear + keyboard range', () => {
             month.rows.push(row);
         }
         formula.setMonths([month]);
-        const workbook = {touch: vi.fn()} as unknown as WorkbookService;
+        const workbook = {touch: vi.fn(), history: new TableHistoryService()} as unknown as WorkbookService;
         edit = new MonthTableEditX(formula, workbook, () => month, () => undefined, () => undefined);
     });
 
