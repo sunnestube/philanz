@@ -2,7 +2,7 @@ name: apply-issue4-workbook
 on:
   push:
     paths:
-      - '.github/patches/issue4-workbook.b64'
+      - '.github/patches/issue4-workbook.b64.c'
 jobs:
   apply:
     runs-on: ubuntu-latest
@@ -18,13 +18,16 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          tr -d '\n\r ' < .github/patches/issue4-workbook.b64 | base64 -d | tar xzf -
+          cat .github/patches/issue4-workbook.b64.a \
+              .github/patches/issue4-workbook.b64.b \
+              .github/patches/issue4-workbook.b64.c \
+            | tr -d '\n\r ' | base64 -d | tar xzf -
           rm -f .github/patches/issue4-workbook.b64 \
+                .github/patches/issue4-workbook.b64.a \
+                .github/patches/issue4-workbook.b64.b \
+                .github/patches/issue4-workbook.b64.c \
                 .github/workflows/apply-issue4-workbook.yml \
-                .github/workflows/apply-issue4-rest.yml \
-                .github/patches/issue4-rest.b64 \
-                .github/patches/issue4-rest.b64.a \
-                .github/patches/issue4-rest.b64.b
+                .github/workflows/apply-issue4-rest.yml
           rmdir .github/patches 2>/dev/null || true
           git add -A
           if git diff --cached --quiet; then
