@@ -1,0 +1,35 @@
+name: apply-issue4-workbook
+on:
+  push:
+    paths:
+      - '.github/patches/issue4-workbook.b64'
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/issue-2-month-table-virtualization-paste
+          fetch-depth: 0
+      - name: Extract workbook and commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          base64 -d .github/patches/issue4-workbook.b64 | tar xzf -
+          rm -f .github/patches/issue4-workbook.b64 \
+                .github/workflows/apply-issue4-workbook.yml \
+                .github/workflows/apply-issue4-rest.yml \
+                .github/patches/issue4-rest.b64 \
+                .github/patches/issue4-rest.b64.a \
+                .github/patches/issue4-rest.b64.b
+          rmdir .github/patches 2>/dev/null || true
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "feat(table): expose TableHistoryService on WorkbookService (Issue #4)"
+          git push origin HEAD:fix/issue-2-month-table-virtualization-paste
