@@ -9,6 +9,7 @@ import {CsvExportService} from './csv-export.service';
 import {FormulaService} from './formula.service';
 import {CsvImportService} from './csv-import.service';
 import {applyColumnFills, isColumnConstant} from './column-fill';
+import {TableHistoryService} from './table-history.service';
 
 export interface WorkbookOptions {
     person: string[];
@@ -118,7 +119,10 @@ export class WorkbookService {
         return combos;
     });
 
-    constructor(private readonly formulaService: FormulaService) {
+    constructor(
+        private readonly formulaService: FormulaService,
+        readonly history: TableHistoryService
+    ) {
         this.restoreSettings();
     }
 

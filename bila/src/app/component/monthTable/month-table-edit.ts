@@ -17,11 +17,13 @@ export class MonthTableEdit {
     private editOriginal = '';
     private ignoreFormulaBlur = false;
     protected suppressCommit = false;
+    /** Captured on selectCell for select Undo (ngModel updates before change). */
+    protected selectBaseline: {row: number; col: number; raw: string; color: string} | null = null;
     private readonly refTokenPattern = /(?:[A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+/g;
 
     constructor(
-        private readonly formulaService: FormulaService,
-        private readonly workbook: WorkbookService,
+        protected readonly formulaService: FormulaService,
+        protected readonly workbook: WorkbookService,
         private readonly monthOf: () => Month | undefined,
         private readonly focusBar: () => void,
         private readonly blurBar: () => void
@@ -100,6 +102,13 @@ export class MonthTableEdit {
         this.formulaMode = false;
         this.refPickMode = false;
         this.liveEdit = false;
+        const row = this.monthOf()?.rows[rowIndex];
+        this.selectBaseline = {
+            row: rowIndex,
+            col: colIndex,
+            raw: cell.raw ?? '',
+            color: row?.color ?? ''
+        };
     }
 
     startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
@@ -134,13 +143,30 @@ export class MonthTableEdit {
     }
 
     commitEdit(cell: MonthCell | null): void {
-        if (!cell || this.suppressCommit || this.editingRow === null) {
+        if (!cell || this.suppressCommit || this.editingRow === null || this.editingCol === null) {
             this.liveEdit = false;
             return;
         }
         const next = this.draft ?? '';
         const changed = next !== (this.editOriginal ?? '');
-        if (changed) {
+        const row = this.editingRow;
+        const col = this.editingCol;
+        const month = this.monthOf();
+        if (changed && month) {
+            const history = this.workbook.history;
+            const before = history.captureCells(month, [{row, col}]);
+            const beforeColors = history.captureColors(month, [row]);
+            cell.raw = next;
+            const after = history.captureCells(month, [{row, col}]);
+            const afterColors = history.captureColors(month, [row]);
+            history.push({
+                monthTitle: month.label.title,
+                before,
+                after,
+                beforeColors,
+                afterColors
+            });
+        } else if (changed) {
             cell.raw = next;
         }
         this.liveEdit = false;
@@ -201,9 +227,27 @@ export class MonthTableEdit {
             this.pasteGrid(grid, rowIndex, colIndex, clip);
             return;
         }
+        const month = this.monthOf();
         const next = this.formulaService.pasteFormula(colIndex, rowIndex, clip);
-        this.draft = next;
-        cell.raw = next;
+        if (month) {
+            const history = this.workbook.history;
+            const before = history.captureCells(month, [{row: rowIndex, col: colIndex}]);
+            const beforeColors = history.captureColors(month, [rowIndex]);
+            this.draft = next;
+            cell.raw = next;
+            const after = history.captureCells(month, [{row: rowIndex, col: colIndex}]);
+            const afterColors = history.captureColors(month, [rowIndex]);
+            history.push({
+                monthTitle: month.label.title,
+                before,
+                after,
+                beforeColors,
+                afterColors
+            });
+        } else {
+            this.draft = next;
+            cell.raw = next;
+        }
         this.editOriginal = next;
         this.formulaMode = this.formulaService.isFormula(next);
         this.editingRow = rowIndex;
@@ -222,6 +266,9 @@ export class MonthTableEdit {
         if (event.key === 'Escape') {
             event.preventDefault();
             this.exitFormula();
+            return;
+        }
+        if (this.handleHistoryKeys(event)) {
             return;
         }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
@@ -413,11 +460,28 @@ export class MonthTableEdit {
         }
         const tsv = clipboardText ?? grid.map((line) => line.join('\t')).join('\n');
         const origin = this.formulaService.pasteSource(tsv);
+        const coords: Array<{row: number; col: number}> = [];
+        const colorRows: number[] = [];
         grid.forEach((line, rowOffset) => {
             const rowIndex = startRow + rowOffset;
             while (month.rows.length <= rowIndex) {
                 this.appendEmptyRow(month);
             }
+            colorRows.push(rowIndex);
+            line.forEach((_value, colOffset) => {
+                const colIndex = startCol + colOffset;
+                const target = month.rows[rowIndex]?.cells[colIndex];
+                if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
+                    return;
+                }
+                coords.push({row: rowIndex, col: colIndex});
+            });
+        });
+        const history = this.workbook.history;
+        const before = history.captureCells(month, coords);
+        const beforeColors = history.captureColors(month, colorRows);
+        grid.forEach((line, rowOffset) => {
+            const rowIndex = startRow + rowOffset;
             const row = month.rows[rowIndex];
             line.forEach((value, colOffset) => {
                 const colIndex = startCol + colOffset;
@@ -442,11 +506,113 @@ export class MonthTableEdit {
                 }
             });
         });
+        const after = history.captureCells(month, coords);
+        const afterColors = history.captureColors(month, colorRows);
+        history.push({
+            monthTitle: month.label.title,
+            before,
+            after,
+            beforeColors,
+            afterColors
+        });
         this.suppressCommit = true;
         this.formulaMode = false;
         this.refPickMode = false;
         this.liveEdit = false;
         this.draft = '';
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+        queueMicrotask(() => { this.suppressCommit = false; });
+    }
+
+
+    /**
+     * App undo/redo when not typing in an input/formula field.
+     * While the cell input or formula-bar has focus, Ctrl/Cmd+Z uses native field undo.
+     * Redo: Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z (both supported).
+     */
+    protected handleHistoryKeys(event: KeyboardEvent): boolean {
+        if (!(event.ctrlKey || event.metaKey)) {
+            return false;
+        }
+        const typing = event.target instanceof HTMLInputElement
+            || event.target instanceof HTMLTextAreaElement;
+        // Native field undo/redo while editing text or formula bar
+        if (typing && (this.liveEdit || this.formulaMode || this.refPickMode)) {
+            return false;
+        }
+        const key = event.key.toLowerCase();
+        const redo = key === 'y' || (key === 'z' && event.shiftKey);
+        const undo = key === 'z' && !event.shiftKey;
+        if (!undo && !redo) {
+            return false;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (undo) {
+            this.undo();
+        } else {
+            this.redo();
+        }
+        return true;
+    }
+
+    undo(): boolean {
+        const month = this.monthOf();
+        if (!month || !this.workbook.history.undo(month)) {
+            return false;
+        }
+        this.afterHistoryApply(month);
+        return true;
+    }
+
+    redo(): boolean {
+        const month = this.monthOf();
+        if (!month || !this.workbook.history.redo(month)) {
+            return false;
+        }
+        this.afterHistoryApply(month);
+        return true;
+    }
+
+    /** Select change after ngModel update — uses selectBaseline from selectCell. */
+    recordSelectChange(cell: MonthCell, row: MonthRow, rowIndex: number, colIndex: number): void {
+        const month = this.monthOf();
+        const baseline = this.selectBaseline;
+        if (!month || !baseline || baseline.row !== rowIndex || baseline.col !== colIndex) {
+            return;
+        }
+        const afterRaw = cell.raw ?? '';
+        const afterColor = row.color ?? '';
+        if (baseline.raw === afterRaw && baseline.color === afterColor) {
+            return;
+        }
+        this.workbook.history.push({
+            monthTitle: month.label.title,
+            before: [{row: rowIndex, col: colIndex, raw: baseline.raw}],
+            after: [{row: rowIndex, col: colIndex, raw: afterRaw}],
+            beforeColors: [{row: rowIndex, color: baseline.color}],
+            afterColors: [{row: rowIndex, color: afterColor}]
+        });
+        this.selectBaseline = {
+            row: rowIndex,
+            col: colIndex,
+            raw: afterRaw,
+            color: afterColor
+        };
+    }
+
+    private afterHistoryApply(month: Month): void {
+        this.suppressCommit = true;
+        this.liveEdit = false;
+        this.formulaMode = false;
+        this.refPickMode = false;
+        this.draft = '';
+        if (this.editingRow !== null && this.editingCol !== null) {
+            const cell = month.rows[this.editingRow]?.cells[this.editingCol];
+            this.editOriginal = cell?.raw ?? '';
+            this.draft = this.editOriginal;
+        }
         this.formulaService.recalculateAll();
         this.workbook.touch();
         queueMicrotask(() => { this.suppressCommit = false; });
