@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
@@ -6,8 +6,8 @@ import {Month} from '../../model/Month';
 import {MonthRow} from '../../model/MonthRow';
 import {CELL_TYPE} from '../../model/CellType';
 import {ImportComponent} from '../import/import.component';
-import {CONSTANT_MONTHS, ConstantDef, WorkbookService, YearView} from '../../service/workbook.service';
-import {applyColumnFills, isColumnConstant} from '../../service/column-fill';
+import {WorkbookService, YearView} from '../../service/workbook.service';
+import {applyColumnFills} from '../../service/column-fill';
 import {YearArchiveService, YearMeta} from '../../service/year-archive.service';
 import {SaldoPanelComponent} from '../saldoPanel/saldo-panel.component';
 import {StartTabComponent} from '../startTab/start-tab.component';
@@ -32,7 +32,8 @@ const MIN_ROWS = 36;
         YearTabsComponent,
         YearCsvTabComponent
     ],
-    styleUrls: ['./year.component.css']
+    styleUrls: ['./year.component.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class YearComponent implements OnInit, OnDestroy {
     readonly workbook = inject(WorkbookService);
@@ -48,9 +49,6 @@ export class YearComponent implements OnInit, OnDestroy {
     private warmTimer = 0;
 
     ngOnInit(): void {
-        this.patchConstantCredit();
-        this.patchConstantPrevRow();
-        this.patchColumnConstants();
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.route.paramMap.subscribe((params) => {
@@ -191,65 +189,7 @@ export class YearComponent implements OnInit, OnDestroy {
         });
     }
 
-    private patchConstantPrevRow(): void {
-        const workbook = this.workbook;
-        const original = workbook.constantAmount.bind(workbook);
-        const months = CONSTANT_MONTHS;
-        const isPrev = (raw: string | null | undefined): boolean => {
-            const text = (raw ?? '').trim();
-            return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
-        };
-        const resolve = (item: ConstantDef, title: string): number => {
-            let index = months.indexOf(title as typeof months[number]);
-            const seen = new Set<number>();
-            while (index >= 0) {
-                if (seen.has(index)) {
-                    return 0;
-                }
-                seen.add(index);
-                if (isPrev(item.months[index])) {
-                    index -= 1;
-                    continue;
-                }
-                return original(item, months[index]);
-            }
-            return 0;
-        };
-        workbook.constantAmount = (item, title) => resolve(item, title);
-        workbook.constantAverage = (item) => {
-            const values = item.months
-                .map((raw, index) => ({raw, value: resolve(item, months[index])}))
-                .filter((entry) => entry.raw.trim() !== '');
-            if (!values.length) {
-                return 0;
-            }
-            return values.reduce((sum, entry) => sum + entry.value, 0) / values.length;
-        };
-        workbook.constantTotal = (item) =>
-            item.months.reduce((sum, _raw, index) => sum + resolve(item, months[index]), 0);
-    }
 
-    private patchConstantCredit(): void {
-        const workbook = this.workbook;
-        const original = workbook.constantHit.bind(workbook);
-        workbook.constantHit = (month, row) => {
-            const hit = original(month, row);
-            if (!hit) {
-                return hit;
-            }
-            const match = workbook.matchConstant(month, row);
-            if (!match || match.person) {
-                return hit;
-            }
-            const account = (match.account || '').trim().toUpperCase();
-            if (!account) {
-                return {...hit, creditKey: null};
-            }
-            const personIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_person);
-            const payer = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
-            return {...hit, creditKey: payer ? `${payer}|${account}` : null};
-        };
-    }
 
     private ensureSaldoColumns(): void {
         if (!this.workbook.saldoColumnsOpen()) {
@@ -359,27 +299,4 @@ export class YearComponent implements OnInit, OnDestroy {
         }
     }
 
-    private patchColumnConstants(): void {
-        const workbook = this.workbook;
-        const originalMatch = workbook.matchConstant.bind(workbook);
-        workbook.matchConstant = (month, row) => {
-            const match = originalMatch(month, row);
-            if (match && isColumnConstant(match)) {
-                return null;
-            }
-            return match;
-        };
-        const originalTouch = workbook.touch.bind(workbook);
-        let fillsTimer = 0;
-        workbook.touch = () => {
-            originalTouch();
-            if (fillsTimer) {
-                clearTimeout(fillsTimer);
-            }
-            fillsTimer = window.setTimeout(() => {
-                const current = workbook.selectedMonth();
-                applyColumnFills(workbook, current ? [current] : undefined);
-            }, 250);
-        };
-    }
 }
