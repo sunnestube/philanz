@@ -207,6 +207,21 @@ export class FormulaService {
         return this.adjustFormula(text, source.col, source.row, targetCol, targetRow);
     }
 
+    /**
+     * Adjusts cell references in a formula based on relative/absolute positioning.
+     * Implements Excel-style relative reference shifting:
+     * - A1 (relative): shifts based on (toCol - fromCol, toRow - fromRow)
+     * - $A1 (col absolute): column stays fixed, row shifts
+     * - A$1 (row absolute): row stays fixed, column shifts
+     * - $A$1 (both absolute): neither changes
+     *
+     * @param raw Formula string with references (e.g. "=A1+B2")
+     * @param fromCol Source column index
+     * @param fromRow Source row index
+     * @param toCol Target column index
+     * @param toRow Target row index
+     * @returns Adjusted formula with shifted references
+     */
     adjustFormula(raw: string, fromCol: number, fromRow: number, toCol: number, toRow: number): string {
         const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?(\$)?([A-Za-z]+)(\$)?(\d+)/g;
         return raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
@@ -375,7 +390,7 @@ export class FormulaService {
     private tokenize(source: string): string[] {
         const tokens: string[] = [];
         const input = source.replace(/\s+/g, '');
-        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+|\d+(?:['’]\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
+        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+|\d+(?:['']\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
         let match: RegExpExecArray | null;
         let cursor = 0;
         while ((match = pattern.exec(input)) !== null) {
@@ -444,7 +459,7 @@ export class FormulaService {
         if (!trimmed || trimmed.startsWith('=')) {
             return null;
         }
-        const normalized = trimmed.replace(/['’\s]/g, '').replace(',', '.');
+        const normalized = trimmed.replace(/[''\s]/g, '').replace(',', '.');
         if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) {
             return null;
         }
