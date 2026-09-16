@@ -66,6 +66,9 @@ export class MonthTableEditX extends MonthTableEdit {
     }
 
     override onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (this.handleHistoryKeys(event)) {
+            return;
+        }
         const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
         if (event.key === 'Delete' || (event.key === 'Backspace' && !typing)) {
             event.preventDefault();
@@ -207,6 +210,21 @@ export class MonthTableEditX extends MonthTableEdit {
         if (!month) {
             return;
         }
+        const coords: Array<{row: number; col: number}> = [];
+        const colorRows: number[] = [];
+        for (let row = this.range.row0; row <= this.range.row1; row++) {
+            colorRows.push(row);
+            for (let col = this.range.col0; col <= this.range.col1; col++) {
+                const cell = month.rows[row]?.cells[col];
+                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+                    continue;
+                }
+                coords.push({row, col});
+            }
+        }
+        const history = this.workbook.history;
+        const before = history.captureCells(month, coords);
+        const beforeColors = history.captureColors(month, colorRows);
         this.suppressCommit = true;
         for (let row = this.range.row0; row <= this.range.row1; row++) {
             const line = month.rows[row];
@@ -229,6 +247,15 @@ export class MonthTableEditX extends MonthTableEdit {
             const code = (person?.value || person?.raw || '').trim();
             line.color = code ? code.toLowerCase() : '';
         }
+        const after = history.captureCells(month, coords);
+        const afterColors = history.captureColors(month, colorRows);
+        history.push({
+            monthTitle: month.label.title,
+            before,
+            after,
+            beforeColors,
+            afterColors
+        });
         this.draft = '';
         this.refresh();
         queueMicrotask(() => { this.suppressCommit = false; });
