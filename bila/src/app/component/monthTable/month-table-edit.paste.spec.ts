@@ -71,6 +71,16 @@ describe('MonthTableEdit paste / clear', () => {
         expect(month.rows[4].cells[2].raw).toBe('=B$1');
     });
 
+
+    it('multi-paste covers column-absolute $A1 and row-absolute A$1', () => {
+        // origin (col 1, row 0); paste at (col 2, row 2) → Δcol +1, Δrow +2
+        const tsv = '=$A1\t=A$1';
+        formula.copyGrid(tsv, 1, 0);
+        edit.runPasteGrid([['=$A1', '=A$1']], 2, 2, tsv);
+        expect(month.rows[2].cells[2].raw).toBe('=$A3'); // $A fixed col, row 1→3
+        expect(month.rows[2].cells[3].raw).toBe('=B$1'); // A→B, $1 fixed row
+    });
+
     it('multi-paste without known origin leaves formulas raw', () => {
         formula.clipboard = null;
         formula.gridClipboard = null;
