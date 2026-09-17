@@ -116,4 +116,50 @@ describe('MonthTableEdit undo/redo', () => {
         edit.onKeydown(sz, 0, 1, cell);
         expect(cell.raw).toBe('abc');
     });
+
+    it('commit after live input still undoes to editOriginal (not the typed raw)', () => {
+        const cell = month.rows[1].cells[1];
+        edit.selectCell(1, 1, cell);
+        // Simulate onCellInput writing through to cell.raw before blur/commit
+        cell.raw = 'typed';
+        edit.draft = 'typed';
+        edit.commitEdit(cell);
+        expect(cell.raw).toBe('typed');
+        expect(edit.undo()).toBe(true);
+        expect(cell.raw).toBe('v1');
+    });
+
+    it('person select change undoes both value/raw and row color', () => {
+        const cell = month.rows[0].cells[3];
+        edit.selectCell(0, 3, cell);
+        cell.value = 'H';
+        edit.applySelectSideEffects(cell, month.rows[0], ['', 'P', 'H', 'L']);
+        edit.recordSelectChange(cell, month.rows[0], 0, 3);
+        expect(cell.raw).toBe('H');
+        expect(month.rows[0].color).toBe('h');
+        expect(edit.undo()).toBe(true);
+        expect(cell.raw).toBe('P');
+        expect(cell.value).toBe('P');
+        expect(month.rows[0].color).toBe('p');
+        expect(edit.redo()).toBe(true);
+        expect(cell.raw).toBe('H');
+        expect(cell.value).toBe('H');
+        expect(month.rows[0].color).toBe('h');
+    });
+
+    it('Ctrl+Z inside an input does not trigger app undo', () => {
+        const cell = month.rows[0].cells[1];
+        edit.selectCell(0, 1, cell);
+        edit.draft = 'keep';
+        edit.commitEdit(cell);
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+        const z = new KeyboardEvent('keydown', {key: 'z', ctrlKey: true, bubbles: true});
+        Object.defineProperty(z, 'target', {value: input});
+        const handled = edit.onKeydown(z, 0, 1, cell);
+        expect(cell.raw).toBe('keep');
+        expect(history.canUndo(month.label.title)).toBe(true);
+        input.remove();
+    });
+
 });
