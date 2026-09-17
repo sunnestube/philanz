@@ -212,49 +212,32 @@ export class MonthTableEditX extends MonthTableEdit {
         }
         const coords: Array<{row: number; col: number}> = [];
         const colorRows: number[] = [];
-        for (let row = this.range.row0; row <= this.range.row1; row++) {
-            colorRows.push(row);
-            for (let col = this.range.col0; col <= this.range.col1; col++) {
-                const cell = month.rows[row]?.cells[col];
-                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
-                    continue;
-                }
-                coords.push({row, col});
-            }
-        }
-        const history = this.workbook.history;
-        const before = history.captureCells(month, coords);
-        const beforeColors = history.captureColors(month, colorRows);
         this.suppressCommit = true;
-        for (let row = this.range.row0; row <= this.range.row1; row++) {
-            const line = month.rows[row];
-            if (!line) {
-                continue;
-            }
-            for (let col = this.range.col0; col <= this.range.col1; col++) {
-                const cell = line.cells[col];
-                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+        // One undo unit for the whole range (cells + person colors).
+        this.workbook.history.record(month, coords, colorRows, () => {
+            for (let row = this.range.row0; row <= this.range.row1; row++) {
+                colorRows.push(row);
+                const line = month.rows[row];
+                if (!line) {
                     continue;
                 }
-                cell.raw = '';
-                cell.display = '';
-                cell.error = null;
-                if (cell.type.id.indexOf('select') !== -1) {
-                    cell.value = '';
+                for (let col = this.range.col0; col <= this.range.col1; col++) {
+                    const cell = line.cells[col];
+                    if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+                        continue;
+                    }
+                    coords.push({row, col});
+                    cell.raw = '';
+                    cell.display = '';
+                    cell.error = null;
+                    if (cell.type.id.indexOf('select') !== -1) {
+                        cell.value = '';
+                    }
                 }
+                const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+                const code = (person?.value || person?.raw || '').trim();
+                line.color = code ? code.toLowerCase() : '';
             }
-            const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
-            const code = (person?.value || person?.raw || '').trim();
-            line.color = code ? code.toLowerCase() : '';
-        }
-        const after = history.captureCells(month, coords);
-        const afterColors = history.captureColors(month, colorRows);
-        history.push({
-            monthTitle: month.label.title,
-            before,
-            after,
-            beforeColors,
-            afterColors
         });
         this.draft = '';
         this.refresh();
