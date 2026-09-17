@@ -68,4 +68,16 @@ describe('TableHistoryService', () => {
         });
         expect(history.canRedo(month.label.title)).toBe(false);
     });
+
+    it('record notes coords pushed during mutate before write', () => {
+        const coords: Array<{row: number; col: number}> = [];
+        history.record(month, coords, [], () => {
+            coords.push({row: 1, col: 1});
+            month.rows[1].cells[1].raw = 'grown';
+        });
+        expect(month.rows[1].cells[1].raw).toBe('grown');
+        expect(history.undo(month)).toBe(true);
+        expect(month.rows[1].cells[1].raw).toBe('a1');
+    });
+
 });
