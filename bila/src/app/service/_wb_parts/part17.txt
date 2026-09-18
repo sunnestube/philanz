@@ -1,0 +1,19 @@
+#fx:')) {
+                try {
+                    fx = JSON.parse(line.slice(4)) as typeof fx;
+                } catch {
+                    fx = null;
+                }
+            } else if (line.startsWith('#settings:')) {
+                try {
+                    settings = JSON.parse(line.slice(10)) as typeof settings;
+                } catch {
+                    settings = null;
+                }
+            } else {
+                rest.push(line);
+            }
+        });
+        return {meta: {persons, accounts, personNames, accountNames, opening, constants, fx, settings}, body: rest.join('\n')};
+    }
+}
