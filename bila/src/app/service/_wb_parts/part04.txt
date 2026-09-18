@@ -1,0 +1,101 @@
+rn auto;
+        }
+        return stored;
+    }
+
+    saldoTotalTitle(): string {
+        return this.saldoTotalPref().title || 'Total';
+    }
+
+    saldoTotalVisible(): boolean {
+        return this.saldoTotalPref().visible !== false;
+    }
+
+    setSaldoColumnPref(key: string, patch: Partial<SaldoColumnPref>): void {
+        const current = this.saldoColumnPrefs();
+        const fallback = current[key] ?? {visible: true, title: key.replace('|', ' ')};
+        this.saldoColumnPrefs.set({
+            ...current,
+            [key]: {
+                visible: patch.visible ?? fallback.visible,
+                title: patch.title ?? fallback.title
+            }
+        });
+        this.persistSettings();
+        this.touch();
+    }
+
+    setSaldoTotalPref(patch: Partial<SaldoColumnPref>): void {
+        const current = this.saldoTotalPref();
+        this.saldoTotalPref.set({
+            visible: patch.visible ?? current.visible,
+            title: patch.title ?? current.title
+        });
+        this.persistSettings();
+        this.touch();
+    }
+
+    private fillsTimer = 0;
+
+    touch(): void {
+        this.revision.update((value) => value + 1);
+        this.scheduleColumnFills();
+    }
+
+    /** Debounced column-constant fills for the active month (explicit; was Year monkey-patch). */
+    private scheduleColumnFills(): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        if (this.fillsTimer) {
+            clearTimeout(this.fillsTimer);
+        }
+        this.fillsTimer = window.setTimeout(() => {
+            this.fillsTimer = 0;
+            const current = this.selectedMonth();
+            applyColumnFills(this, current ? [current] : undefined);
+        }, 250);
+    }
+
+    private isPrevMonthMarker(raw: string | null | undefined): boolean {
+        const text = (raw ?? '').trim();
+        return text === '↑' || text === '=↑' || text.toLowerCase() === '=vorzeile';
+    }
+
+    openSettings(): void {
+        this.settingsOpen.set(true);
+    }
+
+    closeSettings(): void {
+        this.settingsOpen.set(false);
+    }
+
+    setOptions(options: WorkbookOptions): void {
+        this.persons.set(this.normalizeCodes(options.person));
+        this.accounts.set(this.normalizeCodes(options.account));
+        this.persistSettings();
+        this.touch();
+    }
+
+    openingOf(person: string, account: string): number {
+        return this.openingBalances()[`${person}|${account}`] ?? 0;
+    }
+
+    setOpening(person: string, account: string, value: number): void {
+        const next = {...this.openingBalances()};
+        const key = `${person}|${account}`;
+        if (!value) {
+            delete next[key];
+        } else {
+            next[key] = value;
+        }
+        this.openingBalances.set(next);
+        this.persistSettings();
+        this.touch();
+    }
+
+    openingPersonTotal(person: string): number {
+        return this.accountCodes().reduce((sum, account) => sum + this.openingOf(person, account), 0);
+    }
+
+    openingAccount
