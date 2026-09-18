@@ -1,0 +1,69 @@
+s);
+            }
+            if (meta.settings.accountNames) {
+                this.accountNames.set(meta.settings.accountNames);
+            }
+            if (typeof meta.settings.headerRowHeight === 'number') {
+                this.headerRowHeight.set(meta.settings.headerRowHeight);
+            }
+            if (typeof meta.settings.textColWidth === 'number') {
+                this.textColWidth.set(meta.settings.textColWidth);
+            }
+            if (Array.isArray(meta.settings.constants)) {
+                this.constants.set(WorkbookService.normalizeConstants(meta.settings.constants));
+            }
+        }
+        if (meta.constants.length) {
+            this.constants.set(WorkbookService.normalizeConstants(meta.constants));
+        }
+        if (meta.settings) {
+            const yearHint = typeof meta.settings.calendarYear === 'number'
+                ? meta.settings.calendarYear
+                : this.fx.calendarYear();
+            if (Array.isArray(meta.settings.fx)) {
+                this.fx.load(meta.settings.fx, yearHint);
+            }
+            if (typeof meta.settings.displayCurrency === 'string') {
+                this.fx.setDisplayCurrency(meta.settings.displayCurrency);
+            }
+            if (typeof meta.settings.calendarYear === 'number') {
+                this.fx.setCalendarYear(meta.settings.calendarYear);
+            }
+        }
+        if (meta.fx) {
+            this.fx.load(meta.fx.currencies, meta.fx.year || this.fx.calendarYear());
+            if (meta.fx.display) {
+                this.fx.setDisplayCurrency(meta.fx.display);
+            }
+        }
+        const months = CsvImportService.parseCSV(body);
+        this.setMonths(months);
+        this.persistSettings();
+        return months;
+    }
+
+    comboSaldos(scope: 'month' | 'year'): ComboSaldo[] {
+        this.revision();
+        const months = scope === 'month'
+            ? (this.selectedMonth() ? [this.selectedMonth() as Month] : [])
+            : this.months();
+        const map = new Map<string, ComboSaldo>();
+        this.saldoCombos().forEach((combo) => {
+            const opening = scope === 'year' ? this.openingOf(combo.person, combo.account) : 0;
+            map.set(combo.key, {
+                person: combo.person,
+                account: combo.account,
+                expenses: 0,
+                income: 0,
+                balance: opening
+            });
+        });
+        months.forEach((month) => {
+            const personIdx = month.columns.findIndex((col) => col.type === CELL_TYPE.select_person);
+            const accountIdx = month.columns.findIndex((col) => col.type === CELL_TYPE.select_account);
+            month.rows.forEach((row) => {
+                const person = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+                const account = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+                const bucket = map.get(`${person}|${account}`);
+                if (bucket) {
+                    const 
