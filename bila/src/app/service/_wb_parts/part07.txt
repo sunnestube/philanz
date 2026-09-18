@@ -1,0 +1,67 @@
+string {
+        const months = this.months();
+        if (!months.length) {
+            return '';
+        }
+        const opening = Object.entries(this.openingBalances())
+            .filter(([, value]) => value)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(';');
+        const settings = JSON.stringify({
+            saldoColumnPrefs: this.saldoColumnPrefs(),
+            saldoTotalPref: this.saldoTotalPref(),
+            saldoColumnsOpen: this.saldoColumnsOpen(),
+            saldoPanelOpen: this.saldoPanelOpen(),
+            personNames: this.personNames(),
+            accountNames: this.accountNames(),
+            headerRowHeight: this.headerRowHeight(),
+            textColWidth: this.textColWidth(),
+            constants: this.constants(),
+            fx: this.fx.snapshot(),
+            displayCurrency: this.fx.displayCurrency(),
+            calendarYear: this.fx.calendarYear()
+        });
+        const meta = [
+            `#persons:${this.encodeNamedCodes(this.personCodes(), this.personNames())}`,
+            `#accounts:${this.encodeNamedCodes(this.accountCodes(), this.accountNames())}`,
+            opening ? `#opening:${opening}` : '',
+            `#constants:${JSON.stringify(this.constants())}`,
+            `#fx:${JSON.stringify({year: this.fx.calendarYear(), currencies: this.fx.snapshot(), display: this.fx.displayCurrency()})}`,
+            `#settings:${settings}`
+        ].filter(Boolean).join('\n');
+        return `${meta}\n${CsvExportService.convertToCSV(months, months[0].columns)}`;
+    }
+
+    applyCsv(csvData: string): Month[] {
+        const {meta, body} = WorkbookService.splitMeta(csvData);
+        if (meta.persons.length) {
+            this.persons.set(['', ...meta.persons]);
+        }
+        if (meta.accounts.length) {
+            this.accounts.set(['', ...meta.accounts]);
+        }
+        if (Object.keys(meta.personNames).length) {
+            this.personNames.set(meta.personNames);
+        }
+        if (Object.keys(meta.accountNames).length) {
+            this.accountNames.set(meta.accountNames);
+        }
+        this.openingBalances.set(meta.opening);
+        if (meta.settings) {
+            if (meta.settings.saldoColumnPrefs) {
+                this.saldoColumnPrefs.set(meta.settings.saldoColumnPrefs);
+            }
+            if (meta.settings.saldoTotalPref) {
+                this.saldoTotalPref.set({
+                    visible: meta.settings.saldoTotalPref.visible !== false,
+                    title: meta.settings.saldoTotalPref.title || 'Total'
+                });
+            }
+            if (typeof meta.settings.saldoColumnsOpen === 'boolean') {
+                this.saldoColumnsOpen.set(meta.settings.saldoColumnsOpen);
+            }
+            if (typeof meta.settings.saldoPanelOpen === 'boolean') {
+                this.saldoPanelOpen.set(meta.settings.saldoPanelOpen);
+            }
+            if (meta.settings.personNames) {
+                this.personNames.set(meta.settings.personName
