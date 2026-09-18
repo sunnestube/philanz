@@ -1,0 +1,10 @@
+.month-fx-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+    flex-shrink: 0;
+}
+.month-fx-bar .fx-hint { font-size: 11px; color: #64748b; }

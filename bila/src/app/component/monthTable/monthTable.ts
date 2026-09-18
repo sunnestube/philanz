@@ -34,7 +34,7 @@ const VIEW_SIZE = 64;
         MonthTableFooterComponent,
         CurrencySelectComponent
     ],
-    styleUrls: ['./monthTable.css'],
+    styleUrls: ['./monthTable.css', './month-fx-bar.css'],
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush
 })
