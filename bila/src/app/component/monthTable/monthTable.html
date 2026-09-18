@@ -1,4 +1,10 @@
 @if (month) {
+    <div class="month-fx-bar">
+        <bal-currency-select/>
+        @if (currencyRev() !== 'CHF') {
+            <span class="fx-hint">Anzeige in {{ currencyRev() }} · Bearbeitung weiter in CHF</span>
+        }
+    </div>
     <bal-formula-bar
         [draft]="edit.draft"
         [activeAddress]="edit.activeAddress"
