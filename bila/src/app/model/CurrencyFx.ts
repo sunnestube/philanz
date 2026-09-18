@@ -1,0 +1,1 @@
+FILE_REF:/workspace/philanz/bila/src/app/model/CurrencyFx.ts
