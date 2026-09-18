@@ -79,9 +79,15 @@ describe('FormulaService', () => {
             expect(service.columnLetter(26)).toBe('AA');
         });
 
-        it('parses swiss numbers', () => {
+        it('parses swiss and german locale numbers', () => {
             expect(service.toNumber("1'000.50")).toBe(1000.5);
             expect(service.toNumber("1'000,50")).toBe(1000.5);
+            expect(service.toNumber('1.234,56')).toBe(1234.56);
+            expect(service.toNumber('1.234.567,89')).toBe(1234567.89);
+            expect(service.toNumber('1.234')).toBe(1234);
+            expect(service.toNumber('1,234.56')).toBe(1234.56);
+            expect(service.toNumber('12,5')).toBe(12.5);
+            expect(service.toNumber('12.5')).toBe(12.5);
             expect(service.toNumber('=A1')).toBeNull();
         });
     });
@@ -114,7 +120,6 @@ describe('FormulaService', () => {
             const tsv = '=A1\t=$B$1\n=A2\t=B$1';
             service.copyGrid(tsv, 2, 4);
             expect(service.pasteSource(tsv)).toEqual({col: 2, row: 4});
-            // cell at offset (1,0) from origin (2,4) → source (3,4); paste to (5,6)
             expect(service.adjustFormula('=A2', 3, 4, 5, 6)).toBe('=C4');
         });
 
