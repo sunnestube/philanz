@@ -1,0 +1,40 @@
+ else if (line.startsWith('#accounts:')) {
+                const parsed = WorkbookService.parseNamedCodes(line.slice(10));
+                accounts.push(...parsed.codes);
+                Object.assign(accountNames, parsed.names);
+            } else if (line.startsWith('#opening:')) {
+                line.slice(9).split(';').forEach((pair) => {
+                    const [key, raw] = pair.split('=');
+                    if (!key || raw === undefined) {
+                        return;
+                    }
+                    const value = Number(raw);
+                    if (Number.isFinite(value)) {
+                        opening[key.trim()] = value;
+                    }
+                });
+            } else if (line.startsWith('#constants:')) {
+                try {
+                    constants.push(...WorkbookService.normalizeConstants(JSON.parse(line.slice(11))));
+                } catch {
+                    /* ignore */
+                }
+            } else if (line.startsWith('#fx:')) {
+                try {
+                    fx = JSON.parse(line.slice(4)) as typeof fx;
+                } catch {
+                    fx = null;
+                }
+            } else if (line.startsWith('#settings:')) {
+                try {
+                    settings = JSON.parse(line.slice(10)) as typeof settings;
+                } catch {
+                    settings = null;
+                }
+            } else {
+                rest.push(line);
+            }
+        });
+        return {meta: {persons, accounts, personNames, accountNames, opening, constants, fx, settings}, body: rest.join('\n')};
+    }
+}
