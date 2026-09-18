@@ -38,7 +38,7 @@ export class MonthTableSaldo {
 
     runningRows(): Array<Record<string, number>> {
         const rev = this.workbook.revision();
-        const title = this.monthOf()?.label.title ?? '';
+        const title = (this.monthOf()?.label.title ?? '') + '|' + this.workbook.fx.displayCurrency();
         if (this.cachedRev === rev && this.cachedTitle === title) {
             return this.cachedRunning;
         }
@@ -78,18 +78,29 @@ export class MonthTableSaldo {
     }
 
     rowSaldos(header: SaldoColView[], rowIndex: number): SaldoCellView[] {
-        return header.map((col) => saldoCellView(col, this.saldoAt(rowIndex, col.key), this.saldoDelta(rowIndex, col.key)));
+        const day = this.rowDay(rowIndex);
+        return header.map((col) => saldoCellView(
+            col,
+            this.workbook.fx.toDisplay(this.saldoAt(rowIndex, col.key), day),
+            this.workbook.fx.toDisplay(this.saldoDelta(rowIndex, col.key), day)
+        ));
     }
 
     rowTotal(rowIndex: number): SaldoCellView | null {
         if (!this.workbook.saldoTotalVisible() || !this.combos().length) {
             return null;
         }
+        const day = this.rowDay(rowIndex);
         return saldoCellView(
             {key: 'total', person: '', personClass: 'total-col', title: this.workbook.saldoTotalTitle(), first: false},
-            this.saldoTotal(rowIndex),
-            this.saldoTotalDelta(rowIndex)
+            this.workbook.fx.toDisplay(this.saldoTotal(rowIndex), day),
+            this.workbook.fx.toDisplay(this.saldoTotalDelta(rowIndex), day)
         );
+    }
+
+    private rowDay(rowIndex: number): number {
+        const month = this.monthOf();
+        return this.workbook.fx.dayIndexForRow(month, month?.rows[rowIndex]);
     }
 
     footerRows(): Array<{person: string | null; label: string; color: string}> {
@@ -106,7 +117,7 @@ export class MonthTableSaldo {
 
     footerViews(columns: ColumnView[], saldos: SaldoColView[]): FooterRowView[] {
         const rev = this.workbook.revision();
-        const title = this.monthOf()?.label.title ?? '';
+        const title = (this.monthOf()?.label.title ?? '') + '|' + this.workbook.fx.displayCurrency();
         if (this.cachedFooter && this.cachedFooterRev === rev && this.cachedFooterTitle === title) {
             return this.cachedFooter;
         }
@@ -123,13 +134,14 @@ export class MonthTableSaldo {
             })),
             saldos: saldos.map((col) => {
                 const value = this.footerSaldo(foot.person, col.key);
-                const view = saldoCellView(col, value ?? 0, 0);
+                const day = this.footerDay();
+                const view = saldoCellView(col, value == null ? 0 : this.workbook.fx.toDisplay(value, day), 0);
                 return value === null ? {...view, text: ''} : view;
             }),
             total: this.workbook.saldoTotalVisible() && saldos.length
                 ? saldoCellView(
                     {key: 'total', person: '', personClass: 'total-col', title: this.workbook.saldoTotalTitle(), first: false},
-                    this.footerSaldoTotal(foot.person),
+                    this.workbook.fx.toDisplay(this.footerSaldoTotal(foot.person), this.footerDay()),
                     0
                 )
                 : null
@@ -143,6 +155,13 @@ export class MonthTableSaldo {
         }
         const combos = this.combos().length;
         return combos ? combos + (this.workbook.saldoTotalVisible() ? 1 : 0) : 0;
+    }
+
+    private footerDay(): number {
+        const month = this.monthOf();
+        const rows = month?.rows ?? [];
+        const last = rows[rows.length - 1];
+        return this.workbook.fx.dayIndexForRow(month, last);
     }
 
     private footerLabelCol(): number {
@@ -183,7 +202,9 @@ export class MonthTableSaldo {
                 }
             }
             const cell = row.cells[colIndex];
-            sum += this.formulaService.toNumber(cell?.display || cell?.raw || '') ?? 0;
+            const amountChf = this.formulaService.toNumber(cell?.display || cell?.raw || '') ?? 0;
+            const day = this.workbook.fx.dayIndexForRow(month, row);
+            sum += this.workbook.fx.toDisplay(amountChf, day);
         });
         return sum;
     }
