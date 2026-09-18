@@ -1,40 +1,66 @@
- else if (line.startsWith('#accounts:')) {
-                const parsed = WorkbookService.parseNamedCodes(line.slice(10));
-                accounts.push(...parsed.codes);
-                Object.assign(accountNames, parsed.names);
-            } else if (line.startsWith('#opening:')) {
-                line.slice(9).split(';').forEach((pair) => {
-                    const [key, raw] = pair.split('=');
-                    if (!key || raw === undefined) {
-                        return;
-                    }
-                    const value = Number(raw);
-                    if (Number.isFinite(value)) {
-                        opening[key.trim()] = value;
-                    }
-                });
-            } else if (line.startsWith('#constants:')) {
-                try {
-                    constants.push(...WorkbookService.normalizeConstants(JSON.parse(line.slice(11))));
-                } catch {
-                    /* ignore */
-                }
-            } else if (line.startsWith('#fx:')) {
-                try {
-                    fx = JSON.parse(line.slice(4)) as typeof fx;
-                } catch {
-                    fx = null;
-                }
-            } else if (line.startsWith('#settings:')) {
-                try {
-                    settings = JSON.parse(line.slice(10)) as typeof settings;
-                } catch {
-                    settings = null;
-                }
-            } else {
-                rest.push(line);
-            }
+is.expenseColumns();
+        const persons = this.personCodes();
+        const months = this.months().map((month) => this.monthExpenseBlock(month, columns, persons));
+        const yearByColumn: Record<string, number> = {};
+        columns.forEach((col) => {
+            yearByColumn[col.title] = months.reduce((sum, block) => sum + (block.byColumn[col.title] ?? 0), 0);
         });
-        return {meta: {persons, accounts, personNames, accountNames, opening, constants, fx, settings}, body: rest.join('\n')};
+        const yearExpense = months.reduce((sum, block) => sum + block.total, 0);
+        const yearIncome = this.months().reduce((sum, month) => {
+            return sum + month.rows.reduce((rowSum, row) => {
+                const day = this.fx.dayIndexForRow(month, row);
+                return rowSum + this.fx.toDisplay(this.rowSplit(month, row).income, day);
+            }, 0);
+        }, 0);
+        const divisor = Math.max(months.length, 1);
+        const monthAvgMap: Record<string, number> = {};
+        const dayAvgMap: Record<string, number> = {};
+        columns.forEach((col) => {
+            monthAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / divisor;
+            dayAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / 365;
+        });
+        return {
+            columns,
+            persons,
+            months,
+            yearExpense,
+            yearIncome,
+            monthAvg: yearExpense / divisor,
+            dayAvg: yearExpense / 365,
+            summaryRows: [
+                {label: 'Jahr', byColumn: yearByColumn, total: yearExpense},
+                {label: 'Ø Monat', byColumn: monthAvgMap, total: yearExpense / divisor},
+                {label: 'Ø Tag', byColumn: dayAvgMap, total: yearExpense / 365}
+            ]
+        };
     }
-}
+
+    yearCharts(): {personStack: object; categoryStack: object; incomeExpense: object} {
+        const report = this.yearExpenseReport();
+        const labels = report.months.map((block) => block.title);
+        const personStack = {
+            labels,
+            datasets: report.persons.map((person, index) => ({
+                label: this.personLabel(person),
+                backgroundColor: PERSON_COLORS[person] ?? CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+                data: report.months.map((block) => block.personTotal[person] ?? 0)
+            }))
+        };
+        const top = [...report.columns]
+            .sort((a, b) => (report.summaryRows[0].byColumn[b.title] ?? 0) - (report.summaryRows[0].byColumn[a.title] ?? 0))
+            .slice(0, 8);
+        const categoryStack = {
+            labels,
+            datasets: top.map((col, index) => ({
+                label: col.title,
+                backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+                data: report.months.map((block) => block.byColumn[col.title] ?? 0)
+            }))
+        };
+        const incomeExpense = {
+            labels,
+            datasets: [
+                {
+                    label: 'Einnahmen',
+                    backgroundColor: '#4ade80',
+                    data: this.months().map((month) => month
