@@ -2,13 +2,10 @@ import {describe, it, expect, beforeEach} from 'vitest';
 import {WorkbookService} from './workbook.service';
 import {FormulaService} from './formula.service';
 import {TableHistoryService} from './table-history.service';
+import {CurrencyFxService} from './currency-fx.service';
 import {MonthTableSaldo} from '../component/monthTable/month-table-saldo';
 import {columnViews, formatSaldo} from '../component/monthTable/month-table.vm';
 
-/**
- * Regression: Excel DE/CH CSV uses 1.234,56 — after import, footer / year
- * sums must include those cells (Summenrechnung).
- */
 const CSV = [
     '#persons:P,L',
     '#accounts:B,K',
@@ -26,7 +23,7 @@ describe('CSV import → Summenrechnung', () => {
 
     beforeEach(() => {
         formula = new FormulaService();
-        workbook = new WorkbookService(formula, new TableHistoryService());
+        workbook = new WorkbookService(formula, new TableHistoryService(), new CurrencyFxService());
     });
 
     it('footer and formulas sum German-formatted amounts after applyCsv', () => {
