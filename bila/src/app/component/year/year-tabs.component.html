@@ -1,6 +1,7 @@
 <div class="tabs">
     <div class="tab-label start-tab" [class.active]="view() === 'start'" (click)="openView.emit('start')">Start</div>
     <div class="tab-label constants-tab" [class.active]="view() === 'constants'" (click)="openView.emit('constants')">Konstanten</div>
+    <div class="tab-label fx-tab-label" [class.active]="view() === 'fx'" (click)="openView.emit('fx')">Währungen</div>
     @for (month of months(); track month.label.title) {
         <div class="tab-label"
              [class]="month.label.background"
