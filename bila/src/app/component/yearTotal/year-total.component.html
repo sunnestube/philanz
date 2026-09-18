@@ -1,7 +1,12 @@
 @if (report(); as data) {
 <section class="year-total">
-    <h2>Total</h2>
-    <p>Spaltennamen einmal oben, vertikal und klebrig. Darunter Monat für Monat. Einnahmenspalten grün.</p>
+    <div class="total-head">
+        <div>
+            <h2>Total</h2>
+            <p>Spaltennamen einmal oben, vertikal und klebrig. Darunter Monat für Monat. Einnahmenspalten grün. Umrechnung mit Tageskurs (fehlend → letzter bekannter).</p>
+        </div>
+        <bal-currency-select/>
+    </div>
     <div class="cards">
         <div class="card"><span>Jahr Ausgaben</span><strong>{{ format(data.yearExpense) }}</strong></div>
         <div class="card"><span>Jahr Einnahmen</span><strong>{{ format(data.yearIncome) }}</strong></div>
