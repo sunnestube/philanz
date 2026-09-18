@@ -16,6 +16,7 @@ import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {YearTabsComponent} from './year-tabs.component';
 import {YearCsvTabComponent} from './year-csv-tab.component';
+import {FxTabComponent} from '../fxTab/fx-tab.component';
 
 const MIN_ROWS = 36;
 
@@ -30,7 +31,8 @@ const MIN_ROWS = 36;
         YearTotalComponent,
         YearGrafComponent,
         YearTabsComponent,
-        YearCsvTabComponent
+        YearCsvTabComponent,
+        FxTabComponent
     ],
     styleUrls: ['./year.component.css'],
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -51,10 +53,12 @@ export class YearComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
+        this.syncCalendarYear();
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
             if (id) {
                 this.yearName = this.archive.ensure(id).name;
+                this.syncCalendarYear();
                 const csv = this.archive.open(this.yearName);
                 if (csv) {
                     this.workbook.applyCsv(csv);
@@ -136,6 +140,7 @@ export class YearComponent implements OnInit, OnDestroy {
         }
         const meta = this.archive.save(this.yearName, csvData);
         this.yearName = meta.name;
+        this.syncCalendarYear();
         const now = new Date();
         this.saveMessage = `${meta.name} gespeichert um ${now.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'})}.`;
         void this.router.navigate(['/year', meta.name], {replaceUrl: true});
@@ -162,6 +167,7 @@ export class YearComponent implements OnInit, OnDestroy {
     protected openYear(id: string): void {
         const csv = this.archive.open(id);
         this.yearName = id;
+        this.syncCalendarYear();
         if (csv) {
             this.workbook.applyCsv(csv);
             this.fillRows();
@@ -180,6 +186,12 @@ export class YearComponent implements OnInit, OnDestroy {
                 this.openYear(next);
             }
         }
+    }
+
+    private syncCalendarYear(): void {
+        const match = /^(\d{4})/.exec(this.yearName || '');
+        const year = match ? Number(match[1]) : new Date().getFullYear();
+        this.workbook.fx.setCalendarYear(year);
     }
 
     private loadTemplate(): void {
@@ -291,7 +303,7 @@ export class YearComponent implements OnInit, OnDestroy {
             this.scheduleWarm();
             return;
         }
-        const extra: YearView[] = ['start', 'constants', 'csv', 'total', 'graf'];
+        const extra: YearView[] = ['start', 'constants', 'fx', 'csv', 'total', 'graf'];
         const nextView = extra.find((view) => !this.warmedViews.has(view));
         if (nextView) {
             this.ensureView(nextView);
