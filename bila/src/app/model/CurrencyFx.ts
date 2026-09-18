@@ -93,22 +93,48 @@ export function emptySeries(code: string, year: number, name = ''): CurrencySeri
     };
 }
 
-/** Ensure rates array matches year length; keeps existing values. */
+/** Ensure rates array matches year length; keeps existing positive rates. */
 export function resizeRates(rates: Array<number | null | undefined>, year: number): Array<number | null> {
     const len = daysInYear(year);
     const next: Array<number | null> = Array.from({length: len}, () => null);
     for (let i = 0; i < Math.min(len, rates?.length ?? 0); i++) {
         const value = rates[i];
-        next[i] = value != null && Number.isFinite(value) ? Number(value) : null;
+        next[i] = value != null && Number.isFinite(value) && Number(value) > 0 ? Number(value) : null;
     }
     return next;
 }
 
+/**
+ * Parse a rate cell (DE/CH aware): `0,95`, `1.012,5`, `1'012.5`, `0.95`.
+ * Empty / invalid → null (clears the day).
+ */
 export function parseRateInput(raw: string): number | null {
-    const text = String(raw ?? '').trim().replace(/['’\s]/g, '').replace(',', '.');
+    let text = String(raw ?? '').trim().replace(/['’\s]/g, '');
     if (!text) {
         return null;
     }
+    if (text.includes(',')) {
+        // Last comma is decimal separator; dots are thousands.
+        text = text.replace(/\./g, '').replace(',', '.');
+    }
     const value = Number(text);
     return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * Parse Excel / plain-text paste into a list of daily rates.
+ * Accepts one column of rates, or TSV `date\trate` / `dayIndex\trate` / `rate` (last column wins).
+ * Empty cells become null. Trailing blank lines from Excel are dropped.
+ */
+export function parseFxPasteRates(text: string): Array<number | null> {
+    const normalized = String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalized.split('\n');
+    while (lines.length && lines[lines.length - 1].trim() === '') {
+        lines.pop();
+    }
+    return lines.map((line) => {
+        const cells = line.split('\t');
+        const rateCell = cells.length > 1 ? cells[cells.length - 1] : (cells[0] ?? '');
+        return parseRateInput(rateCell);
+    });
 }
