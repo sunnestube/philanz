@@ -1,0 +1,94 @@
+void {
+        const key = code.trim().toUpperCase();
+        if (!key) {
+            return;
+        }
+        const clean = name.replace(/[=;,]/g, ' ').trim();
+        const target = kind === 'person' ? this.personNames : this.accountNames;
+        const next = {...target()};
+        if (!clean || clean.toUpperCase() === key) {
+            delete next[key];
+        } else {
+            next[key] = clean;
+        }
+        target.set(next);
+        this.persistSettings();
+        this.touch();
+    }
+
+    setHeaderRowHeight(px: number, persist = true): void {
+        this.headerRowHeight.set(Math.max(48, Math.min(240, Math.round(px))));
+        if (persist) {
+            this.persistSettings();
+        }
+    }
+
+    setTextColWidth(px: number, persist = true): void {
+        this.textColWidth.set(Math.max(72, Math.min(480, Math.round(px))));
+        if (persist) {
+            this.persistSettings();
+        }
+    }
+
+    addConstant(name = ''): void {
+        this.constants.update((list) => [...list, WorkbookService.emptyConstant(name)]);
+        this.persistSettings();
+        this.touch();
+    }
+
+    removeConstant(id: string): void {
+        this.constants.update((list) => list.filter((item) => item.id !== id));
+        this.persistSettings();
+        this.touch();
+    }
+
+    setConstantName(id: string, name: string): void {
+        this.patchConstant(id, {name: name.trim()});
+    }
+
+    setConstantPerson(id: string, person: string): void {
+        this.patchConstant(id, {person: (person || '').trim().toUpperCase()});
+    }
+
+    setConstantAccount(id: string, account: string): void {
+        this.patchConstant(id, {account: (account || '').trim().toUpperCase()});
+    }
+
+    setConstantMonth(id: string, index: number, raw: string): void {
+        const current = this.constants().find((item) => item.id === id);
+        if (!current || index < 0 || index >= 12) {
+            return;
+        }
+        const months = [...current.months];
+        months[index] = raw ?? '';
+        this.patchConstant(id, {months});
+    }
+
+    isFormula(raw: string | null | undefined): boolean {
+        return this.formulaService.isFormula(raw);
+    }
+
+    /**
+     * Amount for a constant in a month. Markers `↑` / `=↑` / `=vorzeile` walk
+     * to the previous month (explicit API; formerly YearComponent monkey-patch).
+     */
+    constantAmount(item: ConstantDef, monthTitle: string): number {
+        const months = CONSTANT_MONTHS;
+        let index = months.indexOf(monthTitle as typeof months[number]);
+        const seen = new Set<number>();
+        while (index >= 0) {
+            if (seen.has(index)) {
+                return 0;
+            }
+            seen.add(index);
+            const raw = item.months[index] ?? '';
+            if (this.isPrevMonthMarker(raw)) {
+                index -= 1;
+                continue;
+            }
+            return this.evaluateAmount(raw, months[index]);
+        }
+        return 0;
+    }
+
+    constantAverage(item: ConstantDef): nu
