@@ -8,6 +8,7 @@ import {
     emptySeries,
     fillForwardRate,
     normalizeCurrencyCode,
+    parseFxPasteRates,
     parseRateInput,
     resizeRates
 } from '../model/CurrencyFx';
@@ -97,6 +98,41 @@ export class CurrencyFxService {
 
     setRateFromInput(code: string, dayIndex: number, raw: string): void {
         this.setRate(code, dayIndex, parseRateInput(raw));
+    }
+
+    /**
+     * Apply a pasted rate column starting at `startDayIndex`.
+     * Writes up to daysInYear; ignores extras; leaves trailing days unchanged when fewer lines.
+     * Empty / invalid pasted cells clear that day (null).
+     */
+    setRatesFromPaste(code: string, startDayIndex: number, rates: Array<number | null>): void {
+        const normalized = normalizeCurrencyCode(code);
+        const start = Math.max(0, Math.floor(startDayIndex) || 0);
+        this.currencies.update((list) => list.map((item) => {
+            if (item.code !== normalized) {
+                return item;
+            }
+            const next = [...item.rates];
+            for (let i = 0; i < rates.length; i++) {
+                const day = start + i;
+                if (day >= next.length) {
+                    break;
+                }
+                const rate = rates[i];
+                next[day] = rate != null && Number.isFinite(rate) && rate > 0 ? rate : null;
+            }
+            return {...item, rates: next};
+        }));
+    }
+
+    /** Parse clipboard text and apply from startDayIndex (see setRatesFromPaste). */
+    pasteRates(code: string, startDayIndex: number, clipboardText: string): number {
+        const rates = parseFxPasteRates(clipboardText);
+        if (!rates.length) {
+            return 0;
+        }
+        this.setRatesFromPaste(code, startDayIndex, rates);
+        return rates.length;
     }
 
     renameCurrency(code: string, name: string): void {
@@ -213,5 +249,7 @@ export {
     chfToFx,
     dayOfYearIndex,
     daysInYear,
+    parseFxPasteRates,
+    parseRateInput,
     BASE_CURRENCY
 };
