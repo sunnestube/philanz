@@ -7,6 +7,9 @@
             @if (isViewReady('constants')) {
                 <div class="tab-content extra" [class.active]="workbook.view() === 'constants'"><bal-constants-tab/></div>
             }
+            @if (isViewReady('fx')) {
+                <div class="tab-content extra fill-pane" [class.active]="workbook.view() === 'fx'"><bal-fx-tab/></div>
+            }
             @if (isViewReady('total')) {
                 <div class="tab-content extra fill-pane" [class.active]="workbook.view() === 'total'"><bal-year-total/></div>
             }

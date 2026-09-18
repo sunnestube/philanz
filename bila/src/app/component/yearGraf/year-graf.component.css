@@ -1,3 +1,4 @@
+.graf-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 8px; }
 .year-graf { color: #111; }
 h2 { margin: 0 0 6px; }
 p { margin: 0 0 12px; color: #475569; font-size: 13px; }
