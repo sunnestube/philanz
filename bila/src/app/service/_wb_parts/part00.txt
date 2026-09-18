@@ -1,0 +1,100 @@
+import {Injectable, computed, signal} from '@angular/core';
+import {Month} from '../model/Month';
+import {MonthColumn} from '../model/MonthColumn';
+import {MonthCell} from '../model/MonthCell';
+import {MonthRow} from '../model/MonthRow';
+import {CELL_TYPE, CellType} from '../model/CellType';
+import {SECTION} from '../model/Section';
+import {CsvExportService} from './csv-export.service';
+import {FormulaService} from './formula.service';
+import {CsvImportService} from './csv-import.service';
+import {applyColumnFills, isColumnConstant} from './column-fill';
+import {TableHistoryService} from './table-history.service';
+import {CurrencyFxService} from './currency-fx.service';
+import {BASE_CURRENCY} from '../model/CurrencyFx';
+
+export interface WorkbookOptions {
+    person: string[];
+    account: string[];
+}
+
+export interface ComboSaldo {
+    person: string;
+    account: string;
+    expenses: number;
+    income: number;
+    balance: number;
+}
+
+export interface SaldoCombo {
+    person: string;
+    account: string;
+    key: string;
+}
+
+export type YearView = 'month' | 'start' | 'constants' | 'fx' | 'total' | 'graf' | 'csv';
+
+export const CONSTANT_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] as const;
+
+export interface ConstantDef {
+    id: string;
+    name: string;
+    person: string;
+    account: string;
+    months: string[];
+}
+
+export interface SaldoColumnPref {
+    visible: boolean;
+    title: string;
+}
+
+export interface ExpenseColumn {
+    title: string;
+    index: number;
+}
+
+export interface MonthExpenseBlock {
+    title: string;
+    byPerson: Record<string, Record<string, number>>;
+    personTotal: Record<string, number>;
+    byColumn: Record<string, number>;
+    total: number;
+}
+
+export interface YearExpenseReport {
+    columns: ExpenseColumn[];
+    persons: string[];
+    months: MonthExpenseBlock[];
+    yearExpense: number;
+    yearIncome: number;
+    monthAvg: number;
+    dayAvg: number;
+    summaryRows: Array<{label: string; byColumn: Record<string, number>; total: number}>;
+}
+
+const SETTINGS_KEY = 'philanz-settings';
+const PERSON_COLORS: Record<string, string> = {
+    P: '#60a5fa',
+    L: '#818cf8',
+    H: '#fbbf24',
+    E: '#fb923c',
+    A: '#f97316'
+};
+const CATEGORY_COLORS = ['#34d399', '#f472b6', '#38bdf8', '#facc15', '#c084fc', '#fb7185', '#4ade80', '#94a3b8'];
+
+@Injectable({
+    providedIn: 'root'
+})
+export class WorkbookService {
+    readonly months = signal<Month[]>([]);
+    readonly selectedMonth = signal<Month | null>(null);
+    readonly settingsOpen = signal(false);
+    readonly revision = signal(0);
+    readonly view = signal<YearView>('month');
+    readonly saldoColumnsOpen = signal(true);
+    readonly saldoPanelOpen = signal(false);
+    readonly saldoTotalPref = signal<SaldoColumnPref>({visible: true, title: 'Total'});
+    readonly saldoColumnPrefs = signal<Record<string, SaldoColumnPref>>({});
+    readonly openingBalances = signal<Record<string, number>>({});
+    readonly persons = 
