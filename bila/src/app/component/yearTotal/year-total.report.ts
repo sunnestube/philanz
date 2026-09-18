@@ -2,6 +2,7 @@ import {CELL_TYPE} from '../../model/CellType';
 import {SECTION} from '../../model/Section';
 import {ExpenseColumn, WorkbookService} from '../../service/workbook.service';
 import {columnFillAmount} from '../../service/column-fill';
+import {parseLocaleNumber} from '../../service/formula.service';
 
 export function buildYearTotalReport(workbook: WorkbookService) {
     const base = workbook.yearExpenseReport();
@@ -31,8 +32,8 @@ export function buildYearTotalReport(workbook: WorkbookService) {
             extra.forEach((col) => {
                 const filled = columnFillAmount(workbook, month, row, col.index);
                 const raw = row.cells[col.index]?.display || row.cells[col.index]?.raw || '0';
-                const parsed = Number(String(raw).replace(/['\s]/g, '').replace(',', '.'));
-                const value = filled ?? (Number.isFinite(parsed) ? parsed : 0);
+                const parsed = parseLocaleNumber(String(raw));
+                const value = filled ?? (parsed ?? 0);
                 byColumn[col.title] += value;
                 if (byPerson[person]) {
                     byPerson[person][col.title] += value;
