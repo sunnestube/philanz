@@ -1,0 +1,79 @@
+        byPerson[person] = {};
+            personTotal[person] = 0;
+            columns.forEach((col) => {
+                byPerson[person][col.title] = 0;
+            });
+        });
+        columns.forEach((col) => {
+            byColumn[col.title] = 0;
+        });
+        const personIdx = month.columns.findIndex((col) => col.type === CELL_TYPE.select_person);
+        month.rows.forEach((row) => {
+            const person = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+            const day = this.fx.dayIndexForRow(month, row);
+            columns.forEach((col) => {
+                const amountChf = this.formulaService.toNumber(row.cells[col.index]?.display || row.cells[col.index]?.raw || '') ?? 0;
+                const amount = this.fx.toDisplay(amountChf, day);
+                byColumn[col.title] += amount;
+                if (byPerson[person]) {
+                    byPerson[person][col.title] += amount;
+                    personTotal[person] += amount;
+                }
+            });
+        });
+        const total = Object.values(byColumn).reduce((sum, value) => sum + value, 0);
+        return {title: month.label.title, byPerson, personTotal, byColumn, total};
+    }
+
+    private rowSplit(month: Month, row: MonthRow): {income: number; expenses: number} {
+        let income = 0;
+        let expenses = 0;
+        month.columns.forEach((column, index) => {
+            if (column.type !== CELL_TYPE.number || column.section === SECTION.SALDO) {
+                return;
+            }
+            const amount = this.formulaService.toNumber(
+                row.cells[index]?.display || row.cells[index]?.raw || ''
+            ) ?? 0;
+            if (column.section === SECTION.EINGANG) {
+                income += amount;
+            } else if (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')) {
+                expenses += amount;
+            }
+        });
+        return {income, expenses};
+    }
+
+    private publish(months: Month[]): void {
+        this.months.set([...months]);
+        this.formulaService.setMonths(this.months());
+        this.touch();
+    }
+
+    private reindexCells(months: Month[]): void {
+        months.forEach((month) => {
+            month.rows.forEach((row, rowIndex) => {
+                row.cells.forEach((cell, colIndex) => {
+                    cell.rowIndex = rowIndex;
+                    cell.columnIndex = colIndex;
+                    cell.columnTitle = month.columns[colIndex]?.title ?? cell.columnTitle;
+                });
+            });
+        });
+    }
+
+    private normalizeCodes(codes: string[]): string[] {
+        const unique = new Set<string>();
+        const result: string[] = [''];
+        codes.forEach((code) => {
+            const next = code.trim().toUpperCase();
+            if (!next || unique.has(next)) {
+                return;
+            }
+            unique.add(next);
+            result.push(next);
+        });
+        return result;
+    }
+
+    private patchConstan
