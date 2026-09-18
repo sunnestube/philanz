@@ -1,0 +1,87 @@
+Total(account: string): number {
+        return this.personCodes().reduce((sum, person) => sum + this.openingOf(person, account), 0);
+    }
+
+    openingGrandTotal(): number {
+        return Object.values(this.openingBalances()).reduce((sum, value) => sum + value, 0);
+    }
+
+    addColumn(
+        column: MonthColumn = new MonthColumn('Neu', CELL_TYPE.number, SECTION.AUSGANG),
+        atIndex?: number
+    ): void {
+        const months = this.months();
+        const target = atIndex === undefined ? (months[0]?.columns.length ?? 0) : atIndex;
+        if (target < 0) {
+            return;
+        }
+        this.formulaService.shiftAfterColumnInserted(target);
+        months.forEach((month) => {
+            const copy = new MonthColumn(column.title, column.type, column.section);
+            const index = Math.min(target, month.columns.length);
+            month.columns.splice(index, 0, copy);
+            month.rows.forEach((row, rowIndex) => {
+                row.cells.splice(index, 0, new MonthCell(
+                    rowIndex,
+                    index,
+                    copy.title,
+                    new CellType(copy.type),
+                    ''
+                ));
+            });
+        });
+        this.reindexCells(months);
+        this.publish(months);
+    }
+
+    insertColumn(index: number): void {
+        this.addColumn(new MonthColumn('Neu', CELL_TYPE.number, SECTION.AUSGANG), index);
+    }
+
+    removeColumn(index: number): void {
+        if (this.isLockedColumn(index)) {
+            return;
+        }
+        this.formulaService.shiftAfterColumnRemoved(index);
+        const months = this.months();
+        months.forEach((month) => {
+            month.columns.splice(index, 1);
+            month.rows.forEach((row) => row.cells.splice(index, 1));
+        });
+        this.reindexCells(months);
+        this.publish(months);
+    }
+
+    updateColumn(index: number, patch: Partial<{title: string; type: CELL_TYPE; section: SECTION}>): void {
+        if (this.isLockedColumn(index)) {
+            return;
+        }
+        const months = this.months();
+        months.forEach((month) => {
+            const column = month.columns[index];
+            if (!column) {
+                return;
+            }
+            if (patch.title !== undefined) {
+                column.title = patch.title;
+            }
+            if (patch.type !== undefined) {
+                column.type = patch.type;
+            }
+            if (patch.section !== undefined) {
+                column.section = patch.section;
+            }
+            month.rows.forEach((row) => {
+                const cell = row.cells[index];
+                if (!cell) {
+                    return;
+                }
+                cell.columnTitle = column.title;
+                cell.type = new CellType(column.type);
+            });
+        });
+        this.publish(months);
+    }
+
+    renameCode(kind: 'person' | 'account', from: string, to: string): void {
+        const next = to.trim().toUpperCas
