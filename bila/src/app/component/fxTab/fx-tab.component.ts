@@ -2,7 +2,7 @@ import {Component, computed, inject, signal} from '@angular/core';
 import {DecimalPipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {WorkbookService} from '../../service/workbook.service';
-import {fillForwardRate} from '../../model/CurrencyFx';
+import {fillForwardRate, parseFxPasteRates} from '../../model/CurrencyFx';
 
 @Component({
     selector: 'bal-fx-tab',
@@ -67,6 +67,43 @@ export class FxTabComponent {
             return;
         }
         this.workbook.fx.renameCurrency(series.code, (event.target as HTMLInputElement).value);
+        this.workbook.persistFx();
+    }
+
+    /**
+     * Excel Ctrl/Cmd+V: paste 365/366 daily rates (or fewer from focused row).
+     * Single-value paste into a focused rate input keeps native cell behavior.
+     */
+    onPaste(event: ClipboardEvent): void {
+        const series = this.selected();
+        if (!series) {
+            return;
+        }
+        const clip = event.clipboardData?.getData('text/plain') ?? '';
+        const multiline = /[\r\n]/.test(clip) || clip.includes('\t');
+        const active = document.activeElement as HTMLElement | null;
+        const focusedRate = active?.classList?.contains('rate-input') ? active : null;
+
+        if (!multiline && focusedRate) {
+            // Single value into one input — browser default + (change) on blur.
+            return;
+        }
+
+        const rates = parseFxPasteRates(clip);
+        if (!rates.length) {
+            return;
+        }
+
+        event.preventDefault();
+        let start = 0;
+        if (focusedRate) {
+            const attr = focusedRate.getAttribute('data-day-index');
+            const parsed = attr != null ? Number(attr) : NaN;
+            if (Number.isFinite(parsed) && parsed >= 0) {
+                start = parsed;
+            }
+        }
+        this.workbook.fx.setRatesFromPaste(series.code, start, rates);
         this.workbook.persistFx();
     }
 
