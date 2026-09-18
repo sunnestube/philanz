@@ -1,0 +1,83 @@
+d.saldoColumnPrefs === 'object') {
+                this.saldoColumnPrefs.set(parsed.saldoColumnPrefs);
+            }
+            if (parsed.saldoTotalPref && typeof parsed.saldoTotalPref === 'object') {
+                this.saldoTotalPref.set({
+                    visible: parsed.saldoTotalPref.visible !== false,
+                    title: parsed.saldoTotalPref.title || 'Total'
+                });
+            }
+            if (Array.isArray(parsed.constants)) {
+                this.constants.set(WorkbookService.normalizeConstants(parsed.constants));
+            }
+            const yearHint = typeof parsed.calendarYear === 'number'
+                ? parsed.calendarYear
+                : this.fx.calendarYear();
+            if (Array.isArray(parsed.fx)) {
+                this.fx.load(parsed.fx, yearHint);
+            }
+            if (typeof parsed.displayCurrency === 'string') {
+                this.fx.setDisplayCurrency(parsed.displayCurrency);
+            }
+            if (typeof parsed.calendarYear === 'number') {
+                this.fx.setCalendarYear(parsed.calendarYear);
+            }
+        } catch {
+            return;
+        }
+    }
+
+    private encodeNamedCodes(codes: string[], names: Record<string, string>): string {
+        return codes.map((code) => {
+            const name = (names[code] || '').trim();
+            return name && name.toUpperCase() !== code ? `${code}=${name}` : code;
+        }).join(',');
+    }
+
+    private renameNameMap(map: Record<string, string>, prev: string, next: string): Record<string, string> {
+        if (!map[prev] && !map[next]) {
+            return map;
+        }
+        const copy = {...map};
+        if (copy[prev] && !copy[next]) {
+            copy[next] = copy[prev];
+        }
+        delete copy[prev];
+        return copy;
+    }
+
+    static parseNamedCodes(line: string): {codes: string[]; names: Record<string, string>} {
+        const codes: string[] = [];
+        const names: Record<string, string> = {};
+        line.split(',').forEach((item) => {
+            const raw = item.trim();
+            if (!raw) {
+                return;
+            }
+            const eq = raw.indexOf('=');
+            if (eq > 0) {
+                const code = raw.slice(0, eq).trim().toUpperCase();
+                const name = raw.slice(eq + 1).trim();
+                if (!code) {
+                    return;
+                }
+                codes.push(code);
+                if (name && name.toUpperCase() !== code) {
+                    names[code] = name;
+                }
+                return;
+            }
+            codes.push(raw.toUpperCase());
+        });
+        return {codes, names};
+    }
+
+    static splitMeta(csvData: string): {
+        meta: {
+            persons: string[];
+            accounts: string[];
+            personNames: Record<string, string>;
+            accountNames: Record<string, string>;
+            opening: Record<string, number>;
+            constants: ConstantDef[];
+            fx: {year
