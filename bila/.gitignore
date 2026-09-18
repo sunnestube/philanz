@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Assembled from _wb_parts/ via scripts/assemble-workbook.cjs
+src/app/service/workbook.service.ts
