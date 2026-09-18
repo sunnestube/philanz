@@ -1,0 +1,75 @@
+e();
+        const prev = from.trim().toUpperCase();
+        if (!next || next === prev) {
+            return;
+        }
+        if (kind === 'person') {
+            this.persons.set(this.normalizeCodes(
+                this.persons().map((code) => code === prev ? next : code)
+            ));
+            this.personNames.set(this.renameNameMap(this.personNames(), prev, next));
+        } else {
+            this.accounts.set(this.normalizeCodes(
+                this.accounts().map((code) => code === prev ? next : code)
+            ));
+            this.accountNames.set(this.renameNameMap(this.accountNames(), prev, next));
+        }
+        const opening = {...this.openingBalances()};
+        Object.keys(opening).forEach((key) => {
+            const [person, account] = key.split('|');
+            if (kind === 'person' && person === prev) {
+                opening[`${next}|${account}`] = opening[key];
+                delete opening[key];
+            }
+            if (kind === 'account' && account === prev) {
+                opening[`${person}|${next}`] = opening[key];
+                delete opening[key];
+            }
+        });
+        this.openingBalances.set(opening);
+        const prefs = {...this.saldoColumnPrefs()};
+        Object.keys(prefs).forEach((key) => {
+            const [person, account] = key.split('|');
+            if (kind === 'person' && person === prev) {
+                prefs[`${next}|${account}`] = prefs[key];
+                delete prefs[key];
+            }
+            if (kind === 'account' && account === prev) {
+                prefs[`${person}|${next}`] = prefs[key];
+                delete prefs[key];
+            }
+        });
+        this.saldoColumnPrefs.set(prefs);
+        this.constants.update((list) => list.map((item) => {
+            if (kind === 'person' && item.person === prev) {
+                return {...item, person: next};
+            }
+            if (kind === 'account' && item.account === prev) {
+                return {...item, account: next};
+            }
+            return item;
+        }));
+        const type = kind === 'person' ? CELL_TYPE.select_person : CELL_TYPE.select_account;
+        this.months().forEach((month) => {
+            month.rows.forEach((row) => {
+                row.cells.forEach((cell) => {
+                    if (cell.type.id === type && (cell.raw || '').trim().toUpperCase() === prev) {
+                        cell.raw = next;
+                    }
+                });
+                if (kind === 'person') {
+                    const person = row.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+                    row.color = (person?.raw || '').toLowerCase();
+                }
+            });
+        });
+        this.persistSettings();
+        this.publish(this.months());
+    }
+
+    isLockedColumn(index: number): boolean {
+        const type = this.months()[0]?.columns[index]?.type;
+        return type === CELL_TYPE.none || type === CELL_TYPE.index;
+    }
+
+    toCsv(): 

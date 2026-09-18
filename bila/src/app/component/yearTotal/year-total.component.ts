@@ -2,10 +2,12 @@ import {Component, computed, ElementRef, HostBinding, HostListener, inject, View
 import {SECTION} from '../../model/Section';
 import {WorkbookService} from '../../service/workbook.service';
 import {buildYearTotalReport} from './year-total.report';
+import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
 
 @Component({
     selector: 'bal-year-total',
     standalone: true,
+    imports: [CurrencySelectComponent],
     templateUrl: './year-total.component.html',
     styleUrl: './year-total.component.css'
 })

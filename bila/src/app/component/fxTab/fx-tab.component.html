@@ -1,0 +1,73 @@
+<section class="fx-tab" (paste)="onPaste($event)">
+    <div class="fx-head">
+        <div>
+            <h2>Währungen / Kurse</h2>
+            <p>
+                Tägliche Kurse als <strong>CHF pro 1 Einheit</strong> der Fremdwährung (z.B. EUR→CHF = 0.95).
+                Fehlende Tage übernehmen den letzten bekannten Kurs; ohne Kurse gilt 1:1.
+                Beträge im Monats- und Total-Tab werden mit dem Kurs des Buchungsdatums umgerechnet.
+            </p>
+            <p class="fx-paste-hint">Ctrl+V: Jahreskurse aus Excel (365/366 Zeilen)</p>
+        </div>
+        <div class="fx-add">
+            <input type="text" placeholder="Code (EUR)" maxlength="8"
+                   [ngModel]="newCode()" (ngModelChange)="newCode.set($event)"/>
+            <input type="text" placeholder="Name (optional)"
+                   [ngModel]="newName()" (ngModelChange)="newName.set($event)"/>
+            <button type="button" class="fx-btn" (click)="add()">+ Währung</button>
+        </div>
+    </div>
+
+    <div class="fx-codes">
+        @for (item of workbook.fx.currencies(); track item.code) {
+            <button type="button"
+                    class="fx-chip"
+                    [class.active]="selected()?.code === item.code"
+                    (click)="select(item.code)">
+                {{ item.code }}@if (item.name) { · {{ item.name }}}
+            </button>
+        } @empty {
+            <p class="fx-empty">Noch keine Fremdwährung — oben Code eingeben.</p>
+        }
+    </div>
+
+    @if (selected(); as series) {
+        <div class="fx-toolbar">
+            <label>Name
+                <input type="text" [ngModel]="series.name" (change)="onName($event)"/>
+            </label>
+            <span class="fx-meta">Jahr {{ workbook.fx.calendarYear() }} · {{ days().length }} Tage</span>
+            <button type="button" class="fx-btn danger" (click)="remove(series.code)">Löschen</button>
+        </div>
+        <div class="fx-table-wrap">
+            <table class="fx-table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Datum</th>
+                    <th>Kurs (CHF / 1 {{ series.code }})</th>
+                    <th>Effektiv</th>
+                </tr>
+                </thead>
+                <tbody>
+                @for (day of days(); track day.index) {
+                    <tr [class.sparse]="rateText(day.index) === ''">
+                        <td class="idx">{{ day.index + 1 }}</td>
+                        <td>{{ day.label }}</td>
+                        <td>
+                            <input class="rate-input"
+                                   type="text"
+                                   inputmode="decimal"
+                                   [attr.data-day-index]="day.index"
+                                   [value]="rateText(day.index)"
+                                   (change)="onRate(day.index, $event)"
+                                   placeholder="—"/>
+                        </td>
+                        <td class="eff">{{ effective(day.index) | number:'1.4-6':'de-CH' }}</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

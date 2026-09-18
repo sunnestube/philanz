@@ -86,16 +86,23 @@ export class MonthTableRange {
             const cells: string[] = [];
             for (let col = this.col0; col <= this.col1; col++) {
                 const raw = month.rows[row]?.cells[col]?.raw ?? '';
-                this.formula.copyFormula(raw, col, row);
                 cells.push(raw);
             }
             lines.push(cells.join('\t'));
         }
-        return lines.join('\n');
+        const tsv = lines.join('\n');
+        this.formula.copyGrid(tsv, this.copyCol, this.copyRow);
+        return tsv;
     }
 
+    /** Optional hook so MonthTable can virtualize before focusing. */
+    beforeFocus: ((row: number) => void) | null = null;
+
     focusCell(monthTitle: string, row: number, col: number): void {
-        document.getElementById(TableNavigationService.cellId(monthTitle, row, col))?.focus();
+        this.beforeFocus?.(row);
+        queueMicrotask(() => {
+            document.getElementById(TableNavigationService.cellId(monthTitle, row, col))?.focus();
+        });
     }
 
     private move(

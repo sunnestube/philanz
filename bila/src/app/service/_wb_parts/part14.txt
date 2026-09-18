@@ -1,0 +1,71 @@
+  }
+
+    private persistSettings(): void {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+            person: this.persons(),
+            account: this.accounts(),
+            personNames: this.personNames(),
+            accountNames: this.accountNames(),
+            opening: this.openingBalances(),
+            saldoColumnsOpen: this.saldoColumnsOpen(),
+            saldoPanelOpen: this.saldoPanelOpen(),
+            saldoColumnPrefs: this.saldoColumnPrefs(),
+            saldoTotalPref: this.saldoTotalPref(),
+            headerRowHeight: this.headerRowHeight(),
+            textColWidth: this.textColWidth(),
+            constants: this.constants(),
+            fx: this.fx.snapshot(),
+            displayCurrency: this.fx.displayCurrency(),
+            calendarYear: this.fx.calendarYear()
+        }));
+    }
+
+    private restoreSettings(): void {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) {
+            return;
+        }
+        try {
+            const parsed = JSON.parse(raw) as WorkbookOptions & {
+                opening?: Record<string, number>;
+                personNames?: Record<string, string>;
+                accountNames?: Record<string, string>;
+                saldoColumnsOpen?: boolean;
+                saldoPanelOpen?: boolean;
+                saldoColumnPrefs?: Record<string, SaldoColumnPref>;
+                saldoTotalPref?: SaldoColumnPref;
+                headerRowHeight?: number;
+                textColWidth?: number;
+                constants?: ConstantDef[];
+                fx?: unknown;
+                displayCurrency?: string;
+                calendarYear?: number;
+            };
+            if (Array.isArray(parsed.person)) {
+                this.persons.set(this.normalizeCodes(parsed.person));
+            }
+            if (Array.isArray(parsed.account)) {
+                this.accounts.set(this.normalizeCodes(parsed.account));
+            }
+            if (parsed.personNames && typeof parsed.personNames === 'object') {
+                this.personNames.set(parsed.personNames);
+            }
+            if (parsed.accountNames && typeof parsed.accountNames === 'object') {
+                this.accountNames.set(parsed.accountNames);
+            }
+            if (typeof parsed.headerRowHeight === 'number') {
+                this.headerRowHeight.set(parsed.headerRowHeight);
+            }
+            if (typeof parsed.textColWidth === 'number') {
+                this.textColWidth.set(parsed.textColWidth);
+            }
+            if (parsed.opening && typeof parsed.opening === 'object') {
+                this.openingBalances.set(parsed.opening);
+            }
+            if (typeof parsed.saldoColumnsOpen === 'boolean') {
+                this.saldoColumnsOpen.set(parsed.saldoColumnsOpen);
+            }
+            if (typeof parsed.saldoPanelOpen === 'boolean') {
+                this.saldoPanelOpen.set(parsed.saldoPanelOpen);
+            }
+            if (parsed.saldoColumnPrefs && typeof parse

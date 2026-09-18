@@ -1,0 +1,87 @@
+t(id: string, patch: Partial<ConstantDef>): void {
+        this.constants.update((list) => list.map((item) => item.id === id ? {...item, ...patch} : item));
+        this.persistSettings();
+        this.touch();
+    }
+
+    private applyConstantHit(
+        map: Map<string, ComboSaldo>,
+        month: Month,
+        row: MonthRow
+    ): void {
+        const hit = this.constantHit(month, row);
+        if (!hit) {
+            return;
+        }
+        if (hit.debitKey) {
+            const debit = map.get(hit.debitKey);
+            if (debit) {
+                debit.expenses += hit.amount;
+            }
+        }
+        if (hit.creditKey) {
+            const credit = map.get(hit.creditKey);
+            if (credit) {
+                credit.income += hit.amount;
+            }
+        }
+    }
+
+    private evaluateAmount(raw: string, monthTitle?: string): number {
+        const text = (raw ?? '').trim();
+        if (!text) {
+            return 0;
+        }
+        if (!this.formulaService.isFormula(text)) {
+            return this.formulaService.toNumber(text) ?? 0;
+        }
+        const month = (monthTitle
+            ? this.months().find((item) => item.label.title === monthTitle)
+            : undefined) ?? this.months()[0];
+        if (!month?.rows[0]?.cells[0]) {
+            return this.formulaService.toNumber(text.slice(1)) ?? 0;
+        }
+        const scratch = new MonthCell(0, 0, '', new CellType(CELL_TYPE.number), text);
+        this.formulaService.evaluateCell(month, scratch, new Set<string>());
+        if (scratch.error) {
+            return 0;
+        }
+        return this.formulaService.toNumber(scratch.display) ?? 0;
+    }
+
+    static emptyConstant(name = ''): ConstantDef {
+        return {
+            id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+            name,
+            person: '',
+            account: '',
+            months: Array.from({length: 12}, () => '')
+        };
+    }
+
+    static normalizeConstants(raw: unknown): ConstantDef[] {
+        if (!Array.isArray(raw)) {
+            return [WorkbookService.emptyConstant('')];
+        }
+        const list = raw.map((item) => {
+            const source = item as Partial<ConstantDef>;
+            const months = Array.from({length: 12}, (_, index) => {
+                const value = Array.isArray(source.months) ? source.months[index] : '';
+                return value == null ? '' : String(value);
+            });
+            return {
+                id: source.id || WorkbookService.emptyConstant().id,
+                name: (source.name || '').trim(),
+                person: (source.person || '').trim().toUpperCase(),
+                account: (source.account || '').trim().toUpperCase(),
+                months
+            };
+        });
+        return list.length ? list : [WorkbookService.emptyConstant('')];
+    }
+
+    /** Persist FX + settings (rates tab / currency changes). */
+    persistFx(): void {
+        this.persistSettings();
+        this.touch();
+  

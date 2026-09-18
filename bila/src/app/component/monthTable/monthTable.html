@@ -1,4 +1,10 @@
 @if (month) {
+    <div class="month-fx-bar">
+        <bal-currency-select/>
+        @if (currencyRev() !== 'CHF') {
+            <span class="fx-hint">Anzeige in {{ currencyRev() }} · Bearbeitung weiter in CHF</span>
+        }
+    </div>
     <bal-formula-bar
         [draft]="edit.draft"
         [activeAddress]="edit.activeAddress"
@@ -18,7 +24,8 @@
          [class.dragging]="panning"
          (pointerdown)="pointer.onPanStart($event)"
          (pointerup)="edit.endDrag()"
-         (pointercancel)="edit.endDrag()">
+         (pointercancel)="edit.endDrag()"
+         (scroll)="onTableScroll()">
         <table class="data-table">
             <thead balMonthHeader
                    [columns]="columnViews()"
@@ -29,9 +36,14 @@
                    (headerResize)="pointer.onHeaderResizeStart($event)"
                    (textResize)="pointer.onTextResizeStart($event)"></thead>
             <tbody>
-                @for (row of month.rows; track $index; let rowIndex = $index) {
+                <tr class="virt-pad" aria-hidden="true">
+                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
+                        [style.height.px]="padTop()"></td>
+                </tr>
+                @for (row of viewRows(); track row; let offset = $index) {
+                    @let rowIndex = viewStart + offset;
                     <tr [class]="row.color">
-                        @for (cell of row.cells; let colIndex = $index; track colIndex) {
+                        @for (cell of row.cells; track cell; let colIndex = $index) {
                             <td balMonthCell
                                 [cell]="cell"
                                 [cssType]="cellCss(cell)"
@@ -68,6 +80,10 @@
                         }
                     </tr>
                 }
+                <tr class="virt-pad" aria-hidden="true">
+                    <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
+                        [style.height.px]="padBottom()"></td>
+                </tr>
                 <tr class="foot-spacer" aria-hidden="true">
                     <td [attr.colspan]="month.columns.length + saldo.extraColCount()"
                         [style.height.px]="saldo.footerRows().length * 20"></td>

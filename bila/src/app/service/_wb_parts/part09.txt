@@ -1,0 +1,73 @@
+split = this.rowSplit(month, row);
+                    bucket.income += split.income;
+                    bucket.expenses += split.expenses;
+                }
+                this.applyConstantHit(map, month, row);
+            });
+        });
+        map.forEach((item) => {
+            const opening = scope === 'year' ? this.openingOf(item.person, item.account) : 0;
+            item.balance = opening + item.income - item.expenses;
+        });
+        return [...map.values()];
+    }
+
+    runningSaldosForMonth(month: Month | undefined): Array<Record<string, number>> {
+        this.revision();
+        if (!month) {
+            return [];
+        }
+        const running: Record<string, number> = {};
+        this.saldoCombos().forEach((combo) => {
+            running[combo.key] = this.openingOf(combo.person, combo.account);
+        });
+        const snapshots: Array<Record<string, number>> = [];
+        for (const current of this.months()) {
+            const personIdx = current.columns.findIndex((col) => col.type === CELL_TYPE.select_person);
+            const accountIdx = current.columns.findIndex((col) => col.type === CELL_TYPE.select_account);
+            current.rows.forEach((row) => {
+                const person = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+                const account = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+                const key = `${person}|${account}`;
+                if (Object.prototype.hasOwnProperty.call(running, key)) {
+                    running[key] += this.rowDelta(current, row);
+                }
+                const hit = this.constantHit(current, row);
+                if (hit) {
+                    if (hit.debitKey && Object.prototype.hasOwnProperty.call(running, hit.debitKey)) {
+                        running[hit.debitKey] -= hit.amount;
+                    }
+                    if (hit.creditKey && Object.prototype.hasOwnProperty.call(running, hit.creditKey)) {
+                        running[hit.creditKey] += hit.amount;
+                    }
+                }
+                if (current === month) {
+                    snapshots.push({...running});
+                }
+            });
+            if (current === month) {
+                break;
+            }
+        }
+        return snapshots;
+    }
+
+    rowDelta(month: Month, row: MonthRow): number {
+        const split = this.rowSplit(month, row);
+        return split.income - split.expenses;
+    }
+
+    expenseColumns(): ExpenseColumn[] {
+        const month = this.months()[0];
+        if (!month) {
+            return [];
+        }
+        return month.columns
+            .map((column, index) => ({column, index}))
+            .filter(({column}) => column.type === CELL_TYPE.number
+                && (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')))
+            .map(({column, index}) => ({title: column.title, index}));
+    }
+
+    yearExpenseReport(): YearExpenseReport {
+        const columns = th

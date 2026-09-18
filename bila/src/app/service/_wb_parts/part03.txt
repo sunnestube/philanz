@@ -1,0 +1,68 @@
+mber {
+        const values = item.months
+            .map((raw, index) => ({raw, value: this.constantAmount(item, CONSTANT_MONTHS[index])}))
+            .filter((entry) => entry.raw.trim() !== '');
+        if (!values.length) {
+            return 0;
+        }
+        return values.reduce((sum, entry) => sum + entry.value, 0) / values.length;
+    }
+
+    constantTotal(item: ConstantDef): number {
+        return item.months.reduce(
+            (sum, _raw, index) => sum + this.constantAmount(item, CONSTANT_MONTHS[index]),
+            0
+        );
+    }
+
+    /**
+     * Account-only constants credit the row payer's account
+     * (explicit API; formerly YearComponent monkey-patch).
+     */
+    constantHit(month: Month, row: MonthRow): {amount: number; debitKey: string | null; creditKey: string | null} | null {
+        const match = this.matchConstant(month, row);
+        if (!match) {
+            return null;
+        }
+        const amount = this.constantAmount(match, month.label.title);
+        if (!amount) {
+            return null;
+        }
+        const personIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_person);
+        const accountIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_account);
+        const payer = (row.cells[personIdx]?.raw ?? '').trim().toUpperCase();
+        const payerAccount = (row.cells[accountIdx]?.raw ?? '').trim().toUpperCase();
+        const debitKey = payer && payerAccount ? `${payer}|${payerAccount}` : null;
+        let creditKey: string | null = null;
+        if (match.person && match.account) {
+            creditKey = `${match.person}|${match.account}`;
+        } else if (!match.person && match.account) {
+            creditKey = payer ? `${payer}|${match.account.trim().toUpperCase()}` : null;
+        }
+        return {amount, debitKey, creditKey};
+    }
+
+    /** Row-label constants only — column-fill constants are handled separately. */
+    matchConstant(month: Month, row: MonthRow): ConstantDef | null {
+        const textIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.text);
+        if (textIdx < 0) {
+            return null;
+        }
+        const cell = row.cells[textIdx];
+        const raw = (cell?.raw ?? '').trim();
+        const display = (cell?.display ?? '').trim();
+        const labels = raw.startsWith('=') ? [display] : [raw, display];
+        return this.constants().find((item) => {
+            if (isColumnConstant(item)) {
+                return false;
+            }
+            const name = item.name.trim();
+            return !!name && labels.some((label) => label === name);
+        }) ?? null;
+    }
+
+    saldoTitleFor(combo: SaldoCombo): string {
+        const auto = `${this.personLabel(combo.person)} ${this.accountLabel(combo.account)}`.trim();
+        const stored = this.saldoColumnPrefs()[combo.key]?.title?.trim() || '';
+        if (!stored || stored === `${combo.person} ${combo.account}` || stored === auto) {
+            retu

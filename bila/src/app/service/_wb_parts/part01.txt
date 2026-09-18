@@ -1,0 +1,91 @@
+signal<string[]>(['', 'P', 'L', 'H', 'E', 'A']);
+    readonly accounts = signal<string[]>(['', 'B', 'K', 'S', 'R', 'Y', 'T']);
+    readonly personNames = signal<Record<string, string>>({});
+    readonly accountNames = signal<Record<string, string>>({});
+    readonly headerRowHeight = signal(84);
+    readonly textColWidth = signal(160);
+    readonly constants = signal<ConstantDef[]>([WorkbookService.emptyConstant('Miete')]);
+
+    readonly personCodes = computed(() => this.persons().filter((code) => !!code));
+    readonly accountCodes = computed(() => this.accounts().filter((code) => !!code));
+    readonly saldoCombos = computed((): SaldoCombo[] => {
+        const combos: SaldoCombo[] = [];
+        this.personCodes().forEach((person) => {
+            this.accountCodes().forEach((account) => {
+                combos.push({
+                    person,
+                    account,
+                    key: `${person}|${account}`
+                });
+            });
+        });
+        return combos;
+    });
+
+    constructor(
+        private readonly formulaService: FormulaService,
+        readonly history: TableHistoryService,
+        readonly fx: CurrencyFxService
+    ) {
+        this.restoreSettings();
+    }
+
+    setMonths(months: Month[]): void {
+        this.reindexCells(months);
+        this.months.set(months);
+        this.selectedMonth.set(months[0] ?? null);
+        this.view.set(months.length ? 'month' : 'start');
+        this.formulaService.setMonths(months);
+        this.touch();
+    }
+
+    selectMonth(month: Month): void {
+        this.selectedMonth.set(month);
+    }
+
+    setView(view: YearView): void {
+        this.view.set(view);
+    }
+
+    toggleSaldoColumns(): void {
+        this.saldoColumnsOpen.update((value) => !value);
+        this.persistSettings();
+    }
+
+    toggleSaldoPanel(): void {
+        this.saldoPanelOpen.update((value) => !value);
+        this.persistSettings();
+    }
+
+    visibleSaldoCombos(): SaldoCombo[] {
+        const prefs = this.saldoColumnPrefs();
+        return this.saldoCombos().filter((combo) => prefs[combo.key]?.visible !== false);
+    }
+
+    personLabel(code: string): string {
+        const clean = (code || '').trim();
+        if (!clean) {
+            return '';
+        }
+        const name = (this.personNames()[clean.toUpperCase()] || '').trim();
+        return name || clean.toUpperCase();
+    }
+
+    accountLabel(code: string): string {
+        const clean = (code || '').trim();
+        if (!clean) {
+            return '';
+        }
+        const name = (this.accountNames()[clean.toUpperCase()] || '').trim();
+        return name || clean.toUpperCase();
+    }
+
+    optionLabel(kind: 'person' | 'account', code: string): string {
+        if (!code) {
+            return '';
+        }
+        const label = kind === 'person' ? this.personLabel(code) : this.accountLabel(code);
+        return label === code ? code : `${code} · ${label}`;
+    }
+
+    setCodeName(kind: 'person' | 'account', code: string, name: string): 

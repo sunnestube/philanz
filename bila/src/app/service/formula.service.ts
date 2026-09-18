@@ -19,12 +19,54 @@ export interface FormulaClipboard {
     row: number;
 }
 
+/** Origin of a multi-cell copy used for relative formula paste. */
+export interface FormulaGridClipboard {
+    text: string;
+    col: number;
+    row: number;
+}
+
+
+/**
+ * Parse amounts from UI / CSV. Accepts CH (`1'234.56`, `1'234,56`),
+ * DE Excel (`1.234,56`, `1.234`) and plain `1234.56` / `12,5`.
+ */
+export function parseLocaleNumber(value: string | null | undefined): number | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const trimmed = String(value).trim();
+    if (!trimmed || trimmed.startsWith('=') || trimmed.startsWith('#')) {
+        return null;
+    }
+    let normalized = trimmed.replace(/[''\u2019\u00A0\u202F\s]/g, '');
+    const lastComma = normalized.lastIndexOf(',');
+    const lastDot = normalized.lastIndexOf('.');
+    if (lastComma >= 0 && lastDot >= 0) {
+        if (lastComma > lastDot) {
+            normalized = normalized.replace(/\./g, '').replace(',', '.');
+        } else {
+            normalized = normalized.replace(/,/g, '');
+        }
+    } else if (lastComma >= 0) {
+        normalized = normalized.replace(',', '.');
+    } else if (/^[+-]?\d{1,3}(\.\d{3})+$/.test(normalized)) {
+        normalized = normalized.replace(/\./g, '');
+    }
+    if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) {
+        return null;
+    }
+    const numb = Number(normalized);
+    return Number.isFinite(numb) ? numb : null;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class FormulaService {
     months: Month[] = [];
     clipboard: FormulaClipboard | null = null;
+    gridClipboard: FormulaGridClipboard | null = null;
 
     setMonths(months: Month[]): void {
         this.months = months;
@@ -190,7 +232,31 @@ export class FormulaService {
     copyFormula(raw: string, col: number, row: number): string {
         const text = raw ?? '';
         this.clipboard = {raw: text, col, row};
+        this.gridClipboard = null;
         return text;
+    }
+
+    /**
+     * Remembers a multi-cell TSV copy so pasteGrid can shift formulas
+     * relative to the copy origin (Excel-style, respecting $).
+     */
+    copyGrid(text: string, originCol: number, originRow: number): void {
+        const normalized = text ?? '';
+        this.gridClipboard = {text: normalized, col: originCol, row: originRow};
+        const first = normalized.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')[0]?.split('\t')[0] ?? '';
+        this.clipboard = {raw: first, col: originCol, row: originRow};
+    }
+
+    /** Source cell for relative adjust, or null when clipboard is external/unknown. */
+    pasteSource(clipboardText?: string): {col: number; row: number} | null {
+        const text = clipboardText ?? '';
+        if (this.gridClipboard && (!text || this.sameFormula(text, this.gridClipboard.text))) {
+            return {col: this.gridClipboard.col, row: this.gridClipboard.row};
+        }
+        if (this.clipboard && (!text || this.sameFormula(text, this.clipboard.raw))) {
+            return {col: this.clipboard.col, row: this.clipboard.row};
+        }
+        return null;
     }
 
     pasteFormula(targetCol: number, targetRow: number, clipboardText?: string): string {
@@ -198,15 +264,18 @@ export class FormulaService {
         if (!text) {
             return '';
         }
-        const source = this.clipboard && (!clipboardText || this.sameFormula(clipboardText, this.clipboard.raw))
-            ? this.clipboard
-            : null;
+        const source = this.pasteSource(clipboardText);
         if (!this.isFormula(text) || !source) {
             return text;
         }
         return this.adjustFormula(text, source.col, source.row, targetCol, targetRow);
     }
 
+    /**
+     * Adjusts cell references in a formula based on relative/absolute positioning.
+     * - A1 (relative): shifts by (toCol - fromCol, toRow - fromRow)
+     * - $A1 / A$1 / $A$1: absolute parts stay fixed
+     */
     adjustFormula(raw: string, fromCol: number, fromRow: number, toCol: number, toRow: number): string {
         const pattern = /(?:([A-Za-zÄÖÜäöü]{3})!)?(\$)?([A-Za-z]+)(\$)?(\d+)/g;
         return raw.replace(pattern, (full, monthName, colDollar, letters, rowDollar, digits) => {
@@ -375,7 +444,7 @@ export class FormulaService {
     private tokenize(source: string): string[] {
         const tokens: string[] = [];
         const input = source.replace(/\s+/g, '');
-        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+|\d+(?:['’]\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
+        const pattern = /([A-Za-zÄÖÜäöü]{3}!)?\$?[A-Za-z]+\$?\d+|\d+(?:['']\d{3})*(?:[.,]\d+)?|[+\-*/×÷()]|[A-Za-zÄÖÜäöü]+/g;
         let match: RegExpExecArray | null;
         let cursor = 0;
         while ((match = pattern.exec(input)) !== null) {
@@ -437,19 +506,7 @@ export class FormulaService {
     }
 
     toNumber(value: string): number | null {
-        if (value === null || value === undefined) {
-            return null;
-        }
-        const trimmed = String(value).trim();
-        if (!trimmed || trimmed.startsWith('=')) {
-            return null;
-        }
-        const normalized = trimmed.replace(/['’\s]/g, '').replace(',', '.');
-        if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) {
-            return null;
-        }
-        const numb = Number(normalized);
-        return Number.isFinite(numb) ? numb : null;
+        return parseLocaleNumber(value);
     }
 
     formatNumber(value: number): string {

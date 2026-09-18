@@ -1,0 +1,65 @@
+.rows.reduce((sum, row) => {
+                        const day = this.fx.dayIndexForRow(month, row);
+                        return sum + this.fx.toDisplay(this.rowSplit(month, row).income, day);
+                    }, 0))
+                },
+                {
+                    label: 'Ausgaben',
+                    backgroundColor: '#f472b6',
+                    data: report.months.map((block) => block.total)
+                }
+            ]
+        };
+        return {personStack, categoryStack, incomeExpense};
+    }
+
+    /** CHF vs each FX series — monthly expense totals for Graf overlay. */
+    currencyTrendCharts(): {labels: string[]; datasets: Array<{label: string; borderColor: string; backgroundColor: string; data: number[]; tension: number}>} {
+        const labels = this.months().map((month) => month.label.title);
+        const expenseCols = (() => {
+            const month = this.months()[0];
+            if (!month) {
+                return [] as ExpenseColumn[];
+            }
+            return month.columns
+                .map((column, index) => ({column, index}))
+                .filter(({column}) => column.type === CELL_TYPE.number && (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')))
+                .map(({column, index}) => ({title: column.title, index}));
+        })();
+        const monthExpenseIn = (code: string) => this.months().map((month) => {
+            let total = 0;
+            month.rows.forEach((row) => {
+                const day = this.fx.dayIndexForRow(month, row);
+                expenseCols.forEach((col) => {
+                    const amountChf = this.formulaService.toNumber(row.cells[col.index]?.display || row.cells[col.index]?.raw || '') ?? 0;
+                    total += code === BASE_CURRENCY ? amountChf : this.fx.toDisplay(amountChf, day, code);
+                });
+            });
+            return total;
+        });
+        const palette = ['#0f172a', '#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed'];
+        const datasets = [
+            {
+                label: `Ausgaben ${BASE_CURRENCY}`,
+                borderColor: palette[0],
+                backgroundColor: 'transparent',
+                tension: 0.25,
+                data: monthExpenseIn(BASE_CURRENCY)
+            },
+            ...this.fx.currencies().map((series, index) => ({
+                label: `Ausgaben ${series.code}`,
+                borderColor: palette[(index + 1) % palette.length],
+                backgroundColor: 'transparent',
+                tension: 0.25,
+                data: monthExpenseIn(series.code)
+            }))
+        ];
+        return {labels, datasets};
+    }
+
+        private monthExpenseBlock(month: Month, columns: ExpenseColumn[], persons: string[]): MonthExpenseBlock {
+        const byPerson: Record<string, Record<string, number>> = {};
+        const personTotal: Record<string, number> = {};
+        const byColumn: Record<string, number> = {};
+        persons.forEach((person) => {
+    

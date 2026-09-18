@@ -1,0 +1,68 @@
+?: number; currencies?: unknown; display?: string} | null;
+            settings: {
+                saldoColumnPrefs?: Record<string, SaldoColumnPref>;
+                saldoTotalPref?: SaldoColumnPref;
+                saldoColumnsOpen?: boolean;
+                saldoPanelOpen?: boolean;
+                personNames?: Record<string, string>;
+                accountNames?: Record<string, string>;
+                headerRowHeight?: number;
+                textColWidth?: number;
+                constants?: ConstantDef[];
+                fx?: unknown;
+                displayCurrency?: string;
+                calendarYear?: number;
+            } | null;
+        };
+        body: string;
+    } {
+        const lines = csvData.replace(/^\uFEFF/, '').split(/\r?\n/);
+        const persons: string[] = [];
+        const accounts: string[] = [];
+        const personNames: Record<string, string> = {};
+        const accountNames: Record<string, string> = {};
+        const opening: Record<string, number> = {};
+        const constants: ConstantDef[] = [];
+        let fx: {year?: number; currencies?: unknown; display?: string} | null = null;
+        let settings: {
+            saldoColumnPrefs?: Record<string, SaldoColumnPref>;
+            saldoTotalPref?: SaldoColumnPref;
+            saldoColumnsOpen?: boolean;
+            saldoPanelOpen?: boolean;
+            personNames?: Record<string, string>;
+            accountNames?: Record<string, string>;
+            headerRowHeight?: number;
+            textColWidth?: number;
+            constants?: ConstantDef[];
+            fx?: unknown;
+            displayCurrency?: string;
+            calendarYear?: number;
+        } | null = null;
+        const rest: string[] = [];
+        lines.forEach((line) => {
+            if (line.startsWith('#persons:')) {
+                const parsed = WorkbookService.parseNamedCodes(line.slice(9));
+                persons.push(...parsed.codes);
+                Object.assign(personNames, parsed.names);
+            } else if (line.startsWith('#accounts:')) {
+                const parsed = WorkbookService.parseNamedCodes(line.slice(10));
+                accounts.push(...parsed.codes);
+                Object.assign(accountNames, parsed.names);
+            } else if (line.startsWith('#opening:')) {
+                line.slice(9).split(';').forEach((pair) => {
+                    const [key, raw] = pair.split('=');
+                    if (!key || raw === undefined) {
+                        return;
+                    }
+                    const value = Number(raw);
+                    if (Number.isFinite(value)) {
+                        opening[key.trim()] = value;
+                    }
+                });
+            } else if (line.startsWith('#constants:')) {
+                try {
+                    constants.push(...WorkbookService.normalizeConstants(JSON.parse(line.slice(11))));
+                } catch {
+                    /* ignore */
+                }
+            } else if (line.startsWith('

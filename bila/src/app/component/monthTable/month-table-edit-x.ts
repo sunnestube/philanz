@@ -59,13 +59,16 @@ export class MonthTableEditX extends MonthTableEdit {
         const block = grid.length > 1 || (grid[0]?.length ?? 0) > 1;
         if (block && (this.range.rowMode || this.isIndexCol(colIndex))) {
             event.preventDefault();
-            this.pasteGrid(grid, rowIndex, this.range.copyCol);
+            this.pasteGrid(grid, rowIndex, this.range.copyCol, clip);
             return;
         }
         super.onPaste(event, rowIndex, colIndex, cell);
     }
 
     override onKeydown(event: KeyboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (this.handleHistoryKeys(event)) {
+            return;
+        }
         const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
         if (event.key === 'Delete' || (event.key === 'Backspace' && !typing)) {
             event.preventDefault();
@@ -207,28 +210,35 @@ export class MonthTableEditX extends MonthTableEdit {
         if (!month) {
             return;
         }
+        const coords: Array<{row: number; col: number}> = [];
+        const colorRows: number[] = [];
         this.suppressCommit = true;
-        for (let row = this.range.row0; row <= this.range.row1; row++) {
-            const line = month.rows[row];
-            if (!line) {
-                continue;
-            }
-            for (let col = this.range.col0; col <= this.range.col1; col++) {
-                const cell = line.cells[col];
-                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+        // One undo unit for the whole range (cells + person colors).
+        this.workbook.history.record(month, coords, colorRows, () => {
+            for (let row = this.range.row0; row <= this.range.row1; row++) {
+                colorRows.push(row);
+                const line = month.rows[row];
+                if (!line) {
                     continue;
                 }
-                cell.raw = '';
-                cell.display = '';
-                cell.error = null;
-                if (cell.type.id.indexOf('select') !== -1) {
-                    cell.value = '';
+                for (let col = this.range.col0; col <= this.range.col1; col++) {
+                    const cell = line.cells[col];
+                    if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+                        continue;
+                    }
+                    coords.push({row, col});
+                    cell.raw = '';
+                    cell.display = '';
+                    cell.error = null;
+                    if (cell.type.id.indexOf('select') !== -1) {
+                        cell.value = '';
+                    }
                 }
+                const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
+                const code = (person?.value || person?.raw || '').trim();
+                line.color = code ? code.toLowerCase() : '';
             }
-            const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
-            const code = (person?.value || person?.raw || '').trim();
-            line.color = code ? code.toLowerCase() : '';
-        }
+        });
         this.draft = '';
         this.refresh();
         queueMicrotask(() => { this.suppressCommit = false; });
