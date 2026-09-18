@@ -1,4 +1,4 @@
-<section class="fx-tab">
+<section class="fx-tab" (paste)="onPaste($event)">
     <div class="fx-head">
         <div>
             <h2>Währungen / Kurse</h2>
@@ -7,6 +7,7 @@
                 Fehlende Tage übernehmen den letzten bekannten Kurs; ohne Kurse gilt 1:1.
                 Beträge im Monats- und Total-Tab werden mit dem Kurs des Buchungsdatums umgerechnet.
             </p>
+            <p class="fx-paste-hint">Ctrl+V: Jahreskurse aus Excel (365/366 Zeilen)</p>
         </div>
         <div class="fx-add">
             <input type="text" placeholder="Code (EUR)" maxlength="8"
@@ -57,6 +58,7 @@
                             <input class="rate-input"
                                    type="text"
                                    inputmode="decimal"
+                                   [attr.data-day-index]="day.index"
                                    [value]="rateText(day.index)"
                                    (change)="onRate(day.index, $event)"
                                    placeholder="—"/>
