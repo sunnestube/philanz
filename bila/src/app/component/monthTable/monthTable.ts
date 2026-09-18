@@ -12,6 +12,7 @@ import {MonthTableHeaderComponent} from './month-table-header/month-table-header
 import {MonthTableCellComponent} from './month-table-cell/month-table-cell.component';
 import {SaldoCellComponent} from './saldo-cell/saldo-cell.component';
 import {MonthTableFooterComponent} from './month-table-footer/month-table-footer.component';
+import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
 import {columnViews, cssTypeOf, saldoColViews} from './month-table.vm';
 import {MonthTableEditX as MonthTableEdit} from './month-table-edit-x';
 import {MonthTablePointer} from './month-table-pointer';
@@ -30,7 +31,8 @@ const VIEW_SIZE = 64;
         MonthTableHeaderComponent,
         MonthTableCellComponent,
         SaldoCellComponent,
-        MonthTableFooterComponent
+        MonthTableFooterComponent,
+        CurrencySelectComponent
     ],
     styleUrls: ['./monthTable.css'],
     encapsulation: ViewEncapsulation.None,
@@ -269,6 +271,12 @@ export class MonthTable implements OnDestroy {
         return cssTypeOf(cell.type.id);
     }
 
+    /** Forces OnPush refresh when display currency / rates change. */
+    currencyRev(): string {
+        this.workbook.revision();
+        return this.workbook.fx.displayCurrency();
+    }
+
     cellDisplay(cell: MonthCell, rowIndex: number, colIndex: number): string {
         if (this.isEditing(rowIndex, colIndex)) {
             return this.edit.draft;
@@ -279,6 +287,16 @@ export class MonthTable implements OnDestroy {
         const value = cell.display || cell.raw || '';
         if (cell.type.id === CELL_TYPE.date && value && !value.trim().startsWith('=')) {
             return CellFormatPipe.formatDate(value, this.month?.label.title ?? '');
+        }
+        if (cell.type.id === CELL_TYPE.number && !this.workbook.fx.isBase() && value && !String(value).trim().startsWith('=')) {
+            const amount = this.formulaService.toNumber(value);
+            if (amount == null) {
+                return value;
+            }
+            const row = this.month?.rows[rowIndex];
+            const day = this.workbook.fx.dayIndexForRow(this.month, row);
+            const converted = this.workbook.fx.toDisplay(amount, day);
+            return converted.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         return value;
     }
