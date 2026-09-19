@@ -8,7 +8,7 @@ import {BASE_CURRENCY} from '../../model/CurrencyFx';
     standalone: true,
     imports: [FormsModule],
     template: `
-        <label class="fx-select" title="Anzeigewährung — Beträge aus CHF mit Tageskurs umrechnen (fehlende Kurse: letzter bekannter)">
+        <label class="fx-select" title="Anzeigewährung — Beträge aus CHF mit Tageskurs umrechnen (Fill-Forward; vor erstem Kurs 1:1)">
             <span>Währung</span>
             <select [ngModel]="workbook.fx.displayCurrency()"
                     (ngModelChange)="onChange($event)">
@@ -46,6 +46,6 @@ export class CurrencySelectComponent {
 
     onChange(code: string): void {
         this.workbook.fx.setDisplayCurrency(code);
-        this.workbook.touch();
+        this.workbook.persistFx();
     }
 }
