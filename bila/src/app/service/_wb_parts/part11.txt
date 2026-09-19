@@ -15,6 +15,9 @@
 
     /** CHF vs each FX series — monthly expense totals for Graf overlay. */
     currencyTrendCharts(): {labels: string[]; datasets: Array<{label: string; borderColor: string; backgroundColor: string; data: number[]; tension: number}>} {
+        if (!this.months().length) {
+            return {labels: [], datasets: []};
+        }
         const labels = this.months().map((month) => month.label.title);
         const expenseCols = (() => {
             const month = this.months()[0];
@@ -62,4 +65,3 @@
         const personTotal: Record<string, number> = {};
         const byColumn: Record<string, number> = {};
         persons.forEach((person) => {
-    
