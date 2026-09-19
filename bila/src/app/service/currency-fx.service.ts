@@ -8,6 +8,7 @@ import {
     emptySeries,
     fillForwardRate,
     normalizeCurrencyCode,
+    parseDayOfMonth,
     parseFxPasteRates,
     parseRateInput,
     resizeRates
@@ -23,7 +24,7 @@ import {CELL_TYPE} from '../model/CellType';
  * Design:
  * - Ledger amounts stay in CHF.
  * - `displayCurrency` only scales presentation (and Total/Graf aggregates).
- * - Missing daily rates fill-forward the last known rate; no rates → 1:1 (CHF).
+ * - Missing daily rates fill-forward the last known rate; before the first rate / none → 1:1 (CHF).
  * - Row date = Datum column day + month tab; missing date → mid-month (day 15).
  */
 @Injectable({
@@ -46,10 +47,11 @@ export class CurrencyFxService {
         if (next === this.calendarYear()) {
             return;
         }
+        const prev = this.calendarYear();
         this.calendarYear.set(next);
         this.currencies.update((list) => list.map((item) => ({
             ...item,
-            rates: resizeRates(item.rates, next)
+            rates: resizeRates(item.rates, next, prev)
         })));
     }
 
@@ -170,9 +172,8 @@ export class CurrencyFxService {
         let day = 15;
         if (row && dateIdx >= 0) {
             const raw = String(row.cells[dateIdx]?.raw ?? '').trim();
-            const token = raw.split(/[.\s/]/)[0] ?? '';
-            const parsed = parseInt(token.replace(/\D/g, ''), 10);
-            if (Number.isFinite(parsed) && parsed > 0) {
+            const parsed = parseDayOfMonth(raw);
+            if (parsed != null) {
                 day = parsed;
             }
         }
@@ -249,7 +250,9 @@ export {
     chfToFx,
     dayOfYearIndex,
     daysInYear,
+    parseDayOfMonth,
     parseFxPasteRates,
     parseRateInput,
+    resizeRates,
     BASE_CURRENCY
 };
