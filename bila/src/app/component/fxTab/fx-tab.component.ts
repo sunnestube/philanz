@@ -71,8 +71,9 @@ export class FxTabComponent {
     }
 
     /**
-     * Excel Ctrl/Cmd+V: paste 365/366 daily rates (or fewer from focused row).
-     * Single-value paste into a focused rate input keeps native cell behavior.
+     * Excel Ctrl/Cmd+V: paste a rate column from the focused day (or day 0).
+     * Single-cell paste (Excel often adds a trailing newline) stays native.
+     * TSV / multi-line pastes write via setRatesFromPaste.
      */
     onPaste(event: ClipboardEvent): void {
         const series = this.selected();
@@ -80,17 +81,15 @@ export class FxTabComponent {
             return;
         }
         const clip = event.clipboardData?.getData('text/plain') ?? '';
-        const multiline = /[\r\n]/.test(clip) || clip.includes('\t');
-        const active = document.activeElement as HTMLElement | null;
-        const focusedRate = active?.classList?.contains('rate-input') ? active : null;
-
-        if (!multiline && focusedRate) {
-            // Single value into one input — browser default + (change) on blur.
-            return;
-        }
-
         const rates = parseFxPasteRates(clip);
         if (!rates.length) {
+            return;
+        }
+        const active = document.activeElement as HTMLElement | null;
+        const focusedRate = active?.classList?.contains('rate-input') ? active : null;
+        const hasTab = clip.includes('\t');
+        // Excel single-cell copy is often "0.95\n" — still one rate → native input paste.
+        if (rates.length === 1 && focusedRate && !hasTab) {
             return;
         }
 
