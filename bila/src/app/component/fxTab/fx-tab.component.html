@@ -4,10 +4,10 @@
             <h2>Währungen / Kurse</h2>
             <p>
                 Tägliche Kurse als <strong>CHF pro 1 Einheit</strong> der Fremdwährung (z.B. EUR→CHF = 0.95).
-                Fehlende Tage übernehmen den letzten bekannten Kurs; ohne Kurse gilt 1:1.
+                Fehlende Tage übernehmen den letzten bekannten Kurs (Fill-Forward); vor dem ersten Kurs und ohne Kurse gilt 1:1.
                 Beträge im Monats- und Total-Tab werden mit dem Kurs des Buchungsdatums umgerechnet.
             </p>
-            <p class="fx-paste-hint">Ctrl+V: Jahreskurse aus Excel (365/366 Zeilen)</p>
+            <p class="fx-paste-hint">Ctrl+V ab fokussierter Zeile: Mehrzeilen-/TSV-Kurse aus Excel; Einzelzelle bleibt normales Eingabefeld</p>
         </div>
         <div class="fx-add">
             <input type="text" placeholder="Code (EUR)" maxlength="8"
