@@ -22,9 +22,9 @@
             <tr class="title-row">
                 <th class="sticky-col month-col">Monat</th>
                 <th class="sticky-col person-col">Person</th>
-                @for (col of data.columns; track col.title) {
-                    <th [class.income]="columnKind(col.title) === 'Einnahme'"
-                        [title]="col.title + ' · ' + columnKind(col.title)">
+                @for (col of data.columns; track col.key) {
+                    <th [class.income]="columnKind(col) === 'Einnahme'"
+                        [title]="col.title + ' · ' + columnKind(col)">
                         <div class="title-pack"><span>{{ col.title }}</span></div>
                         <span class="row-resizer" (pointerdown)="onHeaderResizeStart($event)" title="Titelzeile höher ziehen"></span>
                     </th>
@@ -43,16 +43,16 @@
                                 <th class="sticky-col month-col" [attr.rowspan]="data.persons.length + 1">{{ block.title }}</th>
                             }
                             <th class="sticky-col person-col">{{ workbook.personLabel(person) }}</th>
-                            @for (col of data.columns; track col.title) {
-                                <td>{{ format(block.byPerson[person][col.title]) }}</td>
+                            @for (col of data.columns; track col.key) {
+                                <td>{{ format(block.byPerson[person][col.key]) }}</td>
                             }
                             <td class="total">{{ format(block.personTotal[person]) }}</td>
                         </tr>
                     }
                     <tr class="sum">
                         <th class="sticky-col person-col">Σ</th>
-                        @for (col of data.columns; track col.title) {
-                            <td class="total">{{ format(block.byColumn[col.title]) }}</td>
+                        @for (col of data.columns; track col.key) {
+                            <td class="total">{{ format(block.byColumn[col.key]) }}</td>
                         }
                         <td class="total">{{ format(block.total) }}</td>
                     </tr>
@@ -63,8 +63,8 @@
                             <th class="sticky-col month-col" [attr.rowspan]="data.summaryRows.length">Jahr</th>
                         }
                         <th class="sticky-col person-col">{{ row.label }}</th>
-                        @for (col of data.columns; track col.title) {
-                            <td>{{ format(row.byColumn[col.title]) }}</td>
+                        @for (col of data.columns; track col.key) {
+                            <td>{{ format(row.byColumn[col.key]) }}</td>
                         }
                         <td class="total">{{ format(row.total) }}</td>
                     </tr>
