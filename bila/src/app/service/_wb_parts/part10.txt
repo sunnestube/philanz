@@ -3,7 +3,7 @@ is.expenseColumns();
         const months = this.months().map((month) => this.monthExpenseBlock(month, columns, persons));
         const yearByColumn: Record<string, number> = {};
         columns.forEach((col) => {
-            yearByColumn[col.title] = months.reduce((sum, block) => sum + (block.byColumn[col.title] ?? 0), 0);
+            yearByColumn[col.key] = months.reduce((sum, block) => sum + (block.byColumn[col.key] ?? 0), 0);
         });
         const yearExpense = months.reduce((sum, block) => sum + block.total, 0);
         const yearIncome = this.months().reduce((sum, month) => {
@@ -16,8 +16,8 @@ is.expenseColumns();
         const monthAvgMap: Record<string, number> = {};
         const dayAvgMap: Record<string, number> = {};
         columns.forEach((col) => {
-            monthAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / divisor;
-            dayAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / 365;
+            monthAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / divisor;
+            dayAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / 365;
         });
         return {
             columns,
@@ -47,14 +47,14 @@ is.expenseColumns();
             }))
         };
         const top = [...report.columns]
-            .sort((a, b) => (report.summaryRows[0].byColumn[b.title] ?? 0) - (report.summaryRows[0].byColumn[a.title] ?? 0))
+            .sort((a, b) => (report.summaryRows[0].byColumn[b.key] ?? 0) - (report.summaryRows[0].byColumn[a.key] ?? 0))
             .slice(0, 8);
         const categoryStack = {
             labels,
             datasets: top.map((col, index) => ({
                 label: col.title,
                 backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-                data: report.months.map((block) => block.byColumn[col.title] ?? 0)
+                data: report.months.map((block) => block.byColumn[col.key] ?? 0)
             }))
         };
         const incomeExpense = {
