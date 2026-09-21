@@ -36,6 +36,12 @@
             <label>Name
                 <input type="text" [ngModel]="series.name" (change)="onName($event)"/>
             </label>
+            <label>Nachkommastellen
+                <input type="number" min="0" max="8" step="1"
+                       class="fx-digits"
+                       [ngModel]="series.fractionDigits"
+                       (change)="onFractionDigits($event)"/>
+            </label>
             <span class="fx-meta">Jahr {{ workbook.fx.calendarYear() }} · {{ days().length }} Tage</span>
             <button type="button" class="fx-btn danger" (click)="remove(series.code)">Löschen</button>
         </div>
@@ -63,7 +69,7 @@
                                    (change)="onRate(day.index, $event)"
                                    placeholder="—"/>
                         </td>
-                        <td class="eff">{{ effective(day.index) | number:'1.4-6':'de-CH' }}</td>
+                        <td class="eff">{{ effectiveText(day.index) }}</td>
                     </tr>
                 }
                 </tbody>
