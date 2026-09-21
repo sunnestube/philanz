@@ -1,4 +1,5 @@
 import {Injectable, signal} from '@angular/core';
+import {joinYearPack, normalizeYearId, splitYearPack, YearPackPart} from './year-pack';
 
 export interface YearMeta {
     id: string;
@@ -9,6 +10,7 @@ export interface YearMeta {
 const INDEX_KEY = 'philanz-years';
 const ACTIVE_KEY = 'philanz-active-year';
 const LEGACY_KEY = 'year';
+const PACK_KEY = 'philanz-pack';
 
 @Injectable({
     providedIn: 'root'
@@ -23,6 +25,11 @@ export class YearArchiveService {
 
     hydrate(): void {
         const index = this.readIndex();
+        const pack = localStorage.getItem(PACK_KEY);
+        if (pack && !index.length) {
+            this.importPack(pack);
+            return;
+        }
         const legacy = localStorage.getItem(LEGACY_KEY);
         if (legacy && !index.length) {
             const id = String(new Date().getFullYear());
@@ -55,6 +62,7 @@ export class YearArchiveService {
         this.writeIndex(list);
         this.years.set(list);
         this.activeId.set(id);
+        this.rewritePack();
         return meta;
     }
 
@@ -74,6 +82,7 @@ export class YearArchiveService {
         localStorage.removeItem(this.csvKey(id));
         this.writeIndex(list);
         this.years.set(list);
+        this.rewritePack();
         if (this.activeId() === id) {
             const next = list[0]?.id || '';
             this.activeId.set(next);
@@ -107,8 +116,52 @@ export class YearArchiveService {
     }
 
     normalize(name: string): string {
-        const clean = (name || '').trim().replace(/[^\dA-Za-z._-]+/g, '-').replace(/^-+|-+$/g, '');
-        return clean || String(new Date().getFullYear());
+        return normalizeYearId(name);
+    }
+
+    exportPack(): string {
+        return this.buildPack();
+    }
+
+    importPack(text: string): YearPackPart[] {
+        const parts = splitYearPack(text).filter((part) => part.csv.trim());
+        if (!parts.length) {
+            return [];
+        }
+        parts.forEach((part) => {
+            const id = this.normalize(part.id || this.suggestedName());
+            localStorage.setItem(this.csvKey(id), part.csv);
+            const list = this.years().filter((item) => item.id !== id);
+            list.unshift({id, name: id, updated: Date.now()});
+            list.sort((a, b) => b.name.localeCompare(a.name, 'de'));
+            this.writeIndex(list);
+            this.years.set(list);
+        });
+        const first = this.normalize(parts[0].id || this.suggestedName());
+        this.activeId.set(first);
+        localStorage.setItem(ACTIVE_KEY, first);
+        this.rewritePack();
+        return parts;
+    }
+
+    rewritePack(): void {
+        const pack = this.buildPack();
+        if (pack) {
+            localStorage.setItem(PACK_KEY, pack);
+        } else {
+            localStorage.removeItem(PACK_KEY);
+        }
+    }
+
+    packOf(): string | null {
+        return localStorage.getItem(PACK_KEY);
+    }
+
+    private buildPack(): string {
+        const parts: YearPackPart[] = this.years()
+            .map((item) => ({id: item.id, csv: this.csvOf(item.id) || ''}))
+            .filter((part) => part.csv.trim());
+        return joinYearPack(parts);
     }
 
     private csvKey(id: string): string {
