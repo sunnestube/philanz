@@ -18,9 +18,9 @@ export function buildYearTotalReport(workbook: WorkbookService) {
         const byPerson = {...block.byPerson};
         const personTotal = {...block.personTotal};
         extra.forEach((col) => {
-            byColumn[col.title] = 0;
+            byColumn[col.key] = 0;
             base.persons.forEach((person) => {
-                byPerson[person] = {...byPerson[person], [col.title]: 0};
+                byPerson[person] = {...byPerson[person], [col.key]: 0};
             });
         });
         if (!month) {
@@ -36,9 +36,9 @@ export function buildYearTotalReport(workbook: WorkbookService) {
                 const parsed = parseLocaleNumber(String(raw));
                 const valueChf = filled ?? (parsed ?? 0);
                 const value = workbook.fx.toDisplay(valueChf, day);
-                byColumn[col.title] += value;
+                byColumn[col.key] += value;
                 if (byPerson[person]) {
-                    byPerson[person][col.title] += value;
+                    byPerson[person][col.key] += value;
                     personTotal[person] += value;
                 }
             });
@@ -48,7 +48,7 @@ export function buildYearTotalReport(workbook: WorkbookService) {
     });
     const yearByColumn: Record<string, number> = {};
     columns.forEach((col) => {
-        yearByColumn[col.title] = monthBlocks.reduce((sum, block) => sum + (block.byColumn[col.title] ?? 0), 0);
+        yearByColumn[col.key] = monthBlocks.reduce((sum, block) => sum + (block.byColumn[col.key] ?? 0), 0);
     });
     const yearExpense = base.yearExpense;
     const yearIncome = base.yearIncome;
@@ -56,8 +56,8 @@ export function buildYearTotalReport(workbook: WorkbookService) {
     const monthAvgMap: Record<string, number> = {};
     const dayAvgMap: Record<string, number> = {};
     columns.forEach((col) => {
-        monthAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / divisor;
-        dayAvgMap[col.title] = (yearByColumn[col.title] ?? 0) / 365;
+        monthAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / divisor;
+        dayAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / 365;
     });
     return {
         ...base,
@@ -81,5 +81,11 @@ function incomeColumns(workbook: WorkbookService): ExpenseColumn[] {
     return month.columns
         .map((column, index) => ({column, index}))
         .filter(({column}) => column.type === CELL_TYPE.number && column.section === SECTION.EINGANG)
-        .map(({column, index}) => ({title: column.title, index}));
+        .map(({column, index}) => ({
+            title: column.title,
+            index,
+            key: `${column.section}::${index}::${column.title}`,
+            section: String(column.section),
+            kind: 'Einnahme' as const
+        }));
 }
