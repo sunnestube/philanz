@@ -24,10 +24,16 @@
             <figcaption>Einnahmen vs. Ausgaben ({{ displayCode() }})</figcaption>
             <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
         </figure>
+        @if (dualBarCharts(); as dual) {
+            <figure class="wide">
+                <figcaption>Vergleich CHF vs. {{ displayCode() }} (eigene Y-Achsen links/rechts)</figcaption>
+                <p-chart type="line" [data]="dual" [options]="lineOptions"/>
+            </figure>
+        }
         @if (fxTrend(); as trend) {
             @if (trend.datasets.length > 1) {
                 <figure class="wide">
-                    <figcaption>Ausgaben-Trend: CHF vs. Fremdwährungen (je eigene Kurve)</figcaption>
+                    <figcaption>Ausgaben-Trend: CHF (links) vs. Fremdwährungen (rechts)</figcaption>
                     <p-chart type="line" [data]="trend" [options]="lineOptions"/>
                 </figure>
             }
