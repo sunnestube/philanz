@@ -33,7 +33,7 @@ export class YearTotalComponent {
     }
 
     format(value: number): string {
-        return value.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return this.workbook.fx.formatAmount(value);
     }
 
     columnKind(title: string): string {
