@@ -66,7 +66,13 @@ split = this.rowSplit(month, row);
             .map((column, index) => ({column, index}))
             .filter(({column}) => column.type === CELL_TYPE.number
                 && (column.section === SECTION.AUSGANG || String(column.section).startsWith('A')))
-            .map(({column, index}) => ({title: column.title, index}));
+            .map(({column, index}) => ({
+                title: column.title,
+                index,
+                key: `${column.section}::${index}::${column.title}`,
+                section: String(column.section),
+                kind: 'Ausgabe' as const
+            }));
     }
 
     yearExpenseReport(): YearExpenseReport {
