@@ -1,6 +1,6 @@
 <div class="csv-tab-inner">
     <h2>CSV</h2>
-    <p>Import und Export. Das Jahr wählst du oben im Menü. Formeln bleiben roh (=A1).</p>
+    <p>Import und Export. Eine Datei kann ein Jahr oder ein Set (#pack + #year) enthalten. Formeln bleiben roh (=A1).</p>
     <div class="csv-cards">
         <article class="csv-card">
             <h3>Als Jahr speichern</h3>
@@ -17,6 +17,12 @@
             <h3>CSV-Datei exportieren</h3>
             <p>Download als <code>{{ yearName() || '2026' }}.csv</code>.</p>
             <button type="button" class="csv-btn secondary" (click)="exportCsv.emit()">CSV exportieren</button>
+        </article>
+        <article class="csv-card">
+            <h3>Alle Jahre (Set)</h3>
+            <p>Eine Datei mit jedem gespeicherten Jahr. Gleicher Inhalt liegt im Browser unter philanz-pack.</p>
+            <button type="button" class="csv-btn" (click)="savePack.emit()">Set im Browser speichern</button>
+            <button type="button" class="csv-btn secondary" (click)="exportPack.emit()">Set als CSV</button>
         </article>
     </div>
     @if (years().length) {
