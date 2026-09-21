@@ -4,6 +4,8 @@
                 } catch {
                     fx = null;
                 }
+            } else if (line.startsWith('#pack') || line.startsWith('#year:')) {
+                /* multi-year pack markers — handled by year-pack */
             } else if (line.startsWith('#settings:')) {
                 try {
                     settings = JSON.parse(line.slice(10)) as typeof settings;
