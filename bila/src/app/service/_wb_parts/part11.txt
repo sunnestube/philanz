@@ -14,7 +14,7 @@
     }
 
     /** CHF vs each FX series — monthly expense totals for Graf overlay. */
-    currencyTrendCharts(): {labels: string[]; datasets: Array<{label: string; borderColor: string; backgroundColor: string; data: number[]; tension: number}>} {
+    currencyTrendCharts(): {labels: string[]; datasets: Array<{label: string; borderColor: string; backgroundColor: string; data: number[]; tension: number; yAxisID: string}>} {
         if (!this.months().length) {
             return {labels: [], datasets: []};
         }
@@ -47,6 +47,7 @@
                 borderColor: palette[0],
                 backgroundColor: 'transparent',
                 tension: 0.25,
+                yAxisID: 'y',
                 data: monthExpenseIn(BASE_CURRENCY)
             },
             ...this.fx.currencies().map((series, index) => ({
@@ -54,6 +55,7 @@
                 borderColor: palette[(index + 1) % palette.length],
                 backgroundColor: 'transparent',
                 tension: 0.25,
+                yAxisID: 'y1',
                 data: monthExpenseIn(series.code)
             }))
         ];
