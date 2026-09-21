@@ -8,6 +8,11 @@ export interface CurrencySeries {
      * Empty / non-finite entries mean “unknown” and are fill-forwarded.
      */
     rates: Array<number | null>;
+    /**
+     * Display fraction digits for this currency (0–8).
+     * CHF stays 2; BTC needs 8. Default 2 when omitted (legacy CSV).
+     */
+    fractionDigits: number;
 }
 
 export const BASE_CURRENCY = 'CHF';
@@ -100,12 +105,79 @@ export function normalizeCurrencyCode(code: string): string {
     return (code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 }
 
-export function emptySeries(code: string, year: number, name = ''): CurrencySeries {
+export function emptySeries(code: string, year: number, name = '', fractionDigits = 2): CurrencySeries {
     const normalized = normalizeCurrencyCode(code) || 'XXX';
     return {
         code: normalized,
         name: (name || '').trim(),
-        rates: Array.from({length: daysInYear(year)}, () => null)
+        rates: Array.from({length: daysInYear(year)}, () => null),
+        fractionDigits: clampFractionDigits(fractionDigits)
+    };
+}
+
+/** Clamp display digits to 0..8 (Excel-like money / crypto range). */
+export function clampFractionDigits(value: unknown, fallback = 2): number {
+    const n = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(n)) {
+        return fallback;
+    }
+    return Math.min(8, Math.max(0, Math.floor(n)));
+}
+
+/**
+ * Format an amount with a currency's fraction-digit preference.
+ * Guards null / NaN / non-finite → empty string (avoids NG02100 from DecimalPipe).
+ */
+export function formatFxAmount(value: number | null | undefined, fractionDigits = 2, locale = 'de-CH'): string {
+    if (value == null || !Number.isFinite(value)) {
+        return '';
+    }
+    const digits = clampFractionDigits(fractionDigits);
+    return value.toLocaleString(locale, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+    });
+}
+
+/**
+ * Assign Chart.js Y-axis ids so series with very different magnitudes
+ * (e.g. CHF expenses vs BTC) each get usable vertical space.
+ * Base/CHF → left `y`; foreign → right `y1`.
+ * Pure helper — safe to unit-test.
+ */
+export function chartAxisIdForCurrency(code: string, baseCode = BASE_CURRENCY): 'y' | 'y1' {
+    const normalized = normalizeCurrencyCode(code) || baseCode;
+    return normalized === baseCode ? 'y' : 'y1';
+}
+
+/**
+ * Build dual Y-axis Chart.js scale config (left = base, right = foreign).
+ * Tick callbacks stay numeric-safe (no pipe).
+ */
+export function dualCurrencyChartScales(opts?: {
+    stacked?: boolean;
+    locale?: string;
+}): Record<string, unknown> {
+    const locale = opts?.locale ?? 'de-CH';
+    const stacked = !!opts?.stacked;
+    const tick = (value: string | number) => {
+        const n = typeof value === 'number' ? value : Number(value);
+        return Number.isFinite(n) ? n.toLocaleString(locale) : '';
+    };
+    return {
+        x: {stacked, ticks: {color: '#111'}, grid: {color: '#d4d4d8'}},
+        y: {
+            position: 'left',
+            stacked,
+            ticks: {color: '#111', callback: tick},
+            grid: {color: '#d4d4d8'}
+        },
+        y1: {
+            position: 'right',
+            stacked: false,
+            ticks: {color: '#64748b', callback: tick},
+            grid: {drawOnChartArea: false}
+        }
     };
 }
 
