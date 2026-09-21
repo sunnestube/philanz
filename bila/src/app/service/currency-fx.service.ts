@@ -3,10 +3,12 @@ import {
     BASE_CURRENCY,
     CurrencySeries,
     chfToFx,
+    clampFractionDigits,
     dayOfYearIndex,
     daysInYear,
     emptySeries,
     fillForwardRate,
+    formatFxAmount,
     normalizeCurrencyCode,
     parseDayOfMonth,
     parseFxPasteRates,
@@ -209,7 +211,8 @@ export class CurrencyFxService {
         return this.currencies().map((item) => ({
             code: item.code,
             name: item.name,
-            rates: [...item.rates]
+            rates: [...item.rates],
+            fractionDigits: item.fractionDigits
         }));
     }
 
@@ -234,13 +237,30 @@ export class CurrencyFxService {
             list.push({
                 code,
                 name: (source.name || '').trim(),
-                rates: resizeRates(Array.isArray(source.rates) ? source.rates : [], year)
+                rates: resizeRates(Array.isArray(source.rates) ? source.rates : [], year),
+                fractionDigits: source.fractionDigits || 2
             });
         });
         this.currencies.set(list);
         if (!this.codes().includes(this.displayCurrency())) {
             this.displayCurrency.set(BASE_CURRENCY);
         }
+    }
+
+    setFractionDigits(code: string, digits: number): void {
+        const normalized = normalizeCurrencyCode(code);
+        this.currencies.update((list) => list.map((item) =>
+            item.code === normalized ? {...item, fractionDigits: clampFractionDigits(digits)} : item
+        ));
+    }
+
+    /** Format a value using the currency's configured fraction digits (CHF fixed at 2). */
+    formatAmount(value: number, code = this.displayCurrency()): string {
+        const normalized = normalizeCurrencyCode(code) || BASE_CURRENCY;
+        const digits = normalized === BASE_CURRENCY
+            ? 2
+            : (this.currencies().find((item) => item.code === normalized)?.fractionDigits ?? 2);
+        return formatFxAmount(value, digits);
     }
 }
 

@@ -1,13 +1,13 @@
 import {Component, computed, inject, signal} from '@angular/core';
-import {DecimalPipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {WorkbookService} from '../../service/workbook.service';
-import {fillForwardRate, parseFxPasteRates} from '../../model/CurrencyFx';
+import {fillForwardRate, formatFxAmount, parseFxPasteRates} from '../../model/CurrencyFx';
+
 
 @Component({
     selector: 'bal-fx-tab',
     standalone: true,
-    imports: [FormsModule, DecimalPipe],
+    imports: [FormsModule],
     templateUrl: './fx-tab.component.html',
     styleUrl: './fx-tab.component.css'
 })
@@ -119,4 +119,23 @@ export class FxTabComponent {
         const value = series?.rates[dayIndex];
         return value == null ? '' : String(value);
     }
+
+    onFractionDigits(event: Event): void {
+        const series = this.selected();
+        if (!series) {
+            return;
+        }
+        const value = Number((event.target as HTMLInputElement).value);
+        this.workbook.fx.setFractionDigits(series.code, value);
+        this.workbook.persistFx();
+    }
+
+    effectiveText(dayIndex: number): string {
+        const series = this.selected();
+        if (!series) {
+            return '';
+        }
+        return formatFxAmount(this.effective(dayIndex), series.fractionDigits);
+    }
+
 }
