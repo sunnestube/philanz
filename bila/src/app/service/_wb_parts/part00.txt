@@ -52,6 +52,9 @@ export interface SaldoColumnPref {
 export interface ExpenseColumn {
     title: string;
     index: number;
+    key: string;
+    section: string;
+    kind: 'Einnahme' | 'Ausgabe';
 }
 
 export interface MonthExpenseBlock {
