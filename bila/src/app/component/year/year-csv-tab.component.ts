@@ -19,6 +19,8 @@ export class YearCsvTabComponent {
     readonly yearNameChange = output<string>();
     readonly save = output();
     readonly exportCsv = output();
+    readonly exportPack = output();
+    readonly savePack = output();
     readonly openYear = output<string>();
     readonly deleteYear = output<string>();
     readonly imported = output<Month[]>();
