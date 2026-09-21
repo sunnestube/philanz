@@ -3,6 +3,8 @@ import {FormsModule} from '@angular/forms';
 import {Month} from '../../model/Month';
 import {HttpClient} from '@angular/common/http';
 import {WorkbookService} from '../../service/workbook.service';
+import {YearArchiveService} from '../../service/year-archive.service';
+import {isYearPack, splitYearPack} from '../../service/year-pack';
 
 @Component({
     selector: 'bal-import',
@@ -17,7 +19,11 @@ export class ImportComponent {
     @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
     @Output() dataLoaded: EventEmitter<Month[]> = new EventEmitter<Month[]>();
 
-    constructor(private http: HttpClient, private workbook: WorkbookService) {
+    constructor(
+        private http: HttpClient,
+        private workbook: WorkbookService,
+        private archive: YearArchiveService
+    ) {
     }
 
     protected onDragOver(event: DragEvent): void {
@@ -58,7 +64,18 @@ export class ImportComponent {
     }
 
     initMonths(csvData: string): void {
-        const months: Month[] = this.workbook.applyCsv(csvData);
+        if (isYearPack(csvData) && splitYearPack(csvData).length > 1) {
+            const parts = this.archive.importPack(csvData);
+            const first = parts[0];
+            const months = this.workbook.applyCsv(first?.csv || csvData);
+            this.dataLoaded.emit(months);
+            return;
+        }
+        const parts = splitYearPack(csvData);
+        if (parts[0]?.id) {
+            this.archive.save(parts[0].id, parts[0].csv);
+        }
+        const months: Month[] = this.workbook.applyCsv(parts[0]?.csv || csvData);
         this.dataLoaded.emit(months);
     }
 
