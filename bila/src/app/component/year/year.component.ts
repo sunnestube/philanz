@@ -91,6 +91,8 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     protected import(months: Month[]): void {
+        this.yearName = this.archive.activeId() || this.yearName;
+        this.syncCalendarYear();
         this.workbook.setMonths(months);
         this.fillRows();
     }
@@ -146,17 +148,36 @@ export class YearComponent implements OnInit, OnDestroy {
         void this.router.navigate(['/year', meta.name], {replaceUrl: true});
     }
 
+    protected savePack(): void {
+        this.save();
+        this.archive.rewritePack();
+        this.saveMessage = `Set mit ${this.archive.years().length} Jahr(en) im Browser gespeichert.`;
+    }
+
+    protected exportPack(): void {
+        this.save();
+        const pack = this.archive.exportPack();
+        if (!pack) {
+            return;
+        }
+        this.downloadText(pack, 'jahre.csv');
+    }
+
     protected exportToCSV(): void {
         const csvData = this.workbook.toCsv();
         if (!csvData) {
             return;
         }
         const name = this.archive.normalize(this.yearName);
-        const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;' });
+        this.downloadText(csvData, `${name}.csv`);
+    }
+
+    private downloadText(text: string, filename: string): void {
+        const blob = new Blob([text], {type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `${name}.csv`);
+        link.setAttribute('download', filename);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -200,8 +221,6 @@ export class YearComponent implements OnInit, OnDestroy {
             this.fillRows();
         });
     }
-
-
 
     private ensureSaldoColumns(): void {
         if (!this.workbook.saldoColumnsOpen()) {
