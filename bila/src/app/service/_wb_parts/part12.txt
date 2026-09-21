@@ -1,11 +1,11 @@
         byPerson[person] = {};
             personTotal[person] = 0;
             columns.forEach((col) => {
-                byPerson[person][col.title] = 0;
+                byPerson[person][col.key] = 0;
             });
         });
         columns.forEach((col) => {
-            byColumn[col.title] = 0;
+            byColumn[col.key] = 0;
         });
         const personIdx = month.columns.findIndex((col) => col.type === CELL_TYPE.select_person);
         month.rows.forEach((row) => {
@@ -14,9 +14,9 @@
             columns.forEach((col) => {
                 const amountChf = this.formulaService.toNumber(row.cells[col.index]?.display || row.cells[col.index]?.raw || '') ?? 0;
                 const amount = this.fx.toDisplay(amountChf, day);
-                byColumn[col.title] += amount;
+                byColumn[col.key] += amount;
                 if (byPerson[person]) {
-                    byPerson[person][col.title] += amount;
+                    byPerson[person][col.key] += amount;
                     personTotal[person] += amount;
                 }
             });
