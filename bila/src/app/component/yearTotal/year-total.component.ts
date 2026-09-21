@@ -36,8 +36,11 @@ export class YearTotalComponent {
         return this.workbook.fx.formatAmount(value);
     }
 
-    columnKind(title: string): string {
-        const column = this.workbook.months()[0]?.columns.find((item) => item.title === title);
+    columnKind(col: {kind?: string; title: string}): string {
+        if (col.kind) {
+            return col.kind;
+        }
+        const column = this.workbook.months()[0]?.columns.find((item) => item.title === col.title);
         if (!column) {
             return '';
         }
