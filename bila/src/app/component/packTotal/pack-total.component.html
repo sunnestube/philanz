@@ -65,6 +65,6 @@
             </table>
         </div>
     } @else {
-        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
+        <p>{{ error() || "Noch kein Set im Browser. Unter Set eine Datei importieren." }}</p>
     }
 </section>
