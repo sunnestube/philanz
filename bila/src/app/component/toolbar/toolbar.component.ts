@@ -33,7 +33,9 @@ export class ToolbarComponent {
     }
 
     onYear(): boolean {
-        return this.router.url.startsWith('/year');
+        return this.router.url.startsWith('/year')
+            || this.router.url.startsWith('/pack')
+            || this.router.url.startsWith('/set');
     }
 
     years(): YearMeta[] {
@@ -59,7 +61,10 @@ export class ToolbarComponent {
             return;
         }
         this.persistCurrent();
-        void this.router.navigate(['/year', id]);
+        this.archive.open(id);
+        if (this.router.url.startsWith('/year')) {
+            void this.router.navigate(['/year', id]);
+        }
     }
 
     newYear(): void {
