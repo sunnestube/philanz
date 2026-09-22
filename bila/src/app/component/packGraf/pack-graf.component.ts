@@ -4,8 +4,8 @@ import {CurrencySelectComponent} from '../currencySelect/currency-select.compone
 import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService} from '../../service/year-archive.service';
 import {PackReportService} from '../../service/pack-report.service';
-import {dualCurrencyChartScales} from '../../model/CurrencyFx';
-import {withCurrencyBars} from '../yearGraf/currency-bars';
+import {splitCurrencyCharts} from '../yearGraf/currency-bars';
+import {grafChartOptions} from '../yearGraf/graf-options';
 import 'chart.js/auto';
 
 @Component({
@@ -45,14 +45,11 @@ export class PackGrafComponent {
         if (!base) {
             return null;
         }
-        const monthTitles = (base.incomeExpense.labels || []).map((label) => {
-            const parts = String(label).split(' ');
-            return parts.slice(1).join(' ') || String(label);
-        });
+        const months = base.incomeExpense.labels || [];
         return {
-            personStack: withCurrencyBars(base.personStack, this.workbook, monthTitles),
-            categoryStack: withCurrencyBars(base.categoryStack, this.workbook, monthTitles),
-            incomeExpense: withCurrencyBars(base.incomeExpense, this.workbook, monthTitles)
+            person: splitCurrencyCharts(base.personStack, this.workbook, months),
+            category: splitCurrencyCharts(base.categoryStack, this.workbook, months),
+            incomeExpense: splitCurrencyCharts(base.incomeExpense, this.workbook, months)
         };
     });
 
@@ -61,20 +58,15 @@ export class PackGrafComponent {
         return this.pack.trend();
     });
 
+    readonly yoy = computed(() => {
+        this.workbook.fx.displayCurrency();
+        return this.pack.yoy();
+    });
+
     error() {
         return this.pack.error();
     }
 
-    readonly groupedOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
-        scales: dualCurrencyChartScales({stacked: false})
-    };
-    readonly lineOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
-        scales: dualCurrencyChartScales({stacked: false})
-    };
+    readonly groupedOptions = grafChartOptions('bar');
+    readonly lineOptions = grafChartOptions('line');
 }

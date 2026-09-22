@@ -3,8 +3,8 @@
         <div>
             <h2>Graf über alle Jahre</h2>
             <p>
-                Dieselben Diagramme wie im Jahres-Tab Graf. Oben eine Säule je Einnahme/Ausgabe
-                und Währung, Monate aller Jahre hintereinander.
+                Gleiche Monate nebeneinander (Jan 2024 neben Jan 2025).
+                Währungen sind getrennte Diagramme, damit die Säulen lesbar bleiben.
             </p>
         </div>
         <bal-currency-select/>
@@ -12,17 +12,41 @@
     @if (charts(); as data) {
         <div class="grid">
             <figure>
-                <figcaption>Ausgaben pro Person und Monat</figcaption>
-                <p-chart type="bar" [data]="data.personStack" [options]="groupedOptions"/>
+                <figcaption>Personen · {{ displayCode() }}</figcaption>
+                <p-chart type="bar" [data]="data.person.display" [options]="groupedOptions"/>
             </figure>
+            @if (data.person.fx; as fx) {
+                <figure>
+                    <figcaption>Personen · andere Währungen</figcaption>
+                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                </figure>
+            }
             <figure>
-                <figcaption>Ausgaben nach Kategorie</figcaption>
-                <p-chart type="bar" [data]="data.categoryStack" [options]="groupedOptions"/>
+                <figcaption>Kategorien · {{ displayCode() }}</figcaption>
+                <p-chart type="bar" [data]="data.category.display" [options]="groupedOptions"/>
             </figure>
+            @if (data.category.fx; as fx) {
+                <figure>
+                    <figcaption>Kategorien · andere Währungen</figcaption>
+                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                </figure>
+            }
             <figure class="wide">
-                <figcaption>Einnahmen vs. Ausgaben je Währung</figcaption>
-                <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
+                <figcaption>Einnahmen vs. Ausgaben · {{ displayCode() }}</figcaption>
+                <p-chart type="bar" [data]="data.incomeExpense.display" [options]="groupedOptions"/>
             </figure>
+            @if (data.incomeExpense.fx; as fx) {
+                <figure class="wide">
+                    <figcaption>Einnahmen vs. Ausgaben · andere Währungen</figcaption>
+                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                </figure>
+            }
+            @if (yoy(); as delta) {
+                <figure class="wide">
+                    <figcaption>Vorjahresmonat: Differenz Einnahmen / Ausgaben</figcaption>
+                    <p-chart type="bar" [data]="delta" [options]="groupedOptions"/>
+                </figure>
+            }
             @if (fxTrend(); as trend) {
                 @if (trend.datasets.length > 1) {
                     <figure class="wide">

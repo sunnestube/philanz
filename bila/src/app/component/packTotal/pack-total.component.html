@@ -2,7 +2,10 @@
     <div class="total-head">
         <div>
             <h2>Total über alle Jahre</h2>
-            <p>Dieselbe Tabelle wie im Jahres-Tab Total, Monate untereinander — zuerst das älteste Jahr.</p>
+            <p>
+                Monate untereinander, ältestes Jahr zuerst.
+                Unter jedem Monat mit Vorjahr steht die Differenz zum selben Monat.
+            </p>
         </div>
         <bal-currency-select/>
     </div>
@@ -13,6 +16,13 @@
             <div class="card"><span>Ø Monat</span><strong>{{ format(data.monthAvg) }}</strong></div>
             <div class="card"><span>Ø Tag</span><strong>{{ format(data.dayAvg) }}</strong></div>
         </div>
+        @if (data.compares.length) {
+            <ul class="yoy-list" aria-label="Vergleich mit Vorjahresmonat">
+                @for (row of data.compares; track row.text) {
+                    <li [class]="deltaClass(row.delta)">{{ row.text }}</li>
+                }
+            </ul>
+        }
         <div class="total-scroll">
             <table>
                 <thead>
@@ -32,7 +42,7 @@
                         @for (person of data.persons; track person; let first = $first) {
                             <tr class="person-{{person.toLowerCase()}}">
                                 @if (first) {
-                                    <th class="sticky-col month-col" [attr.rowspan]="data.persons.length + 1">{{ block.title }}</th>
+                                    <th class="sticky-col month-col" [attr.rowspan]="rowSpan(block, data.persons.length)">{{ block.title }}</th>
                                 }
                                 <th class="sticky-col person-col">{{ workbook.personLabel(person) }}</th>
                                 @for (col of data.columns; track col.key) {
@@ -48,6 +58,15 @@
                             }
                             <td class="total">{{ format(block.total) }}</td>
                         </tr>
+                        @if (block.compare; as cmp) {
+                            <tr class="yoy">
+                                <th class="sticky-col person-col">Δ {{ cmp.prevYear }} {{ formatPct(cmp.pct) }}</th>
+                                @for (col of data.columns; track col.key) {
+                                    <td [class]="deltaClass(cmp.byColumn[col.key])">{{ formatDelta(cmp.byColumn[col.key]) }}</td>
+                                }
+                                <td class="total" [class]="deltaClass(cmp.total)">{{ formatDelta(cmp.total) }}</td>
+                            </tr>
+                        }
                     }
                     @for (row of data.summaryRows; track row.label; let first = $first) {
                         <tr class="summary">
