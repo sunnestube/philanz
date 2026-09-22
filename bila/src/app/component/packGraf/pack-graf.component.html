@@ -2,26 +2,43 @@
     <div class="graf-head">
         <div>
             <h2>Graf über alle Jahre</h2>
-            <p>Vergleich der gespeicherten Jahre. Obere Diagramme in {{ displayCode() }}, darunter Währungen nebeneinander.</p>
+            <p>
+                Dieselben Diagramme wie im Jahres-Tab Graf. Die Monate aller Jahre stehen
+                hintereinander ({{ displayCode() }}).
+            </p>
         </div>
         <bal-currency-select/>
     </div>
-    @if (!slices().length) {
-        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
-    } @else if (charts(); as data) {
+    @if (charts(); as data) {
         <div class="grid">
             <figure>
-                <figcaption>Ausgaben pro Person und Jahr ({{ displayCode() }})</figcaption>
-                <p-chart type="bar" [data]="data.personStack" [options]="options"/>
+                <figcaption>Ausgaben pro Person und Monat ({{ displayCode() }})</figcaption>
+                <p-chart type="bar" [data]="data.personStack" [options]="lineOptions"/>
             </figure>
             <figure>
-                <figcaption>Einnahmen vs. Ausgaben je Jahr ({{ displayCode() }})</figcaption>
-                <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
+                <figcaption>Ausgaben nach Kategorie ({{ displayCode() }})</figcaption>
+                <p-chart type="bar" [data]="data.categoryStack" [options]="lineOptions"/>
             </figure>
             <figure class="wide">
-                <figcaption>Ausgaben je Jahr: CHF vs. Fremdwährungen</figcaption>
-                <p-chart type="line" [data]="data.currencyCompare" [options]="lineOptions"/>
+                <figcaption>Einnahmen vs. Ausgaben ({{ displayCode() }})</figcaption>
+                <p-chart type="bar" [data]="data.incomeExpense" [options]="lineOptions"/>
             </figure>
+            @if (dualBarCharts(); as dual) {
+                <figure class="wide">
+                    <figcaption>Vergleich CHF vs. {{ displayCode() }} (eigene Y-Achsen links/rechts)</figcaption>
+                    <p-chart type="line" [data]="dual" [options]="lineOptions"/>
+                </figure>
+            }
+            @if (fxTrend(); as trend) {
+                @if (trend.datasets.length > 1) {
+                    <figure class="wide">
+                        <figcaption>Ausgaben-Trend: CHF (links) vs. Fremdwährungen (rechts)</figcaption>
+                        <p-chart type="line" [data]="trend" [options]="lineOptions"/>
+                    </figure>
+                }
+            }
         </div>
+    } @else {
+        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
     }
 </section>

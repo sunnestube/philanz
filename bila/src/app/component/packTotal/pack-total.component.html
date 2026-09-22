@@ -2,25 +2,24 @@
     <div class="total-head">
         <div>
             <h2>Total über alle Jahre</h2>
-            <p>Jedes gespeicherte Jahr als Block. Spalten mit gleichem Namen bleiben über den Key getrennt. Umrechnung mit der Anzeigewährung.</p>
+            <p>Dieselbe Tabelle wie im Jahres-Tab Total, Monate untereinander — zuerst das älteste Jahr.</p>
         </div>
         <bal-currency-select/>
     </div>
-    <div class="cards">
-        <div class="card"><span>Jahre</span><strong>{{ slices().length }}</strong></div>
-        <div class="card"><span>Ausgaben</span><strong>{{ format(totals().expense) }}</strong></div>
-        <div class="card"><span>Einnahmen</span><strong>{{ format(totals().income) }}</strong></div>
-    </div>
-    @if (!slices().length) {
-        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
-    } @else {
+    @if (report(); as data) {
+        <div class="cards">
+            <div class="card"><span>Set Ausgaben</span><strong>{{ format(data.yearExpense) }}</strong></div>
+            <div class="card"><span>Set Einnahmen</span><strong>{{ format(data.yearIncome) }}</strong></div>
+            <div class="card"><span>Ø Monat</span><strong>{{ format(data.monthAvg) }}</strong></div>
+            <div class="card"><span>Ø Tag</span><strong>{{ format(data.dayAvg) }}</strong></div>
+        </div>
         <div class="total-scroll">
             <table>
                 <thead>
                 <tr class="title-row">
-                    <th class="sticky-col month-col">Jahr</th>
+                    <th class="sticky-col month-col">Monat</th>
                     <th class="sticky-col person-col">Person</th>
-                    @for (col of columns(); track col.key) {
+                    @for (col of data.columns; track col.key) {
                         <th [class.income]="columnKind(col) === 'Einnahme'" [title]="col.title">
                             <div class="title-pack"><span>{{ col.title }}</span></div>
                         </th>
@@ -29,29 +28,43 @@
                 </tr>
                 </thead>
                 <tbody>
-                    @for (slice of slices(); track slice.id) {
-                        @for (person of persons(); track person; let first = $first) {
+                    @for (block of data.months; track block.title) {
+                        @for (person of data.persons; track person; let first = $first) {
                             <tr class="person-{{person.toLowerCase()}}">
                                 @if (first) {
-                                    <th class="sticky-col month-col" [attr.rowspan]="persons().length + 1">{{ slice.title }}</th>
+                                    <th class="sticky-col month-col" [attr.rowspan]="data.persons.length + 1">{{ block.title }}</th>
                                 }
                                 <th class="sticky-col person-col">{{ workbook.personLabel(person) }}</th>
-                                @for (col of columns(); track col.key) {
-                                    <td>{{ format(personValue(slice, person, col.key)) }}</td>
+                                @for (col of data.columns; track col.key) {
+                                    <td>{{ format(block.byPerson[person][col.key]) }}</td>
                                 }
-                                <td class="total">{{ format(personTotal(slice, person)) }}</td>
+                                <td class="total">{{ format(block.personTotal[person]) }}</td>
                             </tr>
                         }
                         <tr class="sum">
                             <th class="sticky-col person-col">Σ</th>
-                            @for (col of columns(); track col.key) {
-                                <td class="total">{{ format(columnValue(slice, col.key)) }}</td>
+                            @for (col of data.columns; track col.key) {
+                                <td class="total">{{ format(block.byColumn[col.key]) }}</td>
                             }
-                            <td class="total">{{ format(slice.report.yearExpense + slice.report.yearIncome) }}</td>
+                            <td class="total">{{ format(block.total) }}</td>
+                        </tr>
+                    }
+                    @for (row of data.summaryRows; track row.label; let first = $first) {
+                        <tr class="summary">
+                            @if (first) {
+                                <th class="sticky-col month-col" [attr.rowspan]="data.summaryRows.length">Set</th>
+                            }
+                            <th class="sticky-col person-col">{{ row.label }}</th>
+                            @for (col of data.columns; track col.key) {
+                                <td>{{ format(row.byColumn[col.key]) }}</td>
+                            }
+                            <td class="total">{{ format(row.total) }}</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+    } @else {
+        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
     }
 </section>
