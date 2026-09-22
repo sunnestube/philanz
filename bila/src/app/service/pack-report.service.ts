@@ -1,4 +1,4 @@
-import {Injectable, inject} from '@angular/core';
+import {Injectable, inject, signal} from '@angular/core';
 import {WorkbookService, YearView} from './workbook.service';
 import {YearArchiveService} from './year-archive.service';
 import {buildYearTotalReport} from '../component/yearTotal/year-total.report';
@@ -7,7 +7,7 @@ export type PackTotalReport = ReturnType<typeof buildYearTotalReport> & {
     months: Array<ReturnType<typeof buildYearTotalReport>['months'][number] & {year: string}>;
 };
 
-type BarChart = {labels: string[]; datasets: Array<{label: string; data: number[]} & Record<string, unknown>>};
+export type BarChart = {labels: string[]; datasets: Array<{label: string; data: number[]} & Record<string, unknown>>};
 
 export interface PackYearSlice {
     id: string;
@@ -23,82 +23,114 @@ export class PackReportService {
     private readonly archive = inject(YearArchiveService);
     private busy = false;
     private stamp = '';
-    private last: PackYearSlice[] = [];
 
-    collect(): PackYearSlice[] {
+    readonly report = signal<PackTotalReport | null>(null);
+    readonly charts = signal<{personStack: BarChart; categoryStack: BarChart; incomeExpense: BarChart} | null>(null);
+    readonly trend = signal<BarChart | null>(null);
+    readonly error = signal('');
+
+    refresh(): void {
         const currency = this.workbook.fx.displayCurrency();
         const stamp = this.archive.years()
             .map((item) => `${item.id}:${(this.archive.csvOf(item.id) || '').length}`)
-            .join('|') + `@${currency}`;
-        if (this.busy) {
-            return this.last;
-        }
-        if (stamp === this.stamp) {
-            return this.last;
+            .join('|') + `@${currency}|${this.workbook.months().length}`;
+        if (this.busy || stamp === this.stamp) {
+            return;
         }
         this.busy = true;
-        const live = this.workbook.toCsv();
-        const view = this.workbook.view();
-        const monthTitle = this.workbook.selectedMonth()?.label.title;
-        const slices: PackYearSlice[] = [];
         try {
-            this.archive.years().forEach((item) => {
-                const csv = this.archive.csvOf(item.id);
-                if (!csv?.trim()) {
-                    return;
-                }
-                this.workbook.applyCsv(csv);
-                slices.push({
-                    id: item.id,
-                    title: item.name,
-                    report: buildYearTotalReport(this.workbook),
-                    charts: this.workbook.yearCharts(),
-                    trend: this.workbook.currencyTrendCharts()
-                });
-            });
-            slices.sort((a, b) => a.id.localeCompare(b.id, 'de'));
-            if (live) {
-                this.workbook.applyCsv(live);
-                this.restoreView(view, monthTitle);
-            }
-            this.last = slices;
+            const slices = this.snapshot();
+            this.report.set(this.mergeReport(slices));
+            this.charts.set(this.mergeCharts(slices));
+            this.trend.set(this.mergeTrend(slices));
+            this.error.set(slices.length ? '' : 'Noch kein Set im Browser. Unter Set eine Datei importieren.');
             this.stamp = stamp;
-            return slices;
+        } catch (err) {
+            this.error.set(err instanceof Error ? err.message : 'Set-Auswertung fehlgeschlagen.');
+            this.report.set(null);
+            this.charts.set(null);
+            this.trend.set(null);
         } finally {
             this.busy = false;
         }
     }
 
-    mergedReport(): PackTotalReport | null {
-        const slices = this.collect();
+    private snapshot(): PackYearSlice[] {
+        const live = this.workbook.toCsv();
+        const view = this.workbook.view();
+        const monthTitle = this.workbook.selectedMonth()?.label.title;
+        const slices: PackYearSlice[] = [];
+        const years = this.archive.years();
+        if (!years.length && this.workbook.months().length) {
+            slices.push(this.sliceOf(this.archive.suggestedName(), this.archive.suggestedName()));
+            return slices;
+        }
+        years.forEach((item) => {
+            const csv = this.archive.csvOf(item.id);
+            if (!csv?.trim()) {
+                return;
+            }
+            try {
+                this.workbook.applyCsv(csv);
+                slices.push(this.sliceOf(item.id, item.name));
+            } catch {
+                // skip broken year
+            }
+        });
+        slices.sort((a, b) => a.id.localeCompare(b.id, 'de'));
+        if (live) {
+            try {
+                this.workbook.applyCsv(live);
+                this.restoreView(view, monthTitle);
+            } catch {
+                // keep whatever is loaded
+            }
+        }
+        return slices;
+    }
+
+    private sliceOf(id: string, title: string): PackYearSlice {
+        return {
+            id,
+            title,
+            report: buildYearTotalReport(this.workbook),
+            charts: this.workbook.yearCharts(),
+            trend: this.workbook.currencyTrendCharts()
+        };
+    }
+
+    private mergeReport(slices: PackYearSlice[]): PackTotalReport | null {
         if (!slices.length) {
             return null;
         }
         const columns = new Map<string, PackTotalReport['columns'][number]>();
         const persons = new Set<string>();
-        const months: PackTotalReport['months'] = [];
         slices.forEach((slice) => {
-            slice.report.columns.forEach((col) => {
-                if (!columns.has(col.key)) {
-                    columns.set(col.key, col);
+            (slice.report.columns || []).forEach((col) => {
+                const key = col.key || `${col.title}:${col.index}`;
+                if (!columns.has(key)) {
+                    columns.set(key, {...col, key});
                 }
             });
             slice.report.persons.forEach((person) => persons.add(person));
         });
         const colList = [...columns.values()];
         const personList = [...persons];
+        const months: PackTotalReport['months'] = [];
         slices.forEach((slice) => {
             slice.report.months.forEach((block) => {
                 const byColumn: Record<string, number> = {};
                 const byPerson: Record<string, Record<string, number>> = {};
                 const personTotal: Record<string, number> = {};
                 colList.forEach((col) => {
-                    byColumn[col.key] = block.byColumn[col.key] ?? 0;
+                    byColumn[col.key] = block.byColumn[col.key] ?? block.byColumn[col.title] ?? 0;
                 });
                 personList.forEach((person) => {
                     byPerson[person] = {};
                     colList.forEach((col) => {
-                        byPerson[person][col.key] = block.byPerson[person]?.[col.key] ?? 0;
+                        byPerson[person][col.key] = block.byPerson[person]?.[col.key]
+                            ?? block.byPerson[person]?.[col.title]
+                            ?? 0;
                     });
                     personTotal[person] = block.personTotal[person] ?? 0;
                 });
@@ -143,36 +175,22 @@ export class PackReportService {
         };
     }
 
-    mergedCharts(): {personStack: BarChart; categoryStack: BarChart; incomeExpense: BarChart} | null {
-        const slices = this.collect();
+    private mergeCharts(slices: PackYearSlice[]): {personStack: BarChart; categoryStack: BarChart; incomeExpense: BarChart} | null {
         if (!slices.length) {
             return null;
         }
         return {
-            personStack: this.concatBars(slices.map((slice) => ({
-                title: slice.title,
-                chart: slice.charts.personStack as BarChart
-            }))),
-            categoryStack: this.concatBars(slices.map((slice) => ({
-                title: slice.title,
-                chart: slice.charts.categoryStack as BarChart
-            }))),
-            incomeExpense: this.concatBars(slices.map((slice) => ({
-                title: slice.title,
-                chart: slice.charts.incomeExpense as BarChart
-            })))
+            personStack: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.personStack as BarChart}))),
+            categoryStack: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.categoryStack as BarChart}))),
+            incomeExpense: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.incomeExpense as BarChart})))
         };
     }
 
-    mergedTrend(): BarChart | null {
-        const slices = this.collect();
+    private mergeTrend(slices: PackYearSlice[]): BarChart | null {
         if (!slices.length) {
             return null;
         }
-        const merged = this.concatBars(slices.map((slice) => ({
-            title: slice.title,
-            chart: slice.trend as BarChart
-        })));
+        const merged = this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.trend as BarChart})));
         return merged.labels.length ? merged : null;
     }
 
