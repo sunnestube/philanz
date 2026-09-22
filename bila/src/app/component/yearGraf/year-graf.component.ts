@@ -2,7 +2,8 @@ import {Component, computed, inject} from '@angular/core';
 import {ChartModule} from 'primeng/chart';
 import {WorkbookService} from '../../service/workbook.service';
 import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
-import {BASE_CURRENCY, dualCurrencyChartScales} from '../../model/CurrencyFx';
+import {dualCurrencyChartScales} from '../../model/CurrencyFx';
+import {withCurrencyBars} from './currency-bars';
 import 'chart.js/auto';
 
 @Component({
@@ -18,27 +19,11 @@ export class YearGrafComponent {
     readonly charts = computed(() => {
         this.workbook.revision();
         const base = this.workbook.yearCharts();
-        const trend = this.workbook.currencyTrendCharts();
-        if (trend.datasets.length < 2) {
-            return base;
-        }
-        const overlay = trend.datasets.map((item) => ({
-            ...item,
-            type: 'line' as const,
-            fill: false,
-            order: 20
-        }));
-        const mix = (chart: {labels: string[]; datasets: object[]}) => ({
-            labels: chart.labels,
-            datasets: [
-                ...chart.datasets.map((dataset) => ({...dataset, yAxisID: 'y', order: 1})),
-                ...overlay
-            ]
-        });
+        const months = this.workbook.months().map((month) => month.label.title);
         return {
-            personStack: mix(base.personStack as {labels: string[]; datasets: object[]}),
-            categoryStack: mix(base.categoryStack as {labels: string[]; datasets: object[]}),
-            incomeExpense: mix(base.incomeExpense as {labels: string[]; datasets: object[]})
+            personStack: withCurrencyBars(base.personStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
+            categoryStack: withCurrencyBars(base.categoryStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
+            incomeExpense: withCurrencyBars(base.incomeExpense as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months)
         };
     });
 
@@ -52,67 +37,17 @@ export class YearGrafComponent {
         return this.workbook.fx.displayCurrency();
     });
 
-    /** Upper bar charts: dual Y when display currency ≠ CHF (CHF left, FX right). */
-    readonly dualBarCharts = computed(() => {
-        this.workbook.revision();
-        const code = this.workbook.fx.displayCurrency();
-        const base = this.workbook.yearCharts();
-        if (code === BASE_CURRENCY || !this.workbook.fx.currencies().length) {
-            return null;
-        }
-        const trend = this.workbook.currencyTrendCharts();
-        const chf = trend.datasets.find((d) => d.yAxisID === 'y' || d.label.includes(BASE_CURRENCY));
-        const fx = trend.datasets.find((d) => d.label.includes(code));
-        if (!chf || !fx) {
-            return null;
-        }
-        return {
-            labels: trend.labels,
-            datasets: [
-                {...chf, type: 'line', yAxisID: 'y', tension: 0.25},
-                {...fx, type: 'line', yAxisID: 'y1', tension: 0.25}
-            ]
-        };
-    });
-
-    readonly options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {labels: {color: '#111', boxWidth: 12}}
-        },
-        scales: dualCurrencyChartScales({stacked: true})
-    };
-
     readonly groupedOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: {labels: {color: '#111', boxWidth: 12}}
-        },
+        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
         scales: dualCurrencyChartScales({stacked: false})
     };
 
     readonly lineOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: {labels: {color: '#111', boxWidth: 12}},
-            tooltip: {
-                callbacks: {
-                    label: (ctx: {dataset: {label?: string}; parsed: {y: number | null}}) => {
-                        const label = ctx.dataset.label ?? '';
-                        const raw = ctx.parsed.y;
-                        if (raw == null || !Number.isFinite(raw)) {
-                            return label;
-                        }
-                        const code = label.replace(/^Ausgaben\s+/, '');
-                        const formatted = this.workbook.fx.formatAmount(raw, code || BASE_CURRENCY);
-                        return `${label}: ${formatted}`;
-                    }
-                }
-            }
-        },
+        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
         scales: dualCurrencyChartScales({stacked: false})
     };
 }
