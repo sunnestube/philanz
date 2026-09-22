@@ -1,0 +1,38 @@
+<div class="csv-tab-inner">
+    <h2>Set</h2>
+    <p>Alle Jahre liegen in einer Datei (<code>#pack</code> + <code>#year</code>) und im Browser unter philanz-pack. Einzeljahre werden nicht mehr separat gespeichert.</p>
+    <div class="csv-cards">
+        <article class="csv-card">
+            <h3>Set im Browser</h3>
+            <p>Schreibt das aktuelle Jahr ins Set und speichert alle Jahre lokal.</p>
+            <button type="button" class="csv-btn" (click)="savePack()">Set speichern</button>
+            @if (saveMessage) {
+                <span class="csv-status">{{ saveMessage }}</span>
+            }
+        </article>
+        <article class="csv-card">
+            <h3>Set als Datei</h3>
+            <p>Download als <code>jahre.csv</code>.</p>
+            <button type="button" class="csv-btn secondary" (click)="exportPack()">Set exportieren</button>
+        </article>
+    </div>
+    @if (archive.years().length) {
+        <article class="csv-card import-card">
+            <h3>Jahre im Set</h3>
+            <ul class="year-list">
+                @for (item of archive.years(); track item.id) {
+                    <li>
+                        <button type="button" class="linkish" (click)="openYear(item.id)">{{ item.name }}</button>
+                        <span class="year-date">{{ item.updated | date:'dd.MM.yyyy HH:mm' }}</span>
+                        <button type="button" class="const-remove" (click)="deleteYear(item.id)">löschen</button>
+                    </li>
+                }
+            </ul>
+        </article>
+    }
+    <article class="csv-card import-card">
+        <h3>Set oder CSV importieren</h3>
+        <p>Eine Datei mit einem oder mehreren Jahren. Danach öffnet sich das erste Jahr.</p>
+        <bal-import (dataLoaded)="imported($event)"></bal-import>
+    </article>
+</div>

@@ -1,0 +1,57 @@
+<section class="year-total">
+    <div class="total-head">
+        <div>
+            <h2>Total über alle Jahre</h2>
+            <p>Jedes gespeicherte Jahr als Block. Spalten mit gleichem Namen bleiben über den Key getrennt. Umrechnung mit der Anzeigewährung.</p>
+        </div>
+        <bal-currency-select/>
+    </div>
+    <div class="cards">
+        <div class="card"><span>Jahre</span><strong>{{ slices().length }}</strong></div>
+        <div class="card"><span>Ausgaben</span><strong>{{ format(totals().expense) }}</strong></div>
+        <div class="card"><span>Einnahmen</span><strong>{{ format(totals().income) }}</strong></div>
+    </div>
+    @if (!slices().length) {
+        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
+    } @else {
+        <div class="total-scroll">
+            <table>
+                <thead>
+                <tr class="title-row">
+                    <th class="sticky-col month-col">Jahr</th>
+                    <th class="sticky-col person-col">Person</th>
+                    @for (col of columns(); track col.key) {
+                        <th [class.income]="columnKind(col) === 'Einnahme'" [title]="col.title">
+                            <div class="title-pack"><span>{{ col.title }}</span></div>
+                        </th>
+                    }
+                    <th><div class="title-pack"><span>Σ</span></div></th>
+                </tr>
+                </thead>
+                <tbody>
+                    @for (slice of slices(); track slice.id) {
+                        @for (person of persons(); track person; let first = $first) {
+                            <tr class="person-{{person.toLowerCase()}}">
+                                @if (first) {
+                                    <th class="sticky-col month-col" [attr.rowspan]="persons().length + 1">{{ slice.title }}</th>
+                                }
+                                <th class="sticky-col person-col">{{ workbook.personLabel(person) }}</th>
+                                @for (col of columns(); track col.key) {
+                                    <td>{{ format(personValue(slice, person, col.key)) }}</td>
+                                }
+                                <td class="total">{{ format(personTotal(slice, person)) }}</td>
+                            </tr>
+                        }
+                        <tr class="sum">
+                            <th class="sticky-col person-col">Σ</th>
+                            @for (col of columns(); track col.key) {
+                                <td class="total">{{ format(columnValue(slice, col.key)) }}</td>
+                            }
+                            <td class="total">{{ format(slice.report.yearExpense + slice.report.yearIncome) }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
