@@ -4,31 +4,25 @@
         <div>
             <h2>Graf</h2>
             <p>
-                Obere Diagramme in {{ displayCode() }} plus Währungslinien (CHF links, FX rechts),
-                sobald Kurse erfasst sind. Darunter der reine Ausgaben-Trend je Währung.
+                Oben eine Säule je Einnahme/Ausgabe und Währung (CHF links, FX rechts).
+                Darunter der Ausgaben-Trend als Linie.
             </p>
         </div>
         <bal-currency-select/>
     </div>
     <div class="grid">
         <figure>
-            <figcaption>Ausgaben pro Person und Monat ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.personStack" [options]="lineOptions"/>
+            <figcaption>Ausgaben pro Person und Monat</figcaption>
+            <p-chart type="bar" [data]="data.personStack" [options]="groupedOptions"/>
         </figure>
         <figure>
-            <figcaption>Ausgaben nach Kategorie ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.categoryStack" [options]="lineOptions"/>
+            <figcaption>Ausgaben nach Kategorie</figcaption>
+            <p-chart type="bar" [data]="data.categoryStack" [options]="groupedOptions"/>
         </figure>
         <figure class="wide">
-            <figcaption>Einnahmen vs. Ausgaben ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.incomeExpense" [options]="lineOptions"/>
+            <figcaption>Einnahmen vs. Ausgaben je Währung</figcaption>
+            <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
         </figure>
-        @if (dualBarCharts(); as dual) {
-            <figure class="wide">
-                <figcaption>Vergleich CHF vs. {{ displayCode() }} (eigene Y-Achsen links/rechts)</figcaption>
-                <p-chart type="line" [data]="dual" [options]="lineOptions"/>
-            </figure>
-        }
         @if (fxTrend(); as trend) {
             @if (trend.datasets.length > 1) {
                 <figure class="wide">
