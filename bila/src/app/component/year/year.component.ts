@@ -1,5 +1,4 @@
 import {ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
@@ -15,7 +14,6 @@ import {ConstantsTabComponent} from '../constantsTab/constants-tab.component';
 import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {YearTabsComponent} from './year-tabs.component';
-import {YearCsvTabComponent} from './year-csv-tab.component';
 import {FxTabComponent} from '../fxTab/fx-tab.component';
 
 const MIN_ROWS = 36;
@@ -31,7 +29,6 @@ const MIN_ROWS = 36;
         YearTotalComponent,
         YearGrafComponent,
         YearTabsComponent,
-        YearCsvTabComponent,
         FxTabComponent
     ],
     styleUrls: ['./year.component.css'],
@@ -40,7 +37,6 @@ const MIN_ROWS = 36;
 export class YearComponent implements OnInit, OnDestroy {
     readonly workbook = inject(WorkbookService);
     readonly archive = inject(YearArchiveService);
-    private readonly http = inject(HttpClient);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     saveMessage = '';
@@ -56,33 +52,26 @@ export class YearComponent implements OnInit, OnDestroy {
         this.syncCalendarYear();
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
-            if (id) {
-                this.yearName = this.archive.ensure(id).name;
-                this.syncCalendarYear();
-                const csv = this.archive.open(this.yearName);
-                if (csv) {
-                    this.workbook.applyCsv(csv);
-                    this.fillRows();
+            if (!id) {
+                const active = this.archive.activeId();
+                if (active && this.archive.csvOf(active)) {
+                    void this.router.navigate(['/year', active], {replaceUrl: true});
                     return;
                 }
-                this.loadTemplate();
-                return;
-            }
-            if (this.workbook.months().length) {
-                this.fillRows();
-                return;
-            }
-            const active = this.archive.activeId();
-            const stored = (active && this.archive.csvOf(active)) || localStorage.getItem('year');
-            if (stored) {
-                if (active) {
-                    this.yearName = active;
+                if (this.workbook.months().length) {
+                    this.fillRows();
                 }
-                this.workbook.applyCsv(stored);
-                this.fillRows();
                 return;
             }
-            this.loadTemplate();
+            this.persistActive();
+            this.yearName = this.archive.normalize(id);
+            this.archive.ensure(this.yearName);
+            this.syncCalendarYear();
+            const csv = this.archive.open(this.yearName);
+            if (csv) {
+                this.workbook.applyCsv(csv);
+                this.fillRows();
+            }
         });
     }
 
@@ -90,11 +79,20 @@ export class YearComponent implements OnInit, OnDestroy {
         return this.archive.years();
     }
 
+    needsImport(): boolean {
+        return !this.workbook.months().length && !this.archive.years().some((item) => !!this.archive.csvOf(item.id));
+    }
+
     protected import(months: Month[]): void {
         this.yearName = this.archive.activeId() || this.yearName;
         this.syncCalendarYear();
         this.workbook.setMonths(months);
         this.fillRows();
+        const id = this.archive.activeId() || this.yearName;
+        if (id && this.workbook.toCsv()) {
+            this.archive.save(id, this.workbook.toCsv());
+            void this.router.navigate(['/year', id], {replaceUrl: true});
+        }
     }
 
     protected selectTab(month: Month): void {
@@ -119,70 +117,19 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this.persistActive();
         if (this.warmTimer) {
             clearTimeout(this.warmTimer);
             this.warmTimer = 0;
         }
     }
 
-    protected openCsv(): void {
-        this.ensureView('csv');
-        this.workbook.setView('csv');
-    }
-
-    protected isCsv(): boolean {
-        return this.workbook.view() === 'csv';
-    }
-
-    protected save(): void {
-        const csvData = this.workbook.toCsv();
-        if (!csvData) {
-            this.saveMessage = 'Nichts zu speichern.';
-            return;
+    private persistActive(): void {
+        const csv = this.workbook.toCsv();
+        const id = this.yearName || this.archive.activeId();
+        if (csv && id) {
+            this.archive.save(id, csv);
         }
-        const meta = this.archive.save(this.yearName, csvData);
-        this.yearName = meta.name;
-        this.syncCalendarYear();
-        const now = new Date();
-        this.saveMessage = `${meta.name} gespeichert um ${now.toLocaleTimeString('de-CH', {hour: '2-digit', minute: '2-digit'})}.`;
-        void this.router.navigate(['/year', meta.name], {replaceUrl: true});
-    }
-
-    protected savePack(): void {
-        this.save();
-        this.archive.rewritePack();
-        this.saveMessage = `Set mit ${this.archive.years().length} Jahr(en) im Browser gespeichert.`;
-    }
-
-    protected exportPack(): void {
-        this.save();
-        const pack = this.archive.exportPack();
-        if (!pack) {
-            return;
-        }
-        this.downloadText(pack, 'jahre.csv');
-    }
-
-    protected exportToCSV(): void {
-        const csvData = this.workbook.toCsv();
-        if (!csvData) {
-            return;
-        }
-        const name = this.archive.normalize(this.yearName);
-        this.downloadText(csvData, `${name}.csv`);
-    }
-
-    private downloadText(text: string, filename: string): void {
-        const blob = new Blob([text], {type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }
 
     protected openYear(id: string): void {
@@ -213,13 +160,6 @@ export class YearComponent implements OnInit, OnDestroy {
         const match = /^(\d{4})/.exec(this.yearName || '');
         const year = match ? Number(match[1]) : new Date().getFullYear();
         this.workbook.fx.setCalendarYear(year);
-    }
-
-    private loadTemplate(): void {
-        this.http.get('assets/empty.csv', {responseType: 'text'}).subscribe((csvData) => {
-            this.workbook.applyCsv(csvData);
-            this.fillRows();
-        });
     }
 
     private ensureSaldoColumns(): void {
@@ -322,7 +262,7 @@ export class YearComponent implements OnInit, OnDestroy {
             this.scheduleWarm();
             return;
         }
-        const extra: YearView[] = ['start', 'constants', 'fx', 'csv', 'total', 'graf'];
+        const extra: YearView[] = ['start', 'constants', 'fx', 'total', 'graf'];
         const nextView = extra.find((view) => !this.warmedViews.has(view));
         if (nextView) {
             this.ensureView(nextView);

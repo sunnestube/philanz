@@ -1,0 +1,27 @@
+<section class="year-graf">
+    <div class="graf-head">
+        <div>
+            <h2>Graf über alle Jahre</h2>
+            <p>Vergleich der gespeicherten Jahre. Obere Diagramme in {{ displayCode() }}, darunter Währungen nebeneinander.</p>
+        </div>
+        <bal-currency-select/>
+    </div>
+    @if (!slices().length) {
+        <p>Noch kein Set im Browser. Unter Set eine Datei importieren.</p>
+    } @else if (charts(); as data) {
+        <div class="grid">
+            <figure>
+                <figcaption>Ausgaben pro Person und Jahr ({{ displayCode() }})</figcaption>
+                <p-chart type="bar" [data]="data.personStack" [options]="options"/>
+            </figure>
+            <figure>
+                <figcaption>Einnahmen vs. Ausgaben je Jahr ({{ displayCode() }})</figcaption>
+                <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
+            </figure>
+            <figure class="wide">
+                <figcaption>Ausgaben je Jahr: CHF vs. Fremdwährungen</figcaption>
+                <p-chart type="line" [data]="data.currencyCompare" [options]="lineOptions"/>
+            </figure>
+        </div>
+    }
+</section>

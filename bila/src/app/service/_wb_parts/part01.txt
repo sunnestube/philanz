@@ -31,10 +31,23 @@ signal<string[]>(['', 'P', 'L', 'H', 'E', 'A']);
     }
 
     setMonths(months: Month[]): void {
+        const prevView = this.view();
+        const prevTitle = this.selectedMonth()?.label.title;
         this.reindexCells(months);
         this.months.set(months);
-        this.selectedMonth.set(months[0] ?? null);
-        this.view.set(months.length ? 'month' : 'start');
+        const match = prevTitle
+            ? months.find((month) => month.label.title === prevTitle)
+            : undefined;
+        this.selectedMonth.set(match ?? months[0] ?? null);
+        if (prevView === 'csv') {
+            this.view.set(months.length ? 'month' : 'start');
+        } else if (prevView === 'month') {
+            this.view.set(months.length ? 'month' : 'start');
+        } else if (prevView) {
+            this.view.set(prevView);
+        } else {
+            this.view.set(months.length ? 'month' : 'start');
+        }
         this.formulaService.setMonths(months);
         this.touch();
     }

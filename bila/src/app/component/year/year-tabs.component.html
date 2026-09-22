@@ -12,7 +12,6 @@
     }
     <div class="tab-label total-tab" [class.active]="view() === 'total'" (click)="openView.emit('total')">Total</div>
     <div class="tab-label graf-tab" [class.active]="view() === 'graf'" (click)="openView.emit('graf')">Graf</div>
-    <div class="tab-label csv-tab-label" [class.active]="view() === 'csv'" (click)="openView.emit('csv')">CSV</div>
     <div class="tab-row-actions">
         <span class="tab-version">v{{ version }}</span>
         <bal-new-row-buttons [month]="selected() ?? undefined"/>

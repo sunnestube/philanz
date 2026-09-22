@@ -17,7 +17,29 @@ export class YearGrafComponent {
 
     readonly charts = computed(() => {
         this.workbook.revision();
-        return this.workbook.yearCharts();
+        const base = this.workbook.yearCharts();
+        const trend = this.workbook.currencyTrendCharts();
+        if (trend.datasets.length < 2) {
+            return base;
+        }
+        const overlay = trend.datasets.map((item) => ({
+            ...item,
+            type: 'line' as const,
+            fill: false,
+            order: 20
+        }));
+        const mix = (chart: {labels: string[]; datasets: object[]}) => ({
+            labels: chart.labels,
+            datasets: [
+                ...chart.datasets.map((dataset) => ({...dataset, yAxisID: 'y', order: 1})),
+                ...overlay
+            ]
+        });
+        return {
+            personStack: mix(base.personStack as {labels: string[]; datasets: object[]}),
+            categoryStack: mix(base.categoryStack as {labels: string[]; datasets: object[]}),
+            incomeExpense: mix(base.incomeExpense as {labels: string[]; datasets: object[]})
+        };
     });
 
     readonly fxTrend = computed(() => {
@@ -38,7 +60,6 @@ export class YearGrafComponent {
         if (code === BASE_CURRENCY || !this.workbook.fx.currencies().length) {
             return null;
         }
-        // Overlay CHF expense totals (from trend) onto incomeExpense as a second axis series.
         const trend = this.workbook.currencyTrendCharts();
         const chf = trend.datasets.find((d) => d.yAxisID === 'y' || d.label.includes(BASE_CURRENCY));
         const fx = trend.datasets.find((d) => d.label.includes(code));

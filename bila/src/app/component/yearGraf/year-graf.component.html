@@ -4,9 +4,8 @@
         <div>
             <h2>Graf</h2>
             <p>
-                Ausgaben und Einnahmen im Vergleich — gestapelte Balken in Anzeigewährung
-                ({{ displayCode() }}). Darunter ein Trend-Overlay: CHF vs. jede erfasste Fremdwährung,
-                damit sichtbar wird, wo Ausgaben steigen oder sinken.
+                Obere Diagramme in {{ displayCode() }} plus Währungslinien (CHF links, FX rechts),
+                sobald Kurse erfasst sind. Darunter der reine Ausgaben-Trend je Währung.
             </p>
         </div>
         <bal-currency-select/>
@@ -14,15 +13,15 @@
     <div class="grid">
         <figure>
             <figcaption>Ausgaben pro Person und Monat ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.personStack" [options]="options"/>
+            <p-chart type="bar" [data]="data.personStack" [options]="lineOptions"/>
         </figure>
         <figure>
             <figcaption>Ausgaben nach Kategorie ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.categoryStack" [options]="options"/>
+            <p-chart type="bar" [data]="data.categoryStack" [options]="lineOptions"/>
         </figure>
         <figure class="wide">
             <figcaption>Einnahmen vs. Ausgaben ({{ displayCode() }})</figcaption>
-            <p-chart type="bar" [data]="data.incomeExpense" [options]="groupedOptions"/>
+            <p-chart type="bar" [data]="data.incomeExpense" [options]="lineOptions"/>
         </figure>
         @if (dualBarCharts(); as dual) {
             <figure class="wide">
