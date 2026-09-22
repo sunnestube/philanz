@@ -3,8 +3,31 @@ import {WorkbookService, YearView} from './workbook.service';
 import {YearArchiveService} from './year-archive.service';
 import {buildYearTotalReport} from '../component/yearTotal/year-total.report';
 
+const CALENDAR_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
+export type MonthCompare = {
+    prevYear: string;
+    total: number;
+    prevTotal: number;
+    pct: number | null;
+    byColumn: Record<string, number>;
+    personTotal: Record<string, number>;
+};
+
+export type PackMonthBlock = ReturnType<typeof buildYearTotalReport>['months'][number] & {
+    year: string;
+    monthKey: string;
+    compare?: MonthCompare;
+};
+
 export type PackTotalReport = ReturnType<typeof buildYearTotalReport> & {
-    months: Array<ReturnType<typeof buildYearTotalReport>['months'][number] & {year: string}>;
+    months: PackMonthBlock[];
+    compares: Array<{
+        label: string;
+        text: string;
+        delta: number;
+        pct: number | null;
+    }>;
 };
 
 export type BarChart = {labels: string[]; datasets: Array<{label: string; data: number[]} & Record<string, unknown>>};
@@ -27,6 +50,7 @@ export class PackReportService {
     readonly report = signal<PackTotalReport | null>(null);
     readonly charts = signal<{personStack: BarChart; categoryStack: BarChart; incomeExpense: BarChart} | null>(null);
     readonly trend = signal<BarChart | null>(null);
+    readonly yoy = signal<BarChart | null>(null);
     readonly error = signal('');
 
     refresh(): void {
@@ -43,6 +67,7 @@ export class PackReportService {
             this.report.set(this.mergeReport(slices));
             this.charts.set(this.mergeCharts(slices));
             this.trend.set(this.mergeTrend(slices));
+            this.yoy.set(this.mergeYoy(slices));
             this.error.set(slices.length ? '' : 'Noch kein Set im Browser. Unter Set eine Datei importieren.');
             this.stamp = stamp;
         } catch (err) {
@@ -50,6 +75,7 @@ export class PackReportService {
             this.report.set(null);
             this.charts.set(null);
             this.trend.set(null);
+            this.yoy.set(null);
         } finally {
             this.busy = false;
         }
@@ -116,7 +142,7 @@ export class PackReportService {
         });
         const colList = [...columns.values()];
         const personList = [...persons];
-        const months: PackTotalReport['months'] = [];
+        const months: PackMonthBlock[] = [];
         slices.forEach((slice) => {
             slice.report.months.forEach((block) => {
                 const byColumn: Record<string, number> = {};
@@ -138,10 +164,48 @@ export class PackReportService {
                     ...block,
                     title: `${slice.title} ${block.title}`,
                     year: slice.title,
+                    monthKey: calendarKey(block.title),
                     byColumn,
                     byPerson,
                     personTotal
                 });
+            });
+        });
+        const lookup = new Map<string, PackMonthBlock>();
+        months.forEach((block) => lookup.set(`${block.year}|${block.monthKey}`, block));
+        const compares: PackTotalReport['compares'] = [];
+        months.forEach((block) => {
+            const prevYear = previousYearId(block.year, slices.map((slice) => slice.title));
+            if (!prevYear) {
+                return;
+            }
+            const prev = lookup.get(`${prevYear}|${block.monthKey}`);
+            if (!prev) {
+                return;
+            }
+            const byColumn: Record<string, number> = {};
+            colList.forEach((col) => {
+                byColumn[col.key] = (block.byColumn[col.key] ?? 0) - (prev.byColumn[col.key] ?? 0);
+            });
+            const personTotal: Record<string, number> = {};
+            personList.forEach((person) => {
+                personTotal[person] = (block.personTotal[person] ?? 0) - (prev.personTotal[person] ?? 0);
+            });
+            const total = (block.total ?? 0) - (prev.total ?? 0);
+            const pct = percentDelta(block.total ?? 0, prev.total ?? 0);
+            block.compare = {
+                prevYear,
+                total,
+                prevTotal: prev.total ?? 0,
+                pct,
+                byColumn,
+                personTotal
+            };
+            compares.push({
+                label: `${block.monthKey} ${block.year}`,
+                text: `${block.monthKey} ${block.year} vs ${block.monthKey} ${prevYear}: ${formatSigned(total)}${pct == null ? '' : ` (${formatSigned(pct)} %)`}`,
+                delta: total,
+                pct
             });
         });
         const yearExpense = slices.reduce((sum, slice) => sum + (slice.report.yearExpense ?? 0), 0);
@@ -163,6 +227,7 @@ export class PackReportService {
             columns: colList,
             persons: personList,
             months,
+            compares,
             yearExpense,
             yearIncome,
             monthAvg: (yearExpense + yearIncome) / divisor,
@@ -180,9 +245,9 @@ export class PackReportService {
             return null;
         }
         return {
-            personStack: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.personStack as BarChart}))),
-            categoryStack: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.categoryStack as BarChart}))),
-            incomeExpense: this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.incomeExpense as BarChart})))
+            personStack: this.overlayBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.personStack as BarChart}))),
+            categoryStack: this.overlayBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.categoryStack as BarChart}))),
+            incomeExpense: this.overlayBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.incomeExpense as BarChart})))
         };
     }
 
@@ -190,33 +255,58 @@ export class PackReportService {
         if (!slices.length) {
             return null;
         }
-        const merged = this.concatBars(slices.map((slice) => ({title: slice.title, chart: slice.trend as BarChart})));
+        const merged = this.overlayBars(slices.map((slice) => ({title: slice.title, chart: slice.trend as BarChart})));
         return merged.labels.length ? merged : null;
     }
 
-    private concatBars(parts: Array<{title: string; chart: BarChart}>): BarChart {
-        const labels: string[] = [];
+    private mergeYoy(slices: PackYearSlice[]): BarChart | null {
+        if (slices.length < 2) {
+            return null;
+        }
+        const income = this.overlayBars(slices.map((slice) => ({title: slice.title, chart: slice.charts.incomeExpense as BarChart})));
+        const years = slices.map((slice) => slice.title);
+        const datasets: BarChart['datasets'] = [];
+        for (let i = 1; i < years.length; i++) {
+            const prev = years[i - 1];
+            const curr = years[i];
+            ['Einnahmen', 'Ausgaben'].forEach((kind, kindIndex) => {
+                const currSet = income.datasets.find((item) => item.label === `${curr} ${kind}`);
+                const prevSet = income.datasets.find((item) => item.label === `${prev} ${kind}`);
+                if (!currSet && !prevSet) {
+                    return;
+                }
+                datasets.push({
+                    label: `${kind} ${prev}→${curr}`,
+                    backgroundColor: kindIndex ? '#f472b6' : '#4ade80',
+                    data: income.labels.map((_, index) => (currSet?.data?.[index] ?? 0) - (prevSet?.data?.[index] ?? 0))
+                });
+            });
+        }
+        return datasets.length ? {labels: income.labels, datasets} : null;
+    }
+
+    /** Jan–Dez als gemeinsame Achse, jedes Jahr eine Serie — Vorjahresmonat steht neben dem aktuellen. */
+    private overlayBars(parts: Array<{title: string; chart: BarChart}>): BarChart {
+        const seen = new Set<string>();
+        parts.forEach((part) => {
+            (part.chart?.labels || []).forEach((label) => seen.add(calendarKey(label)));
+        });
+        const extra = [...seen].filter((key) => !CALENDAR_MONTHS.includes(key));
+        const labels = [...CALENDAR_MONTHS.filter((key) => seen.has(key)), ...extra];
         const datasets = new Map<string, {label: string; data: number[]} & Record<string, unknown>>();
         parts.forEach((part) => {
             const chart = part.chart || {labels: [], datasets: []};
-            const monthLabels = chart.labels || [];
-            monthLabels.forEach((label) => labels.push(`${part.title} ${label}`));
+            const indexOf = new Map((chart.labels || []).map((label, index) => [calendarKey(label), index]));
             (chart.datasets || []).forEach((dataset) => {
-                const key = dataset.label || '';
-                if (!datasets.has(key)) {
-                    datasets.set(key, {
-                        ...dataset,
-                        data: Array(labels.length - monthLabels.length).fill(0)
-                    });
-                }
-            });
-            datasets.forEach((dataset) => {
-                const source = (chart.datasets || []).find((item) => item.label === dataset.label);
-                if (source) {
-                    dataset.data.push(...(source.data || []));
-                } else {
-                    dataset.data.push(...monthLabels.map(() => 0));
-                }
+                const label = `${part.title} ${dataset.label || ''}`.trim();
+                datasets.set(label, {
+                    ...dataset,
+                    label,
+                    data: labels.map((month) => {
+                        const index = indexOf.get(month);
+                        return index == null ? 0 : Number(dataset.data?.[index] ?? 0);
+                    })
+                });
             });
         });
         return {labels, datasets: [...datasets.values()]};
@@ -233,4 +323,42 @@ export class PackReportService {
             this.workbook.setView(view);
         }
     }
+}
+
+function calendarKey(label: string): string {
+    const text = String(label || '').trim();
+    const hit = CALENDAR_MONTHS.find((month) => text === month || text.endsWith(` ${month}`));
+    if (hit) {
+        return hit;
+    }
+    return text.replace(/^\d{4}\s+/, '').trim() || text;
+}
+
+function previousYearId(year: string, years: string[]): string | null {
+    const numeric = parseInt(year, 10);
+    if (Number.isFinite(numeric)) {
+        const prev = String(numeric - 1);
+        return years.includes(prev) ? prev : null;
+    }
+    const index = years.indexOf(year);
+    return index > 0 ? years[index - 1] : null;
+}
+
+function percentDelta(current: number, previous: number): number | null {
+    if (!Number.isFinite(previous) || previous === 0) {
+        return null;
+    }
+    return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function formatSigned(value: number): string {
+    const rounded = Math.round(value * 100) / 100;
+    const body = Math.abs(rounded).toLocaleString('de-CH');
+    if (rounded > 0) {
+        return `+${body}`;
+    }
+    if (rounded < 0) {
+        return `−${body}`;
+    }
+    return body;
 }
