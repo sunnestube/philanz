@@ -2,8 +2,8 @@ import {Component, computed, inject} from '@angular/core';
 import {ChartModule} from 'primeng/chart';
 import {WorkbookService} from '../../service/workbook.service';
 import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
-import {dualCurrencyChartScales} from '../../model/CurrencyFx';
-import {withCurrencyBars} from './currency-bars';
+import {splitCurrencyCharts} from './currency-bars';
+import {grafChartOptions} from './graf-options';
 import 'chart.js/auto';
 
 @Component({
@@ -21,9 +21,9 @@ export class YearGrafComponent {
         const base = this.workbook.yearCharts();
         const months = this.workbook.months().map((month) => month.label.title);
         return {
-            personStack: withCurrencyBars(base.personStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
-            categoryStack: withCurrencyBars(base.categoryStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
-            incomeExpense: withCurrencyBars(base.incomeExpense as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months)
+            person: splitCurrencyCharts(base.personStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
+            category: splitCurrencyCharts(base.categoryStack as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months),
+            incomeExpense: splitCurrencyCharts(base.incomeExpense as {labels: string[]; datasets: Array<{label?: string; data?: number[]} & Record<string, unknown>>}, this.workbook, months)
         };
     });
 
@@ -37,17 +37,6 @@ export class YearGrafComponent {
         return this.workbook.fx.displayCurrency();
     });
 
-    readonly groupedOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
-        scales: dualCurrencyChartScales({stacked: false})
-    };
-
-    readonly lineOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {legend: {labels: {color: '#111', boxWidth: 12}}},
-        scales: dualCurrencyChartScales({stacked: false})
-    };
+    readonly groupedOptions = grafChartOptions('bar');
+    readonly lineOptions = grafChartOptions('line');
 }
