@@ -157,25 +157,34 @@ export function chartAxisIdForCurrency(code: string, baseCode = BASE_CURRENCY): 
 export function dualCurrencyChartScales(opts?: {
     stacked?: boolean;
     locale?: string;
+    /** Axis / tick ink (default light-mode #111). */
+    ink?: string;
+    /** Secondary axis tick color (default #64748b). */
+    muted?: string;
+    /** Grid line color (default #d4d4d8). */
+    grid?: string;
 }): Record<string, unknown> {
     const locale = opts?.locale ?? 'de-CH';
     const stacked = !!opts?.stacked;
+    const ink = opts?.ink ?? '#111';
+    const muted = opts?.muted ?? '#64748b';
+    const grid = opts?.grid ?? '#d4d4d8';
     const tick = (value: string | number) => {
         const n = typeof value === 'number' ? value : Number(value);
         return Number.isFinite(n) ? n.toLocaleString(locale) : '';
     };
     return {
-        x: {stacked, ticks: {color: '#111'}, grid: {color: '#d4d4d8'}},
+        x: {stacked, ticks: {color: ink}, grid: {color: grid}},
         y: {
             position: 'left',
             stacked,
-            ticks: {color: '#111', callback: tick},
-            grid: {color: '#d4d4d8'}
+            ticks: {color: ink, callback: tick},
+            grid: {color: grid}
         },
         y1: {
             position: 'right',
             stacked: false,
-            ticks: {color: '#64748b', callback: tick},
+            ticks: {color: muted, callback: tick},
             grid: {drawOnChartArea: false}
         }
     };

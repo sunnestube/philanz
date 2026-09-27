@@ -22,6 +22,18 @@ describe('CurrencyFx chart + format helpers', () => {
         expect((scales['y1'] as {position: string}).position).toBe('right');
     });
 
+    it('dualCurrencyChartScales accepts dark ink/muted/grid overrides', () => {
+        const scales = dualCurrencyChartScales({
+            stacked: false,
+            ink: '#e2e8f0',
+            muted: '#94a3b8',
+            grid: '#334155'
+        });
+        expect((scales['x'] as {ticks: {color: string}}).ticks.color).toBe('#e2e8f0');
+        expect((scales['y'] as {ticks: {color: string}}).ticks.color).toBe('#e2e8f0');
+        expect((scales['y1'] as {ticks: {color: string}}).ticks.color).toBe('#94a3b8');
+    });
+
     it('formatFxAmount guards null/NaN (NG02100 avoidance)', () => {
         expect(formatFxAmount(null)).toBe('');
         expect(formatFxAmount(Number.NaN)).toBe('');
