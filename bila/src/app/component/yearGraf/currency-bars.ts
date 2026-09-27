@@ -3,17 +3,51 @@ import {WorkbookService} from '../../service/workbook.service';
 
 const BAR_COLORS = ['#60a5fa', '#818cf8', '#34d399', '#f472b6', '#fbbf24', '#fb923c', '#38bdf8', '#c084fc'];
 
+export type BarChart = {
+    labels: string[];
+    datasets: Array<{label?: string; data?: number[]; backgroundColor?: unknown} & Record<string, unknown>>;
+};
+
 export function withCurrencyBars(
-    chart: {labels: string[]; datasets: Array<{label?: string; data?: number[]; backgroundColor?: unknown} & Record<string, unknown>>},
+    chart: BarChart,
     workbook: WorkbookService,
     monthTitles: string[]
-): {labels: string[]; datasets: object[]} {
+): BarChart {
     const codes = uniqueCodes(workbook);
     if (!chart?.datasets?.length || codes.length < 2) {
         return chart;
     }
+    return withCodes(chart, workbook, monthTitles, codes);
+}
+
+/** Display-Währung bleibt im ersten Diagramm, FX in einem zweiten — weniger Säulen pro Chart. */
+export function splitCurrencyCharts(
+    chart: BarChart,
+    workbook: WorkbookService,
+    monthTitles: string[]
+): {display: BarChart; fx: BarChart | null} {
+    if (!chart?.datasets?.length) {
+        return {display: chart, fx: null};
+    }
     const display = workbook.fx.displayCurrency();
-    const datasets: object[] = [];
+    const fxCodes = uniqueCodes(workbook).filter((code) => code !== display);
+    if (!fxCodes.length) {
+        return {display: chart, fx: null};
+    }
+    return {
+        display: chart,
+        fx: withCodes(chart, workbook, monthTitles, fxCodes)
+    };
+}
+
+function withCodes(
+    chart: BarChart,
+    workbook: WorkbookService,
+    monthTitles: string[],
+    codes: string[]
+): BarChart {
+    const display = workbook.fx.displayCurrency();
+    const datasets: BarChart['datasets'] = [];
     chart.datasets.forEach((dataset, index) => {
         codes.forEach((code, codeIndex) => {
             datasets.push({

@@ -1,13 +1,13 @@
 .graf-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 8px; }
 .year-graf { color: #111; }
-h2 { margin: 0 0 6px; }
+h2 { margin: 0 0 6px; color: inherit; }
 p { margin: 0 0 12px; color: #475569; font-size: 13px; }
 .grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
 }
-@media (min-width: 900px) {
+@media (min-width: 1100px) {
     .grid { grid-template-columns: 1fr 1fr; }
     .wide { grid-column: 1 / -1; }
 }
@@ -16,10 +16,27 @@ figure {
     background: #fff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
-    padding: 8px;
-    height: 280px;
+    padding: 10px 10px 8px;
+    height: 340px;
+    color: inherit;
 }
-.wide { height: 320px; }
-figcaption { font-size: 12px; margin-bottom: 4px; color: #334155; }
+.wide { height: 380px; }
+figcaption {
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #334155;
+    font-weight: 600;
+}
 :host ::ng-deep .p-chart,
-:host ::ng-deep canvas { height: calc(100% - 20px) !important; }
+:host ::ng-deep canvas { height: calc(100% - 24px) !important; }
+
+@media (prefers-color-scheme: dark) {
+    .year-graf { color: #e2e8f0; }
+    h2 { color: #f8fafc; }
+    p, figcaption { color: #cbd5e1; }
+    figure {
+        background: #1e293b;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+}
