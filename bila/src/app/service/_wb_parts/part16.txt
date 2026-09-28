@@ -12,7 +12,10 @@
                 fx?: unknown;
                 displayCurrency?: string;
                 calendarYear?: number;
+                closedMonths?: string[];
+                yearClosed?: boolean;
             } | null;
+            closed: {months?: string[]; year?: boolean} | null;
         };
         body: string;
     } {
@@ -37,7 +40,10 @@
             fx?: unknown;
             displayCurrency?: string;
             calendarYear?: number;
+            closedMonths?: string[];
+            yearClosed?: boolean;
         } | null = null;
+        let closed: {months?: string[]; year?: boolean} | null = null;
         const rest: string[] = [];
         lines.forEach((line) => {
             if (line.startsWith('#persons:')) {

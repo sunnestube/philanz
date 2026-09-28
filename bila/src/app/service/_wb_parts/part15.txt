@@ -22,6 +22,14 @@ d.saldoColumnPrefs === 'object') {
             if (typeof parsed.calendarYear === 'number') {
                 this.fx.setCalendarYear(parsed.calendarYear);
             }
+            if (Array.isArray(parsed.closedMonths)) {
+                this.closedMonths.set(
+                    parsed.closedMonths.filter((m): m is string => typeof m === 'string' && !!m.trim()).map((m) => m.trim())
+                );
+            }
+            if (typeof parsed.yearClosed === 'boolean') {
+                this.yearClosed.set(parsed.yearClosed);
+            }
         } catch {
             return;
         }
