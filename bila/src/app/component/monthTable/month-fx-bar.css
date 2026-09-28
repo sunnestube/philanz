@@ -8,3 +8,26 @@
     flex-shrink: 0;
 }
 .month-fx-bar .fx-hint { font-size: 11px; color: #64748b; }
+
+.closed-badge {
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+bal-month-table.month-closed .data-table td.readonly,
+bal-month-table.month-closed .data-table td.readonly .cell-read {
+    cursor: default;
+    user-select: text;
+}
+bal-month-table.month-closed .data-table td.readonly select:disabled {
+    opacity: 1;
+    color: inherit;
+    background: transparent;
+    cursor: default;
+}
