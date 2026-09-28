@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, ElementRef, HostBinding, Input, NgZone, OnDestroy, ViewChild, ViewEncapsulation} from '@angular/core';
 import {CellFormatPipe} from '../../pipe/cell-format.pipe';
 import {Month} from '../../model/Month';
 import {MonthCell} from '../../model/MonthCell';
@@ -92,6 +92,14 @@ export class MonthTable implements OnDestroy {
         };
         // Document listeners attach only while [active]=true — warming all 12 months
         // must not stack 12× pointer/keydown handlers (MaxListenersExceededWarning risk).
+        effect(() => {
+            this.workbook.closedMonths();
+            this.workbook.yearClosed();
+            if (this._active) {
+                this.syncWindowListeners();
+                this.cdr.markForCheck();
+            }
+        });
     }
 
     private windowListening = false;
@@ -147,6 +155,11 @@ export class MonthTable implements OnDestroy {
         return this.workbook.textColWidth();
     }
 
+    @HostBinding('class.month-closed')
+    get hostClosed(): boolean {
+        return this.isClosed();
+    }
+
     get panning(): boolean {
         return this.pointer.panning;
     }
@@ -161,11 +174,14 @@ export class MonthTable implements OnDestroy {
         return this._month;
     }
 
+    private _active = false;
+
     @Input()
     set active(value: boolean) {
+        this._active = value;
         if (value) {
             TableNavigationService.beforeFocus = this.navHook;
-            this.attachWindowListeners();
+            this.syncWindowListeners();
             this.cdr.reattach();
             this.cdr.markForCheck();
         } else {
@@ -174,6 +190,19 @@ export class MonthTable implements OnDestroy {
             }
             this.detachWindowListeners();
             this.cdr.detach();
+        }
+    }
+
+    isClosed(): boolean {
+        return this.workbook.isMonthClosed(this._month?.label.title);
+    }
+
+    /** Attach edit listeners only while active and not closed. */
+    private syncWindowListeners(): void {
+        if (this._active && !this.isClosed()) {
+            this.attachWindowListeners();
+        } else {
+            this.detachWindowListeners();
         }
     }
 
