@@ -6,6 +6,8 @@
         <div class="tab-label"
              [class]="month.label.background"
              [class.active]="view() === 'month' && selected() === month"
+             [class.closed]="isMonthClosed(month)"
+             [attr.title]="isMonthClosed(month) ? (month.label.title + ' — abgeschlossen') : month.label.title"
              (click)="selectMonth.emit(month)">
             {{ month.label.title }}
         </div>
@@ -13,7 +15,23 @@
     <div class="tab-label total-tab" [class.active]="view() === 'total'" (click)="openView.emit('total')">Total</div>
     <div class="tab-label graf-tab" [class.active]="view() === 'graf'" (click)="openView.emit('graf')">Graf</div>
     <div class="tab-row-actions">
+        <button type="button"
+                class="close-toggle"
+                [class.is-closed]="isYearClosed()"
+                (click)="toggleYear()"
+                [attr.title]="yearCloseLabel()"
+                [attr.aria-label]="yearCloseLabel()">{{ yearCloseLabel() }}</button>
+        @if (view() === 'month' && selected()) {
+            <button type="button"
+                    class="close-toggle"
+                    [class.is-closed]="isMonthClosed(selected()!)"
+                    (click)="toggleSelectedMonth()"
+                    [attr.title]="monthCloseLabel()"
+                    [attr.aria-label]="monthCloseLabel()">{{ monthCloseLabel() }}</button>
+        }
         <span class="tab-version">v{{ version }}</span>
-        <bal-new-row-buttons [month]="selected() ?? undefined"/>
+        @if (!isYearClosed() && !(selected() && isMonthClosed(selected()!))) {
+            <bal-new-row-buttons [month]="selected() ?? undefined"/>
+        }
     </div>
 </div>
