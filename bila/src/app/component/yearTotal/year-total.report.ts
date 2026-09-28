@@ -59,16 +59,19 @@ export function buildYearTotalReport(workbook: WorkbookService) {
         monthAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / divisor;
         dayAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / 365;
     });
+    const combined = yearExpense + yearIncome;
     return {
         ...base,
         columns,
         months: monthBlocks,
         yearExpense,
         yearIncome,
+        monthAvg: combined / divisor,
+        dayAvg: combined / 365,
         summaryRows: [
-            {label: 'Jahr', byColumn: yearByColumn, total: yearExpense + yearIncome},
-            {label: 'Ø Monat', byColumn: monthAvgMap, total: (yearExpense + yearIncome) / divisor},
-            {label: 'Ø Tag', byColumn: dayAvgMap, total: (yearExpense + yearIncome) / 365}
+            {label: 'Jahr', byColumn: yearByColumn, total: combined},
+            {label: 'Ø Monat', byColumn: monthAvgMap, total: combined / divisor},
+            {label: 'Ø Tag', byColumn: dayAvgMap, total: combined / 365}
         ]
     };
 }

@@ -15,6 +15,9 @@ export class YearTotalComponent {
     readonly workbook = inject(WorkbookService);
     readonly report = computed(() => {
         this.workbook.revision();
+        // Track FX signals so Ø Monat / totals recompute on currency switch (not only digits).
+        this.workbook.fx.displayCurrency();
+        this.workbook.fx.currencies();
         return buildYearTotalReport(this.workbook);
     });
     panning = false;
@@ -32,7 +35,7 @@ export class YearTotalComponent {
         return this.workbook.headerRowHeight();
     }
 
-    format(value: number): string {
+    format(value: number | null | undefined): string {
         return this.workbook.fx.formatAmount(value);
     }
 
