@@ -38,6 +38,10 @@ import {BASE_CURRENCY} from '../../model/CurrencyFx';
             color: #0f172a;
             cursor: pointer;
         }
+        @media (prefers-color-scheme: dark) {
+            .fx-select { color: #0f172a; background: #fff; border-color: #94a3b8; }
+            .fx-select select { color: #0f172a; }
+        }
     `]
 })
 export class CurrencySelectComponent {
