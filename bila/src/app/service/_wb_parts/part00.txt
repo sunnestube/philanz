@@ -52,9 +52,10 @@ export interface SaldoColumnPref {
 export interface ExpenseColumn {
     title: string;
     index: number;
+    /** Stable Total/Pack lookup + @for trackBy (section::index::title). */
     key: string;
-    section: string;
-    kind: 'Einnahme' | 'Ausgabe';
+    section?: string;
+    kind?: 'Einnahme' | 'Ausgabe';
 }
 
 export interface MonthExpenseBlock {
