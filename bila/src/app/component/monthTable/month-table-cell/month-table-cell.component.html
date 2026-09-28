@@ -7,6 +7,7 @@
             (copy)="copy.emit($event)"
             [id]="cellId()"
             tabindex="0"
+            [disabled]="isReadonly()"
             [ngModelOptions]="{standalone: true}">
         @for (option of options(); track option) {
             <option [value]="option">{{ option }}</option>
@@ -16,10 +17,10 @@
     <div [id]="cellId()"
          tabindex="0"
          class="row-head"
-         (keydown)="valueKeydown.emit($event)"
+         (keydown)="onReadKeydown($event)"
          (copy)="copy.emit($event)"
-         (paste)="paste.emit($event)">{{ rowIndex() + 1 }}</div>
-} @else if (editing()) {
+         (paste)="onReadPaste($event)">{{ rowIndex() + 1 }}</div>
+} @else if (editing() && !isReadonly()) {
     <input
         #editInput
         [id]="cellId()"
@@ -38,9 +39,9 @@
         [id]="cellId()"
         tabindex="0"
         [title]="isFormula() ? cell().raw : cell().type.id"
-        (focus)="valueFocus.emit()"
-        (keydown)="valueKeydown.emit($event)"
+        (focus)="onReadFocus()"
+        (keydown)="onReadKeydown($event)"
         (copy)="copy.emit($event)"
-        (paste)="paste.emit($event)"
+        (paste)="onReadPaste($event)"
     >{{ display() }}</span>
 }

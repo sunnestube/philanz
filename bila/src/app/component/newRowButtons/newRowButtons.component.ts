@@ -17,7 +17,7 @@ export class NewRowButtonsComponent {
 
     addRow(): void {
         const target = this.month ?? this.workbook.selectedMonth();
-        if (!target) {
+        if (!target || this.workbook.isMonthClosed(target.label.title)) {
             return;
         }
         this.appendEmptyRow(target);
@@ -26,7 +26,7 @@ export class NewRowButtonsComponent {
 
     addRows(count: number): void {
         const target = this.month ?? this.workbook.selectedMonth();
-        if (!target) {
+        if (!target || this.workbook.isMonthClosed(target.label.title)) {
             return;
         }
         for (let i = 0; i < count; i++) {
