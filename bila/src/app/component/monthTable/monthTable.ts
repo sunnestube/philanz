@@ -77,6 +77,10 @@ export class MonthTable implements OnDestroy {
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
         this.edit.range.beforeFocus = (row) => this.ensureRowVisible(row);
+        // Range lives outside signals — bump OnPush so Ctrl+A / drag / Shift paint .selected.
+        this.edit.onRangeMutated = () => {
+            this.zone.run(() => this.cdr.markForCheck());
+        };
         this.navHook = (title, row) => {
             if (!this._month) {
                 return;
@@ -197,10 +201,6 @@ export class MonthTable implements OnDestroy {
         return saldoColViews(this.saldo.combos(), (combo) => this.workbook.saldoTitleFor(combo));
     }
 
-    /**
-     * Rows needed to cover the scroller plus overscan.
-     * Fixed VIEW_SIZE=64 blanked tall viewports (content "disappeared" while scrolling).
-     */
     private viewSize(): number {
         const height = this.scroller?.nativeElement.clientHeight ?? 0;
         if (height <= 0) {
@@ -209,7 +209,6 @@ export class MonthTable implements OnDestroy {
         return Math.max(VIEW_SIZE_MIN, Math.ceil(height / ROW_HEIGHT) + VIEW_OVERSCAN * 2);
     }
 
-    /** Visible slice only — track by row object so scroll does not churn identities. */
     viewRows(): MonthRow[] {
         const rows = this.month?.rows ?? [];
         return rows.slice(this.viewStart, this.viewStart + this.viewSize());
@@ -234,12 +233,7 @@ export class MonthTable implements OnDestroy {
         });
     }
 
-    /**
-     * Keep keyboard / range focus inside the rendered window without fighting scroll.
-     * Scrolls the real scroller; viewStart follows via syncViewFromScroll.
-     */
     ensureRowVisible(row: number): void {
-        // Inactive (background-warmed) months must not scroll or steal focus.
         if (TableNavigationService.beforeFocus !== this.navHook) {
             return;
         }
@@ -304,7 +298,6 @@ export class MonthTable implements OnDestroy {
         return cssTypeOf(cell.type.id);
     }
 
-    /** Forces OnPush refresh when display currency / rates change. */
     currencyRev(): string {
         this.workbook.revision();
         return this.workbook.fx.displayCurrency();
