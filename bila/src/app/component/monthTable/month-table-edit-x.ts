@@ -70,6 +70,24 @@ export class MonthTableEditX extends MonthTableEdit {
             return;
         }
         const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
+        const mod = event.ctrlKey || event.metaKey;
+        // Ctrl/Cmd+A — select all editable cells (works across virtualization; data-model range).
+        if (mod && event.key.toLowerCase() === 'a' && !typing) {
+            event.preventDefault();
+            this.selectAllEditable();
+            return;
+        }
+        // Ctrl/Cmd+Shift+End — extend selection to last data row / last editable col.
+        if (mod && event.shiftKey && event.key === 'End' && !typing) {
+            event.preventDefault();
+            const month = this.monthRef();
+            if (month?.rows.length) {
+                this.range.extend(month.rows.length - 1, this.lastCol());
+                this.skipFocusReset = true;
+                this.range.focusCell(month.label.title, month.rows.length - 1, this.range.col1);
+            }
+            return;
+        }
         if (event.key === 'Delete' || (event.key === 'Backspace' && !typing)) {
             event.preventDefault();
             this.clearRange();
@@ -205,34 +223,72 @@ export class MonthTableEditX extends MonthTableEdit {
         return n - 1;
     }
 
+    /** Select every editable cell in the month (ignores virtualization window). */
+    selectAllEditable(): void {
+        const month = this.monthRef();
+        if (!month?.rows.length) {
+            return;
+        }
+        this.range.reset(0, 0);
+        this.range.extend(month.rows.length - 1, this.lastCol());
+        this.range.rowMode = true;
+        this.skipFocusReset = true;
+        this.range.focusCell(month.label.title, this.range.row0, this.range.col0);
+    }
+
+    /**
+     * Clear the selected range on the data model (not the DOM).
+     * Virtualization must not skip off-screen rows — we iterate range.row0..row1 on month.rows.
+     * Coords are pre-computed so history.record snapshots once (avoids per-cell push listener thrash
+     * on ~120-row clears that previously tripped MaxListenersExceededWarning paths).
+     * Entire clear is one history.record undo step.
+     */
     private clearRange(): void {
         const month = this.monthRef();
         if (!month) {
             return;
         }
+        const row0 = this.range.row0;
+        const row1 = this.range.row1;
+        const col0 = this.range.col0;
+        const col1 = this.range.col1;
         const coords: Array<{row: number; col: number}> = [];
         const colorRows: number[] = [];
+        for (let row = row0; row <= row1; row++) {
+            const line = month.rows[row];
+            if (!line) {
+                continue;
+            }
+            colorRows.push(row);
+            for (let col = col0; col <= col1; col++) {
+                const cell = line.cells[col];
+                if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
+                    continue;
+                }
+                coords.push({row, col});
+            }
+        }
+        if (!coords.length && !colorRows.length) {
+            return;
+        }
         this.suppressCommit = true;
-        // One undo unit for the whole range (cells + person colors).
         this.workbook.history.record(month, coords, colorRows, () => {
-            for (let row = this.range.row0; row <= this.range.row1; row++) {
-                colorRows.push(row);
+            for (const {row, col} of coords) {
+                const cell = month.rows[row]?.cells[col];
+                if (!cell) {
+                    continue;
+                }
+                cell.raw = '';
+                cell.display = '';
+                cell.error = null;
+                if (cell.type.id.indexOf('select') !== -1) {
+                    cell.value = '';
+                }
+            }
+            for (const row of colorRows) {
                 const line = month.rows[row];
                 if (!line) {
                     continue;
-                }
-                for (let col = this.range.col0; col <= this.range.col1; col++) {
-                    const cell = line.cells[col];
-                    if (!cell || cell.type.id === CELL_TYPE.none || cell.type.id === CELL_TYPE.index) {
-                        continue;
-                    }
-                    coords.push({row, col});
-                    cell.raw = '';
-                    cell.display = '';
-                    cell.error = null;
-                    if (cell.type.id.indexOf('select') !== -1) {
-                        cell.value = '';
-                    }
                 }
                 const person = line.cells.find((cell) => cell.type.id === CELL_TYPE.select_person);
                 const code = (person?.value || person?.raw || '').trim();
