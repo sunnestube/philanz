@@ -29,6 +29,15 @@ export abstract class MonthTableEditCore {
         protected readonly blurBar: () => void
     ) {}
 
+    /** Month (or whole year) closed → no mutations / edit hooks. */
+    protected isClosed(): boolean {
+        const check = this.workbook.isMonthClosed;
+        if (typeof check !== 'function') {
+            return false;
+        }
+        return check.call(this.workbook, this.monthOf()?.label.title);
+    }
+
     abstract selectCell(rowIndex: number, colIndex: number, cell: MonthCell): void;
     abstract commitEdit(cell: MonthCell | null): void;
     abstract onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void;
@@ -93,12 +102,18 @@ export abstract class MonthTableEditCore {
     }
 
     enterRefPick(): void {
+        if (this.isClosed()) {
+            return;
+        }
         this.formulaMode = true;
         this.refPickMode = (this.draft || '').trim().startsWith('=');
     }
 
 
     startEdit(rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (this.isClosed()) {
+            return;
+        }
         this.selectCell(rowIndex, colIndex, cell);
         if (this.refPickMode) {
             return;
@@ -108,6 +123,9 @@ export abstract class MonthTableEditCore {
     }
 
     onCellInput(event: Event, cell: MonthCell): void {
+        if (this.isClosed()) {
+            return;
+        }
         const value = (event.target as HTMLInputElement).value;
         this.draft = value;
         cell.raw = value;
@@ -120,6 +138,9 @@ export abstract class MonthTableEditCore {
     }
 
     onFormulaInput(event: Event): void {
+        if (this.isClosed()) {
+            return;
+        }
         const value = (event.target as HTMLInputElement).value;
         this.draft = value;
         this.formulaMode = value.trim().startsWith('=');
