@@ -1,1 +1,1 @@
-PLACEHOLDER_WILL_FAIL
+/tmp/wb_content.txt
