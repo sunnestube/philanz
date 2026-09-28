@@ -4,6 +4,12 @@
                 } catch {
                     fx = null;
                 }
+            } else if (line.startsWith('#closed:')) {
+                try {
+                    closed = JSON.parse(line.slice(8)) as typeof closed;
+                } catch {
+                    closed = null;
+                }
             } else if (line.startsWith('#pack') || line.startsWith('#year:')) {
                 /* multi-year pack markers — handled by year-pack */
             } else if (line.startsWith('#settings:')) {
@@ -16,6 +22,6 @@
                 rest.push(line);
             }
         });
-        return {meta: {persons, accounts, personNames, accountNames, opening, constants, fx, settings}, body: rest.join('\n')};
+        return {meta: {persons, accounts, personNames, accountNames, opening, constants, fx, settings, closed}, body: rest.join('\n')};
     }
 }
