@@ -289,17 +289,17 @@ select {
     width: 100%;
     height: 18px;
 }
-tr:nth-child(even) { background-color: #fafafa; }
-tr.p td:not(.S) { background: #F1F5F9; }
-tr.p:nth-child(even) td:not(.S) { background: #E1EAF3; }
-tr.l td:not(.S) { background: #c2c2ec; }
-tr.l:nth-child(even) td:not(.S) { background: #c6c6ff; }
-tr.h td:not(.S) { background: #fff5b6; }
-tr.h:nth-child(even) td:not(.S) { background: #e6dda4; }
-tr.a td:not(.S),
-tr.e td:not(.S) { background: #ffb78e; }
-tr.a:nth-child(even) td:not(.S),
-tr.e:nth-child(even) td:not(.S) { background: #fda373; }
+.data-table tbody tr:nth-child(even) { background-color: #fafafa; }
+.data-table tr.p td:not(.S) { background: #F1F5F9; }
+.data-table tr.p:nth-child(even) td:not(.S) { background: #E1EAF3; }
+.data-table tr.l td:not(.S) { background: #c2c2ec; }
+.data-table tr.l:nth-child(even) td:not(.S) { background: #c6c6ff; }
+.data-table tr.h td:not(.S) { background: #fff5b6; }
+.data-table tr.h:nth-child(even) td:not(.S) { background: #e6dda4; }
+.data-table tr.a td:not(.S),
+.data-table tr.e td:not(.S) { background: #ffb78e; }
+.data-table tr.a:nth-child(even) td:not(.S),
+.data-table tr.e:nth-child(even) td:not(.S) { background: #fda373; }
 
 th.S,
 td.S {
@@ -386,17 +386,17 @@ td.S.total-col { background: #dcfce7; font-weight: 400; }
     .data-table thead tr.title-row th.D { background: #d4d4d4; }
     .data-table td.index,
     .data-table th.index { background: transparent; color: #444; }
-    tr:nth-child(even) { background-color: #ececec; }
-    tr.p td:not(.S) { background: #dbeafe; }
-    tr.p:nth-child(even) td:not(.S) { background: #bfdbfe; }
-    tr.l td:not(.S) { background: #e0e7ff; }
-    tr.l:nth-child(even) td:not(.S) { background: #c7d2fe; }
-    tr.h td:not(.S) { background: #fef3c7; }
-    tr.h:nth-child(even) td:not(.S) { background: #fde68a; }
-    tr.a td:not(.S),
-    tr.e td:not(.S) { background: #ffedd5; }
-    tr.a:nth-child(even) td:not(.S),
-    tr.e:nth-child(even) td:not(.S) { background: #fdba74; }
+    .data-table tbody tr:nth-child(even) { background-color: #ececec; }
+    .data-table tr.p td:not(.S) { background: #dbeafe; }
+    .data-table tr.p:nth-child(even) td:not(.S) { background: #bfdbfe; }
+    .data-table tr.l td:not(.S) { background: #e0e7ff; }
+    .data-table tr.l:nth-child(even) td:not(.S) { background: #c7d2fe; }
+    .data-table tr.h td:not(.S) { background: #fef3c7; }
+    .data-table tr.h:nth-child(even) td:not(.S) { background: #fde68a; }
+    .data-table tr.a td:not(.S),
+    .data-table tr.e td:not(.S) { background: #ffedd5; }
+    .data-table tr.a:nth-child(even) td:not(.S),
+    .data-table tr.e:nth-child(even) td:not(.S) { background: #fdba74; }
     .data-table td:focus-within,
     .data-table td.editing { outline-color: #2563eb; }
     td.S.zero { color: #57534e; }
