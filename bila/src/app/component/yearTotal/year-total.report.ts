@@ -6,17 +6,34 @@ import {parseLocaleNumber} from '../../service/formula.service';
 
 export function buildYearTotalReport(workbook: WorkbookService) {
     const base = workbook.yearExpenseReport();
+    // Guarantee every column has a stable key for template trackBy / byColumn lookups.
+    const baseColumns = (base.columns || []).map((col) => normalizeColumn(col, 'Ausgabe'));
     const extra = incomeColumns(workbook);
     if (!extra.length) {
-        return base;
+        if (baseColumns.every((col, i) => col.key === base.columns[i]?.key)) {
+            return base;
+        }
+        return remapReportKeys(base, baseColumns);
     }
     const months = workbook.months();
-    const columns = [...base.columns, ...extra];
+    const columns = [...baseColumns, ...extra];
     const monthBlocks = base.months.map((block, index) => {
         const month = months[index];
-        const byColumn = {...block.byColumn};
-        const byPerson = {...block.byPerson};
+        const byColumn: Record<string, number> = {};
+        const byPerson: Record<string, Record<string, number>> = {};
         const personTotal = {...block.personTotal};
+        baseColumns.forEach((col) => {
+            // Prefer key; fall back to legacy title-keyed blocks from older snapshots.
+            byColumn[col.key] = block.byColumn[col.key] ?? block.byColumn[col.title] ?? 0;
+        });
+        base.persons.forEach((person) => {
+            byPerson[person] = {};
+            baseColumns.forEach((col) => {
+                byPerson[person][col.key] = block.byPerson[person]?.[col.key]
+                    ?? block.byPerson[person]?.[col.title]
+                    ?? 0;
+            });
+        });
         extra.forEach((col) => {
             byColumn[col.key] = 0;
             base.persons.forEach((person) => {
@@ -24,7 +41,8 @@ export function buildYearTotalReport(workbook: WorkbookService) {
             });
         });
         if (!month) {
-            return {...block, byColumn, byPerson, personTotal};
+            const total = Object.values(byColumn).reduce((sum, value) => sum + value, 0);
+            return {...block, byColumn, byPerson, personTotal, total};
         }
         const personIdx = month.columns.findIndex((column) => column.type === CELL_TYPE.select_person);
         month.rows.forEach((row) => {
@@ -72,6 +90,57 @@ export function buildYearTotalReport(workbook: WorkbookService) {
             {label: 'Jahr', byColumn: yearByColumn, total: combined},
             {label: 'Ø Monat', byColumn: monthAvgMap, total: combined / divisor},
             {label: 'Ø Tag', byColumn: dayAvgMap, total: combined / 365}
+        ]
+    };
+}
+
+function normalizeColumn(col: ExpenseColumn, fallbackKind: 'Einnahme' | 'Ausgabe'): ExpenseColumn {
+    if (col.key) {
+        return col.kind ? col : {...col, kind: fallbackKind};
+    }
+    const section = col.section || (fallbackKind === 'Einnahme' ? String(SECTION.EINGANG) : String(SECTION.AUSGANG));
+    return {
+        ...col,
+        key: `${section}::${col.index}::${col.title}`,
+        section,
+        kind: col.kind || fallbackKind
+    };
+}
+
+function remapReportKeys(base: ReturnType<WorkbookService['yearExpenseReport']>, columns: ExpenseColumn[]) {
+    const months = base.months.map((block) => {
+        const byColumn: Record<string, number> = {};
+        const byPerson: Record<string, Record<string, number>> = {};
+        columns.forEach((col) => {
+            byColumn[col.key] = block.byColumn[col.key] ?? block.byColumn[col.title] ?? 0;
+        });
+        Object.keys(block.byPerson || {}).forEach((person) => {
+            byPerson[person] = {};
+            columns.forEach((col) => {
+                byPerson[person][col.key] = block.byPerson[person]?.[col.key]
+                    ?? block.byPerson[person]?.[col.title]
+                    ?? 0;
+            });
+        });
+        return {...block, byColumn, byPerson};
+    });
+    const yearByColumn: Record<string, number> = {};
+    const monthAvgMap: Record<string, number> = {};
+    const dayAvgMap: Record<string, number> = {};
+    const divisor = Math.max(months.length, 1);
+    columns.forEach((col) => {
+        yearByColumn[col.key] = months.reduce((sum, block) => sum + (block.byColumn[col.key] ?? 0), 0);
+        monthAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / divisor;
+        dayAvgMap[col.key] = (yearByColumn[col.key] ?? 0) / 365;
+    });
+    return {
+        ...base,
+        columns,
+        months,
+        summaryRows: [
+            {label: 'Jahr', byColumn: yearByColumn, total: base.yearExpense},
+            {label: 'Ø Monat', byColumn: monthAvgMap, total: base.yearExpense / divisor},
+            {label: 'Ø Tag', byColumn: dayAvgMap, total: base.yearExpense / 365}
         ]
     };
 }
