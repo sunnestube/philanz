@@ -7,7 +7,6 @@ import {
     FooterRowView,
     SaldoCellView,
     SaldoColView,
-    formatSaldo,
     saldoCellView
 } from './month-table.vm';
 
@@ -24,6 +23,8 @@ export class MonthTableSaldo {
         private readonly formulaService: FormulaService,
         private readonly monthOf: () => Month | undefined
     ) {}
+
+    private formatAmount = (value: number): string => this.workbook.fx.formatAmount(value);
 
     invalidate(): void {
         this.cachedRev = -1;
@@ -82,7 +83,8 @@ export class MonthTableSaldo {
         return header.map((col) => saldoCellView(
             col,
             this.workbook.fx.toDisplay(this.saldoAt(rowIndex, col.key), day),
-            this.workbook.fx.toDisplay(this.saldoDelta(rowIndex, col.key), day)
+            this.workbook.fx.toDisplay(this.saldoDelta(rowIndex, col.key), day),
+            this.formatAmount
         ));
     }
 
@@ -94,7 +96,8 @@ export class MonthTableSaldo {
         return saldoCellView(
             {key: 'total', person: '', personClass: 'total-col', title: this.workbook.saldoTotalTitle(), first: false},
             this.workbook.fx.toDisplay(this.saldoTotal(rowIndex), day),
-            this.workbook.fx.toDisplay(this.saldoTotalDelta(rowIndex), day)
+            this.workbook.fx.toDisplay(this.saldoTotalDelta(rowIndex), day),
+            this.formatAmount
         );
     }
 
@@ -135,14 +138,15 @@ export class MonthTableSaldo {
             saldos: saldos.map((col) => {
                 const value = this.footerSaldo(foot.person, col.key);
                 const day = this.footerDay();
-                const view = saldoCellView(col, value == null ? 0 : this.workbook.fx.toDisplay(value, day), 0);
+                const view = saldoCellView(col, value == null ? 0 : this.workbook.fx.toDisplay(value, day), 0, this.formatAmount);
                 return value === null ? {...view, text: ''} : view;
             }),
             total: this.workbook.saldoTotalVisible() && saldos.length
                 ? saldoCellView(
                     {key: 'total', person: '', personClass: 'total-col', title: this.workbook.saldoTotalTitle(), first: false},
                     this.workbook.fx.toDisplay(this.footerSaldoTotal(foot.person), this.footerDay()),
-                    0
+                    0,
+                    this.formatAmount
                 )
                 : null
         }));
@@ -184,7 +188,7 @@ export class MonthTableSaldo {
         if (column.type !== CELL_TYPE.number) {
             return '';
         }
-        return formatSaldo(this.footerSum(person, colIndex));
+        return this.formatAmount(this.footerSum(person, colIndex));
     }
 
     private footerSum(person: string | null, colIndex: number): number {
