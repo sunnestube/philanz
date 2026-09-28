@@ -32,6 +32,10 @@ export class MonthTableEdit extends MonthTableEditCore {
         };
     }
     commitEdit(cell: MonthCell | null): void {
+        if (this.isClosed()) {
+            this.liveEdit = false;
+            return;
+        }
         if (!cell || this.suppressCommit || this.editingRow === null || this.editingCol === null) {
             this.liveEdit = false;
             return;
@@ -65,6 +69,10 @@ export class MonthTableEdit extends MonthTableEditCore {
         }
     }
     onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
+        if (this.isClosed()) {
+            event.preventDefault();
+            return;
+        }
         event.preventDefault();
         const clip = event.clipboardData?.getData('text/plain') ?? '';
         const grid = this.parseClipboardGrid(clip);
@@ -172,55 +180,9 @@ export class MonthTableEdit extends MonthTableEditCore {
      * Redo: Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z (both supported).
      */
     protected handleHistoryKeys(event: KeyboardEvent): boolean {
-        if (!(event.ctrlKey || event.metaKey)) {
+        if (this.isClosed()) {
             return false;
         }
-        // While caret is in an input/textarea, never steal Ctrl/Cmd+Z from native undo.
-        if (event.target instanceof HTMLInputElement
-            || event.target instanceof HTMLTextAreaElement) {
+        if (!(event.ctrlKey || this.metaKey)) {
             return false;
         }
-        const key = event.key.toLowerCase();
-        const redo = key === 'y' || (key === 'z' && event.shiftKey);
-        const undo = key === 'z' && !event.shiftKey;
-        if (!undo && !redo) {
-            return false;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        if (undo) {
-            this.undo();
-        } else {
-            this.redo();
-        }
-        return true;
-    }
-    /** Select change after ngModel update — uses selectBaseline from selectCell. */
-    recordSelectChange(cell: MonthCell, row: MonthRow, rowIndex: number, colIndex: number): void {
-        const month = this.monthOf();
-        const baseline = this.selectBaseline;
-        if (!month || !baseline || baseline.row !== rowIndex || baseline.col !== colIndex) {
-            return;
-        }
-        // Prefer value (ngModel); applySelectSideEffects already synced raw.
-        const afterRaw = cell.value ?? cell.raw ?? '';
-        cell.raw = afterRaw;
-        const afterColor = row.color ?? '';
-        if (baseline.raw === afterRaw && baseline.color === afterColor) {
-            return;
-        }
-        this.workbook.history.push({
-            monthTitle: month.label.title,
-            before: [{row: rowIndex, col: colIndex, raw: baseline.raw}],
-            after: [{row: rowIndex, col: colIndex, raw: afterRaw}],
-            beforeColors: [{row: rowIndex, color: baseline.color}],
-            afterColors: [{row: rowIndex, color: afterColor}]
-        });
-        this.selectBaseline = {
-            row: rowIndex,
-            col: colIndex,
-            raw: afterRaw,
-            color: afterColor
-        };
-    }
-}
