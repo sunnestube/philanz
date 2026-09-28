@@ -111,4 +111,56 @@ describe('MonthTableEditX clear + keyboard range', () => {
         expect(edit.range.row0).toBe(0);
         expect(edit.range.row1).toBe(month.rows.length - 1);
     });
+
+    it('plain focus after Ctrl+A collapses multi-select (rowMode must not freeze)', () => {
+        // focusCell normally focuses DOM → selectCell once (consumes skipFocusReset).
+        edit.range.focusCell = () => {
+            edit.selectCell(0, 1, month.rows[0].cells[1]);
+        };
+        const selectAll = new KeyboardEvent('keydown', {key: 'a', ctrlKey: true});
+        edit.onKeydown(selectAll, 0, 1, month.rows[0].cells[1]);
+        expect(edit.range.multi()).toBe(true);
+        expect(edit.range.rowMode).toBe(true);
+
+        // Later plain focus (no drag) must collapse — rowMode alone must not freeze.
+        edit.selectCell(2, 1, month.rows[2].cells[1]);
+        expect(edit.range.rowMode).toBe(false);
+        expect(edit.range.row0).toBe(2);
+        expect(edit.range.row1).toBe(2);
+        expect(edit.range.col0).toBe(1);
+        expect(edit.range.col1).toBe(1);
+        expect(edit.range.multi()).toBe(false);
+    });
+
+    it('Shift+click extend keeps multi-select while dragging', () => {
+        edit.range.reset(0, 1);
+        const down = {shiftKey: true, preventDefault() {}} as unknown as MouseEvent;
+        edit.onCellMouseDown(down, 2, 2);
+        expect(edit.range.dragging).toBe(true);
+        expect(edit.range.row0).toBe(0);
+        expect(edit.range.row1).toBe(2);
+        expect(edit.range.col0).toBe(1);
+        expect(edit.range.col1).toBe(2);
+        // focus during drag must not collapse
+        edit.selectCell(2, 2, month.rows[2].cells[2]);
+        expect(edit.range.multi()).toBe(true);
+        edit.endDrag();
+        expect(edit.range.dragging).toBe(false);
+        expect(edit.range.multi()).toBe(true);
+    });
+
+    it('drag enter extends range and notifies onRangeMutated', () => {
+        let bumps = 0;
+        edit.onRangeMutated = () => { bumps += 1; };
+        edit.range.reset(0, 1);
+        const down = {shiftKey: false, preventDefault() {}} as unknown as MouseEvent;
+        edit.onCellMouseDown(down, 0, 1);
+        const before = bumps;
+        edit.onCellEnter(3, 2);
+        expect(edit.range.row1).toBe(3);
+        expect(edit.range.col1).toBe(2);
+        expect(bumps).toBeGreaterThan(before);
+        edit.endDrag();
+    });
+
 });
