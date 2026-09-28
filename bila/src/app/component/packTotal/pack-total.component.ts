@@ -12,15 +12,25 @@ import {PackMonthBlock, PackReportService} from '../../service/pack-report.servi
     styleUrl: '../yearTotal/year-total.component.css',
     styles: [`
         :host {
-            display: block !important;
-            height: auto !important;
-            min-height: 100%;
-            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            height: calc(100vh - 96px) !important;
+            min-height: 0;
+            overflow: hidden !important;
             padding: 12px;
             box-sizing: border-box;
         }
-        .year-total { height: auto !important; }
-        .total-scroll { flex: none; max-height: calc(100vh - 220px); }
+        .year-total {
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100% !important;
+        }
+        /* One scroller only — do not nest host overflow with .total-scroll. */
+        .total-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+        }
         .yoy-list {
             list-style: none;
             margin: 0 0 12px;
