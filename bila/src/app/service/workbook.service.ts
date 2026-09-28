@@ -1,1 +1,0 @@
-/tmp/wb_content.txt
