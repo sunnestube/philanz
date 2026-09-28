@@ -34,6 +34,9 @@ export class ConstantsTabComponent {
     }
 
     addTransfer(): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         this.workbook.addConstant('');
         this.patchLast({kind: 'transfer', months: ['0', ...Array.from({length: 11}, () => '↑')]});
     }
@@ -61,6 +64,9 @@ export class ConstantsTabComponent {
     }
 
     addColumn(): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         this.workbook.addConstant('');
         this.patchLast({kind: 'column', person: '§COL', columnTitle: '', months: ['0', ...Array.from({length: 11}, () => '↑')]});
     }
@@ -70,14 +76,23 @@ export class ConstantsTabComponent {
     }
 
     onName(item: ConstantDef, event: Event): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         this.workbook.setConstantName(item.id, (event.target as HTMLInputElement).value);
     }
 
     onMonth(item: ConstantDef, index: number, event: Event): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         this.workbook.setConstantMonth(item.id, index, (event.target as HTMLInputElement).value);
     }
 
     nudge(id: string, delta: number, kind: ConstantKind): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const list = kind === 'column' ? this.columns() : this.transfers();
         const from = list.findIndex((item) => item.id === id);
         if (from < 0) {
@@ -99,6 +114,9 @@ export class ConstantsTabComponent {
 
     onDrop(event: DragEvent, targetId: string, kind: ConstantKind): void {
         event.preventDefault();
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const id = event.dataTransfer?.getData('text/plain');
         if (!id) {
             return;
@@ -122,6 +140,9 @@ export class ConstantsTabComponent {
     }
 
     private patch(id: string, patch: Partial<RichConstant>): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const list = this.all().map((item) => item.id === id ? {...item, ...patch} : item);
         this.workbook.constants.set(list);
         const item = list.find((entry) => entry.id === id);

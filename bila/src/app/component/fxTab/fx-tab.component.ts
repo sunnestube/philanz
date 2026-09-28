@@ -30,6 +30,9 @@ export class FxTabComponent {
     });
 
     add(): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const series = this.workbook.fx.addCurrency(this.newCode(), this.newName());
         if (series) {
             this.selectedCode.set(series.code);
@@ -40,6 +43,9 @@ export class FxTabComponent {
     }
 
     remove(code: string): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         if (!confirm(`Währung ${code} und alle Kurse löschen?`)) {
             return;
         }
@@ -53,6 +59,9 @@ export class FxTabComponent {
     }
 
     onRate(dayIndex: number, event: Event): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const series = this.selected();
         if (!series) {
             return;
@@ -62,6 +71,9 @@ export class FxTabComponent {
     }
 
     onName(event: Event): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const series = this.selected();
         if (!series) {
             return;
@@ -76,6 +88,9 @@ export class FxTabComponent {
      * TSV / multi-line pastes write via setRatesFromPaste.
      */
     onPaste(event: ClipboardEvent): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const series = this.selected();
         if (!series) {
             return;
