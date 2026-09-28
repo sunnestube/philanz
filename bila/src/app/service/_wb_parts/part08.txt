@@ -36,6 +36,24 @@ s);
                 this.fx.setDisplayCurrency(meta.fx.display);
             }
         }
+        // Closed state: dedicated #closed wins; else #settings; else open.
+        let closedMonths: string[] = [];
+        let yearClosed = false;
+        if (meta.closed) {
+            closedMonths = Array.isArray(meta.closed.months)
+                ? meta.closed.months.filter((m): m is string => typeof m === 'string' && !!m.trim()).map((m) => m.trim())
+                : [];
+            yearClosed = !!meta.closed.year;
+        } else if (meta.settings) {
+            if (Array.isArray(meta.settings.closedMonths)) {
+                closedMonths = meta.settings.closedMonths.filter((m): m is string => typeof m === 'string' && !!m.trim()).map((m) => m.trim());
+            }
+            if (typeof meta.settings.yearClosed === 'boolean') {
+                yearClosed = meta.settings.yearClosed;
+            }
+        }
+        this.closedMonths.set(closedMonths);
+        this.yearClosed.set(yearClosed);
         const months = CsvImportService.parseCSV(body);
         this.setMonths(months);
         this.persistSettings();
