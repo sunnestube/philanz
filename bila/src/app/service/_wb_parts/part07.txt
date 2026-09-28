@@ -19,7 +19,9 @@ string {
             constants: this.constants(),
             fx: this.fx.snapshot(),
             displayCurrency: this.fx.displayCurrency(),
-            calendarYear: this.fx.calendarYear()
+            calendarYear: this.fx.calendarYear(),
+            closedMonths: this.closedMonths(),
+            yearClosed: this.yearClosed()
         });
         const meta = [
             `#persons:${this.encodeNamedCodes(this.personCodes(), this.personNames())}`,
@@ -27,6 +29,7 @@ string {
             opening ? `#opening:${opening}` : '',
             `#constants:${JSON.stringify(this.constants())}`,
             `#fx:${JSON.stringify({year: this.fx.calendarYear(), currencies: this.fx.snapshot(), display: this.fx.displayCurrency()})}`,
+            `#closed:${JSON.stringify({months: this.closedMonths(), year: this.yearClosed()})}`,
             `#settings:${settings}`
         ].filter(Boolean).join('\n');
         return `${meta}\n${CsvExportService.convertToCSV(months, months[0].columns)}`;
