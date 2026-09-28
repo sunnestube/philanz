@@ -207,3 +207,39 @@
     .tab-label.graf-tab { background: #1d4ed8; color: #dbeafe; }
     .tab-label.csv-tab-label { background: #64748b; color: #fff; }
 }
+
+.tab-label.closed {
+    opacity: 0.72;
+    text-decoration: none;
+    position: relative;
+}
+.tab-label.closed::after {
+    content: ' ✓';
+    font-weight: 700;
+    opacity: 0.85;
+}
+.tab-label.year-closed-mark {
+    background: #94a3b8;
+    color: #0f172a;
+}
+.close-toggle {
+    border: 1px solid #94a3b8;
+    background: #f8fafc;
+    color: #0f172a;
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.close-toggle:hover { background: #e2e8f0; }
+.close-toggle.is-closed {
+    background: #cbd5e1;
+    border-color: #64748b;
+}
+@media (prefers-color-scheme: dark) {
+    .tab-label.closed { opacity: 0.8; }
+    .close-toggle { background: #3f3f46; color: #f4f4f5; border-color: #71717a; }
+    .close-toggle.is-closed { background: #52525b; }
+    .closed-badge { background: #475569; color: #f8fafc; border-color: #64748b; }
+}
