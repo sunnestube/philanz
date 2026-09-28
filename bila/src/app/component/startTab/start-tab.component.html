@@ -1,6 +1,9 @@
 <section class="start-tab">
     <h2>Start — Saldi Vorjahr</h2>
     <p>Anfangssaldi pro Person und Konto. Sie fliessen in die laufenden Saldo-Spalten und ins Jahrestotal.</p>
+    @if (workbook.isYearClosed()) {
+        <p class="closed-note">Jahr abgeschlossen — Startwerte nur lesen.</p>
+    }
     <div class="start-scroll">
         <table class="start-grid">
             <thead>
@@ -21,6 +24,7 @@
                                 <input type="text"
                                        inputmode="decimal"
                                        [value]="display(person, account)"
+                                       [disabled]="workbook.isYearClosed()"
                                        (change)="onChange(person, account, $event)"
                                        aria-label="Start {{ person }} {{ account }}"/>
                             </td>

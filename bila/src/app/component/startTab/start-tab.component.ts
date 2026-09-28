@@ -18,6 +18,9 @@ export class StartTabComponent {
     }
 
     onChange(person: string, account: string, event: Event): void {
+        if (this.workbook.isYearClosed()) {
+            return;
+        }
         const raw = (event.target as HTMLInputElement).value.trim().replace("'", '').replace(',', '.');
         const value = raw === '' ? 0 : Number(raw);
         this.workbook.setOpening(person, account, Number.isFinite(value) ? value : 0);
