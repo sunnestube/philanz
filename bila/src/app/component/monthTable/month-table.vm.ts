@@ -45,10 +45,10 @@ export function cssTypeOf(type: string): string {
     return String(type).split('_')[0];
 }
 
-export function formatSaldo(value: number): string {
+export function formatSaldo(value: number, digits = 2): string {
     return value.toLocaleString('de-CH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
     });
 }
 
@@ -77,7 +77,8 @@ export function saldoColViews(combos: SaldoCombo[], titleOf: (combo: SaldoCombo)
 export function saldoCellView(
     col: SaldoColView,
     value: number,
-    delta: number
+    delta: number,
+    format: (amount: number) => string = formatSaldo
 ): SaldoCellView {
     return {
         ...col,
@@ -87,6 +88,6 @@ export function saldoCellView(
         down: delta < 0,
         neg: value < 0,
         zero: value === 0,
-        text: formatSaldo(value)
+        text: format(value)
     };
 }
