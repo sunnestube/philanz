@@ -11,9 +11,11 @@ import {MonthCell} from '../../../model/MonthCell';
     host: {
         '[class]': 'hostClass()',
         '[attr.data-ref]': 'refColor()',
-        '(mousedown)': 'cellMouseDown.emit($event)',
-        '(mouseenter)': 'cellEnter.emit()',
-        '(dblclick)': 'cellDblClick.emit()'
+        '[class.readonly]': 'isReadonly()',
+        '[attr.aria-readonly]': 'isReadonly() || null',
+        '(mousedown)': 'onHostMouseDown($event)',
+        '(mouseenter)': 'onHostEnter()',
+        '(dblclick)': 'onHostDblClick()'
     }
 })
 export class MonthTableCellComponent {
@@ -30,6 +32,7 @@ export class MonthTableCellComponent {
     readonly options = input<string[]>([]);
     readonly rowIndex = input(0);
     readonly selected = input(false);
+    readonly isReadonly = input(false);
     readonly cellMouseDown = output<MouseEvent>();
     readonly cellEnter = output();
     readonly cellDblClick = output();
@@ -58,8 +61,27 @@ export class MonthTableCellComponent {
             this.isFormula() ? 'formula' : '',
             this.editing() ? 'editing' : '',
             this.refTarget() ? 'ref-target' : '',
-            this.selected() ? 'selected' : ''
+            this.selected() ? 'selected' : '',
+            this.isReadonly() ? 'readonly' : ''
         ].filter(Boolean).join(' ');
+    }
+
+    onHostMouseDown(event: MouseEvent): void {
+        if (!this.isReadonly()) {
+            this.cellMouseDown.emit(event);
+        }
+    }
+
+    onHostEnter(): void {
+        if (!this.isReadonly()) {
+            this.cellEnter.emit();
+        }
+    }
+
+    onHostDblClick(): void {
+        if (!this.isReadonly()) {
+            this.cellDblClick.emit();
+        }
     }
 
     onSelectArrowDown(event: KeyboardEvent): void {
@@ -69,8 +91,29 @@ export class MonthTableCellComponent {
     }
 
     onSelectArrowUp(event: KeyboardEvent): void {
+        if (this.isReadonly()) {
+            return;
+        }
         if (event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End') {
             this.selectNavigate.emit(event);
+        }
+    }
+
+    onReadFocus(): void {
+        if (!this.isReadonly()) {
+            this.valueFocus.emit();
+        }
+    }
+
+    onReadKeydown(event: KeyboardEvent): void {
+        if (!this.isReadonly()) {
+            this.valueKeydown.emit(event);
+        }
+    }
+
+    onReadPaste(event: ClipboardEvent): void {
+        if (!this.isReadonly()) {
+            this.paste.emit(event);
         }
     }
 }
