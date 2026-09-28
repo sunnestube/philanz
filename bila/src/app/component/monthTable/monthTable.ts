@@ -20,8 +20,10 @@ import {MonthTableSaldo} from './month-table-saldo';
 
 /** Must match `.data-table tbody tr { height }` in monthTable.css — prior virt used 20 and drifted. */
 const ROW_HEIGHT = 18;
-const VIEW_OVERSCAN = 8;
-const VIEW_SIZE = 64;
+/** Extra rows above/below the viewport — low values blank the pane on fast scroll. */
+const VIEW_OVERSCAN = 16;
+/** Floor when scroller not measured yet. Actual window is dynamic (see viewSize). */
+const VIEW_SIZE_MIN = 48;
 
 @Component({
     selector: 'bal-month-table',
@@ -84,14 +86,34 @@ export class MonthTable implements OnDestroy {
             }
             this.ensureRowVisible(row);
         };
-        // beforeFocus is installed only while [active]=true (see setter) so
-        // background-warmed months do not steal the navigation hook.
-        zone.runOutsideAngular(() => {
+        // Document listeners attach only while [active]=true — warming all 12 months
+        // must not stack 12× pointer/keydown handlers (MaxListenersExceededWarning risk).
+    }
+
+    private windowListening = false;
+
+    private attachWindowListeners(): void {
+        if (this.windowListening) {
+            return;
+        }
+        this.windowListening = true;
+        this.zone.runOutsideAngular(() => {
             document.addEventListener('pointermove', this.onWindowPanMove, {passive: false});
             document.addEventListener('pointerup', this.onWindowPanEnd);
             document.addEventListener('pointercancel', this.onWindowPanEnd);
             document.addEventListener('keydown', this.onWindowEscape);
         });
+    }
+
+    private detachWindowListeners(): void {
+        if (!this.windowListening) {
+            return;
+        }
+        this.windowListening = false;
+        document.removeEventListener('pointermove', this.onWindowPanMove);
+        document.removeEventListener('pointerup', this.onWindowPanEnd);
+        document.removeEventListener('pointercancel', this.onWindowPanEnd);
+        document.removeEventListener('keydown', this.onWindowEscape);
     }
 
     private readonly onWindowPanMove = (event: PointerEvent) => this.pointer.onPanMove(event);
@@ -139,21 +161,20 @@ export class MonthTable implements OnDestroy {
     set active(value: boolean) {
         if (value) {
             TableNavigationService.beforeFocus = this.navHook;
+            this.attachWindowListeners();
             this.cdr.reattach();
             this.cdr.markForCheck();
         } else {
             if (TableNavigationService.beforeFocus === this.navHook) {
                 TableNavigationService.beforeFocus = null;
             }
+            this.detachWindowListeners();
             this.cdr.detach();
         }
     }
 
     ngOnDestroy(): void {
-        document.removeEventListener('pointermove', this.onWindowPanMove);
-        document.removeEventListener('pointerup', this.onWindowPanEnd);
-        document.removeEventListener('pointercancel', this.onWindowPanEnd);
-        document.removeEventListener('keydown', this.onWindowEscape);
+        this.detachWindowListeners();
         if (TableNavigationService.beforeFocus === this.navHook) {
             TableNavigationService.beforeFocus = null;
         }
@@ -176,10 +197,22 @@ export class MonthTable implements OnDestroy {
         return saldoColViews(this.saldo.combos(), (combo) => this.workbook.saldoTitleFor(combo));
     }
 
+    /**
+     * Rows needed to cover the scroller plus overscan.
+     * Fixed VIEW_SIZE=64 blanked tall viewports (content "disappeared" while scrolling).
+     */
+    private viewSize(): number {
+        const height = this.scroller?.nativeElement.clientHeight ?? 0;
+        if (height <= 0) {
+            return VIEW_SIZE_MIN + VIEW_OVERSCAN * 2;
+        }
+        return Math.max(VIEW_SIZE_MIN, Math.ceil(height / ROW_HEIGHT) + VIEW_OVERSCAN * 2);
+    }
+
     /** Visible slice only — track by row object so scroll does not churn identities. */
     viewRows(): MonthRow[] {
         const rows = this.month?.rows ?? [];
-        return rows.slice(this.viewStart, this.viewStart + VIEW_SIZE);
+        return rows.slice(this.viewStart, this.viewStart + this.viewSize());
     }
 
     padTop(): number {
@@ -188,7 +221,7 @@ export class MonthTable implements OnDestroy {
 
     padBottom(): number {
         const total = this.month?.rows.length ?? 0;
-        return Math.max(0, total - this.viewStart - VIEW_SIZE) * ROW_HEIGHT;
+        return Math.max(0, total - this.viewStart - this.viewSize()) * ROW_HEIGHT;
     }
 
     onTableScroll(): void {
@@ -296,7 +329,7 @@ export class MonthTable implements OnDestroy {
             const row = this.month?.rows[rowIndex];
             const day = this.workbook.fx.dayIndexForRow(this.month, row);
             const converted = this.workbook.fx.toDisplay(amount, day);
-            return converted.toLocaleString('de-CH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            return this.workbook.fx.formatAmount(converted);
         }
         return value;
     }
@@ -326,7 +359,10 @@ export class MonthTable implements OnDestroy {
 
     private syncViewFromScroll(forceDetect = false): void {
         const top = this.scroller?.nativeElement.scrollTop ?? 0;
-        const next = Math.max(0, Math.floor(top / ROW_HEIGHT) - VIEW_OVERSCAN);
+        const total = this.month?.rows.length ?? 0;
+        const size = this.viewSize();
+        const maxStart = Math.max(0, total - size);
+        const next = Math.min(maxStart, Math.max(0, Math.floor(top / ROW_HEIGHT) - VIEW_OVERSCAN));
         if (next === this.viewStart) {
             if (forceDetect) {
                 this.cdr.detectChanges();
