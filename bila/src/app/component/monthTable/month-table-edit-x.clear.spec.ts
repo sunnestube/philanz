@@ -14,6 +14,7 @@ describe('MonthTableEditX clear + keyboard range', () => {
     let formula: FormulaService;
     let month: Month;
     let edit: MonthTableEditX;
+    let workbook: WorkbookService;
 
     beforeEach(() => {
         formula = new FormulaService();
@@ -35,7 +36,7 @@ describe('MonthTableEditX clear + keyboard range', () => {
             month.rows.push(row);
         }
         formula.setMonths([month]);
-        const workbook = {touch: vi.fn(), history: new TableHistoryService()} as unknown as WorkbookService;
+        workbook = {touch: vi.fn(), history: new TableHistoryService()} as unknown as WorkbookService;
         edit = new MonthTableEditX(formula, workbook, () => month, () => undefined, () => undefined);
     });
 
@@ -62,5 +63,52 @@ describe('MonthTableEditX clear + keyboard range', () => {
         expect(edit.range.row1).toBe(1);
         expect(edit.range.col0).toBe(1);
         expect(edit.range.col1).toBe(1);
+    });
+
+    it('clears ~200 rows off-screen as one undo step (virtualization-safe)', () => {
+        while (month.rows.length < 200) {
+            const i = month.rows.length;
+            const row = new MonthRow(i, month.columns);
+            row.cells[0].raw = String(i);
+            row.cells[1].raw = `v${i}`;
+            row.cells[2].raw = `=A${i + 1}`;
+            row.cells[3].raw = 'P';
+            row.cells[3].value = 'P';
+            row.color = 'p';
+            month.rows.push(row);
+        }
+        formula.setMonths([month]);
+        edit.range.reset(0, 1);
+        edit.range.extend(199, 2);
+        expect(edit.range.row0).toBe(0);
+        expect(edit.range.row1).toBe(199);
+
+        const event = new KeyboardEvent('keydown', {key: 'Delete'});
+        edit.onKeydown(event, 0, 1, month.rows[0].cells[1]);
+
+        for (let i = 0; i < 200; i++) {
+            expect(month.rows[i].cells[1].raw).toBe('');
+            expect(month.rows[i].cells[2].raw).toBe('');
+            expect(month.rows[i].cells[3].raw).toBe('P');
+        }
+        expect(workbook.history.canUndo(month.label.title)).toBe(true);
+        expect(workbook.history.undo(month)).toBe(true);
+        expect(month.rows[0].cells[1].raw).toBe('v0');
+        expect(month.rows[199].cells[1].raw).toBe('v199');
+        expect(month.rows[100].cells[2].raw).toBe('=A101');
+    });
+
+    it('Ctrl+A selects all editable rows for bulk clear', () => {
+        while (month.rows.length < 50) {
+            const i = month.rows.length;
+            const row = new MonthRow(i, month.columns);
+            row.cells[1].raw = `x${i}`;
+            month.rows.push(row);
+        }
+        edit.range.focusCell = () => undefined;
+        const event = new KeyboardEvent('keydown', {key: 'a', ctrlKey: true});
+        edit.onKeydown(event, 0, 1, month.rows[0].cells[1]);
+        expect(edit.range.row0).toBe(0);
+        expect(edit.range.row1).toBe(month.rows.length - 1);
     });
 });
