@@ -1,1 +1,166 @@
-PLACEHOLDER
+signal<string[]>(['', 'P', 'L', 'H', 'E', 'A']);
+    readonly accounts = signal<string[]>(['', 'B', 'K', 'S', 'R', 'Y', 'T']);
+    readonly personNames = signal<Record<string, string>>({});
+    readonly accountNames = signal<Record<string, string>>({});
+    readonly headerRowHeight = signal(84);
+    readonly textColWidth = signal(160);
+    readonly constants = signal<ConstantDef[]>([WorkbookService.emptyConstant('Miete')]);
+    /** Month titles marked completed (readonly). Year flag closes all months. */
+    readonly closedMonths = signal<string[]>([]);
+    readonly yearClosed = signal(false);
+
+    readonly personCodes = computed(() => this.persons().filter((code) => !!code));
+    readonly accountCodes = computed(() => this.accounts().filter((code) => !!code));
+    readonly saldoCombos = computed((): SaldoCombo[] => {
+        const combos: SaldoCombo[] = [];
+        this.personCodes().forEach((person) => {
+            this.accountCodes().forEach((account) => {
+                combos.push({
+                    person,
+                    account,
+                    key: `${person}|${account}`
+                });
+            });
+        });
+        return combos;
+    });
+
+    constructor(
+        private readonly formulaService: FormulaService,
+        readonly history: TableHistoryService,
+        readonly fx: CurrencyFxService
+    ) {
+        this.restoreSettings();
+    }
+
+    setMonths(months: Month[]): void {
+        const prevView = this.view();
+        const prevTitle = this.selectedMonth()?.label.title;
+        this.reindexCells(months);
+        this.months.set(months);
+        const match = prevTitle
+            ? months.find((month) => month.label.title === prevTitle)
+            : undefined;
+        this.selectedMonth.set(match ?? months[0] ?? null);
+        if (prevView === 'csv') {
+            this.view.set(months.length ? 'month' : 'start');
+        } else if (prevView === 'month') {
+            this.view.set(months.length ? 'month' : 'start');
+        } else if (prevView) {
+            this.view.set(prevView);
+        } else {
+            this.view.set(months.length ? 'month' : 'start');
+        }
+        this.formulaService.setMonths(months);
+        this.touch();
+    }
+
+    selectMonth(month: Month): void {
+        this.selectedMonth.set(month);
+    }
+
+    setView(view: YearView): void {
+        this.view.set(view);
+    }
+
+    toggleSaldoColumns(): void {
+        this.saldoColumnsOpen.update((value) => !value);
+        this.persistSettings();
+    }
+
+    toggleSaldoPanel(): void {
+        this.saldoPanelOpen.update((value) => !value);
+        this.persistSettings();
+    }
+
+    isYearClosed(): boolean {
+        return this.yearClosed();
+    }
+
+    isMonthClosed(title: string | null | undefined): boolean {
+        if (this.yearClosed()) {
+            return true;
+        }
+        const key = (title || '').trim();
+        return !!key && this.closedMonths().includes(key);
+    }
+
+    setMonthClosed(title: string, closed: boolean): void {
+        const key = title.trim();
+        if (!key) {
+            return;
+        }
+        this.closedMonths.update((list) => {
+            const has = list.includes(key);
+            if (closed && !has) {
+                return [...list, key];
+            }
+            if (!closed && has) {
+                return list.filter((item) => item !== key);
+            }
+            return list;
+        });
+        this.persistClosed();
+    }
+
+    setYearClosed(closed: boolean): void {
+        this.yearClosed.set(!!closed);
+        this.persistClosed();
+    }
+
+    toggleMonthClosed(title: string): void {
+        const key = title.trim();
+        if (!key) {
+            return;
+        }
+        if (this.yearClosed()) {
+            // Year overrides months: reopen year and ensure this month is open.
+            this.yearClosed.set(false);
+            this.closedMonths.update((list) => list.filter((item) => item !== key));
+            this.persistClosed();
+            return;
+        }
+        this.setMonthClosed(key, !this.closedMonths().includes(key));
+    }
+
+    toggleYearClosed(): void {
+        this.setYearClosed(!this.yearClosed());
+    }
+
+    private persistClosed(): void {
+        this.persistSettings();
+        this.touch();
+    }
+
+    visibleSaldoCombos(): SaldoCombo[] {
+        const prefs = this.saldoColumnPrefs();
+        return this.saldoCombos().filter((combo) => prefs[combo.key]?.visible !== false);
+    }
+
+    personLabel(code: string): string {
+        const clean = (code || '').trim();
+        if (!clean) {
+            return '';
+        }
+        const name = (this.personNames()[clean.toUpperCase()] || '').trim();
+        return name || clean.toUpperCase();
+    }
+
+    accountLabel(code: string): string {
+        const clean = (code || '').trim();
+        if (!clean) {
+            return '';
+        }
+        const name = (this.accountNames()[clean.toUpperCase()] || '').trim();
+        return name || clean.toUpperCase();
+    }
+
+    optionLabel(kind: 'person' | 'account', code: string): string {
+        if (!code) {
+            return '';
+        }
+        const label = kind === 'person' ? this.personLabel(code) : this.accountLabel(code);
+        return label === code ? code : `${code} · ${label}`;
+    }
+
+    setCodeName(kind: 'person' | 'account', code: string, name: string): 
