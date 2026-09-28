@@ -15,7 +15,7 @@
     height: 100%;
 }
 h2 { margin: 0 0 6px; }
-p { margin: 0 0 12px; color: #475569; font-size: 13px; }
+p { margin: 0 0 12px; color: #334155; font-size: 13px; }
 .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
 .card {
     background: #fff;
@@ -24,7 +24,7 @@ p { margin: 0 0 12px; color: #475569; font-size: 13px; }
     padding: 8px 12px;
     min-width: 140px;
 }
-.card span { display: block; font-size: 11px; color: #64748b; }
+.card span { display: block; font-size: 11px; color: #334155; }
 .card strong { font-size: 16px; font-weight: 500; }
 .total-scroll {
     flex: 1 1 auto;
@@ -125,3 +125,37 @@ tr.person-a td, tr.person-a th,
 tr.person-e td, tr.person-e th { background: #ffedd5; }
 tr.sum td, tr.sum th { background: #ecfeff; }
 tr.summary td, tr.summary th { background: #f1f5f9; font-weight: 600; }
+
+/* Explicit ink on every cell — avoids light-gray inheritance from global dark rules. */
+.year-total h2,
+.year-total strong,
+.year-total th,
+.year-total td {
+    color: #0f172a;
+}
+.card span { color: #334155; }
+p { color: #334155; }
+
+@media (prefers-color-scheme: dark) {
+    /* Total pane stays a light worksheet (like Month) so sticky headers/contrast stay readable. */
+    .year-total { color: #0f172a; }
+    .year-total h2,
+    .year-total strong,
+    .year-total th,
+    .year-total td { color: #0f172a; }
+    p, .card span { color: #334155; }
+    .card { background: #fff; border-color: #94a3b8; }
+    .total-scroll { background: #fff; }
+    th, td { background: #fff; border-color: #94a3b8; }
+    thead th { background: #e2e8f0; }
+    thead th.income { background: #dcfce7; }
+    .sticky-col { background: #f1f5f9; }
+    tr.person-p td, tr.person-p th { background: #dbeafe; }
+    tr.person-l td, tr.person-l th { background: #e0e7ff; }
+    tr.person-h td, tr.person-h th { background: #fef3c7; }
+    tr.person-a td, tr.person-a th,
+    tr.person-e td, tr.person-e th { background: #ffedd5; }
+    tr.sum td, tr.sum th { background: #ecfeff; }
+    tr.summary td, tr.summary th { background: #e2e8f0; }
+    tr.yoy td, tr.yoy th { background: #f8fafc; color: #0f172a; }
+}
