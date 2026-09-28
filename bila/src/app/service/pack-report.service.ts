@@ -98,6 +98,14 @@ export class PackReportService {
             }
             try {
                 this.workbook.applyCsv(csv);
+                // If CSV has no calendar year, derive from archive id so FX dayIndex matches that year.
+                const yearNum = parseInt(item.id, 10);
+                if (Number.isFinite(yearNum) && this.workbook.fx.calendarYear() !== yearNum) {
+                    const hasFxMeta = /(?:^|\n)#fx:/.test(csv) || /calendarYear/.test(csv);
+                    if (!hasFxMeta) {
+                        this.workbook.fx.setCalendarYear(yearNum);
+                    }
+                }
                 slices.push(this.sliceOf(item.id, item.name));
             } catch {
                 // skip broken year
@@ -133,7 +141,8 @@ export class PackReportService {
         const persons = new Set<string>();
         slices.forEach((slice) => {
             (slice.report.columns || []).forEach((col) => {
-                const key = col.key || `${col.title}:${col.index}`;
+                // Prefer section::index::title from year-total; legacy title:index still accepted.
+                const key = col.key || `${col.section || 'A'}::${col.index}::${col.title}`;
                 if (!columns.has(key)) {
                     columns.set(key, {...col, key});
                 }
@@ -149,13 +158,19 @@ export class PackReportService {
                 const byPerson: Record<string, Record<string, number>> = {};
                 const personTotal: Record<string, number> = {};
                 colList.forEach((col) => {
-                    byColumn[col.key] = block.byColumn[col.key] ?? block.byColumn[col.title] ?? 0;
+                    const legacy = `${col.title}:${col.index}`;
+                    byColumn[col.key] = block.byColumn[col.key]
+                        ?? block.byColumn[col.title]
+                        ?? block.byColumn[legacy]
+                        ?? 0;
                 });
                 personList.forEach((person) => {
                     byPerson[person] = {};
                     colList.forEach((col) => {
+                        const legacy = `${col.title}:${col.index}`;
                         byPerson[person][col.key] = block.byPerson[person]?.[col.key]
                             ?? block.byPerson[person]?.[col.title]
+                            ?? block.byPerson[person]?.[legacy]
                             ?? 0;
                     });
                     personTotal[person] = block.personTotal[person] ?? 0;
