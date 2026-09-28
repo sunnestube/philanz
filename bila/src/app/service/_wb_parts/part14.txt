@@ -16,7 +16,9 @@
             constants: this.constants(),
             fx: this.fx.snapshot(),
             displayCurrency: this.fx.displayCurrency(),
-            calendarYear: this.fx.calendarYear()
+            calendarYear: this.fx.calendarYear(),
+            closedMonths: this.closedMonths(),
+            yearClosed: this.yearClosed()
         }));
     }
 
@@ -40,6 +42,8 @@
                 fx?: unknown;
                 displayCurrency?: string;
                 calendarYear?: number;
+                closedMonths?: string[];
+                yearClosed?: boolean;
             };
             if (Array.isArray(parsed.person)) {
                 this.persons.set(this.normalizeCodes(parsed.person));
