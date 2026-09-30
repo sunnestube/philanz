@@ -45,3 +45,6 @@
         (paste)="onReadPaste($event)"
     >{{ display() }}</span>
 }
+@if (fillHandle()) {
+    <span class="fill-handle" title="Ziehen zum Füllen" (pointerdown)="onFillDown($event)"></span>
+}

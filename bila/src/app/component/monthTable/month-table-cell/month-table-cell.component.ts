@@ -12,6 +12,9 @@ import {MonthCell} from '../../../model/MonthCell';
         '[class]': 'hostClass()',
         '[attr.data-ref]': 'refColor()',
         '[class.readonly]': 'isReadonly()',
+        '[class.fill-anchor]': 'fillHandle()',
+        '[attr.data-row]': 'rowIndex()',
+        '[attr.data-col]': 'cell().columnIndex',
         '[attr.aria-readonly]': 'isReadonly() || null',
         '(mousedown)': 'onHostMouseDown($event)',
         '(mouseenter)': 'onHostEnter()',
@@ -33,6 +36,7 @@ export class MonthTableCellComponent {
     readonly rowIndex = input(0);
     readonly selected = input(false);
     readonly isReadonly = input(false);
+    readonly fillHandle = input(false);
     readonly cellMouseDown = output<MouseEvent>();
     readonly cellEnter = output();
     readonly cellDblClick = output();
@@ -44,6 +48,7 @@ export class MonthTableCellComponent {
     readonly valueKeydown = output<KeyboardEvent>();
     readonly copy = output<ClipboardEvent>();
     readonly paste = output<ClipboardEvent>();
+    readonly fillStart = output<PointerEvent>();
     private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
 
     constructor() {
@@ -115,5 +120,11 @@ export class MonthTableCellComponent {
         if (!this.isReadonly()) {
             this.paste.emit(event);
         }
+    }
+
+    onFillDown(event: PointerEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.fillStart.emit(event);
     }
 }
