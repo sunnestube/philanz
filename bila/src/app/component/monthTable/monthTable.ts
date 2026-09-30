@@ -49,7 +49,6 @@ export class MonthTable implements OnDestroy {
     private personOptions: string[] = [''];
     private accountOptions: string[] = [''];
     private optionRev = -1;
-    /** First data-row index rendered in the virtual window. */
     viewStart = 0;
     private scrollTick = 0;
     private navHook: ((monthTitle: string, row: number, col: number) => void) | null = null;
@@ -77,7 +76,6 @@ export class MonthTable implements OnDestroy {
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
         this.edit.range.beforeFocus = (row) => this.ensureRowVisible(row);
-        // Range lives outside signals — bump OnPush so Ctrl+A / drag / Shift paint .selected.
         this.edit.onRangeMutated = () => {
             this.zone.run(() => this.cdr.markForCheck());
         };
@@ -90,8 +88,6 @@ export class MonthTable implements OnDestroy {
             }
             this.ensureRowVisible(row);
         };
-        // Document listeners attach only while [active]=true — warming all 12 months
-        // must not stack 12× pointer/keydown handlers (MaxListenersExceededWarning risk).
         effect(() => {
             this.workbook.closedMonths();
             this.workbook.yearClosed();
@@ -128,8 +124,21 @@ export class MonthTable implements OnDestroy {
         document.removeEventListener('keydown', this.onWindowEscape);
     }
 
-    private readonly onWindowPanMove = (event: PointerEvent) => this.pointer.onPanMove(event);
+    private fillActive = false;
+    private fillFrom: {row: number; col: number} | null = null;
+    private fillTo: {row: number; col: number} | null = null;
+
+    private readonly onWindowPanMove = (event: PointerEvent) => {
+        if (this.fillActive) {
+            this.onFillMove(event);
+            return;
+        }
+        this.pointer.onPanMove(event);
+    };
     private readonly onWindowPanEnd = () => {
+        if (this.fillActive) {
+            this.commitFill();
+        }
         this.pointer.onPanEnd();
         this.edit.endDrag();
     };
@@ -193,11 +202,81 @@ export class MonthTable implements OnDestroy {
         }
     }
 
+    isFillAnchor(rowIndex: number, colIndex: number): boolean {
+        return !this.isClosed()
+            && this.edit.editingRow === rowIndex
+            && this.edit.editingCol === colIndex;
+    }
+
+    onFillStart(event: PointerEvent, rowIndex: number, colIndex: number): void {
+        if (this.isClosed()) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        this.fillActive = true;
+        this.fillFrom = {row: rowIndex, col: colIndex};
+        this.fillTo = {row: rowIndex, col: colIndex};
+        this.edit.range.reset(rowIndex, colIndex);
+        this.edit.range.dragging = true;
+        this.cdr.markForCheck();
+    }
+
+    private onFillMove(event: PointerEvent): void {
+        const hit = this.hitCell(event);
+        if (!hit || !this.fillFrom) {
+            return;
+        }
+        if (this.fillTo && this.fillTo.row === hit.row && this.fillTo.col === hit.col) {
+            return;
+        }
+        this.fillTo = hit;
+        this.zone.run(() => {
+            this.edit.range.anchorRow = this.fillFrom!.row;
+            this.edit.range.anchorCol = this.fillFrom!.col;
+            this.edit.range.extend(hit.row, hit.col);
+            this.edit.range.dragging = true;
+            this.ensureRowVisible(hit.row);
+            this.cdr.markForCheck();
+        });
+    }
+
+    private commitFill(): void {
+        const from = this.fillFrom;
+        const to = this.fillTo;
+        this.fillActive = false;
+        this.fillFrom = null;
+        this.fillTo = null;
+        this.edit.range.dragging = false;
+        if (!from || !to || (from.row === to.row && from.col === to.col)) {
+            this.cdr.markForCheck();
+            return;
+        }
+        this.zone.run(() => {
+            this.edit.fillRange(from.row, from.col, to.row, to.col);
+            this.edit.range.reset(from.row, from.col);
+            this.cdr.markForCheck();
+        });
+    }
+
+    private hitCell(event: PointerEvent): {row: number; col: number} | null {
+        const el = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+        const td = el?.closest?.('td[data-row]') as HTMLElement | null;
+        if (!td?.dataset?.['row'] || td.dataset['col'] == null) {
+            return null;
+        }
+        const row = Number(td.dataset['row']);
+        const col = Number(td.dataset['col']);
+        if (!Number.isFinite(row) || !Number.isFinite(col)) {
+            return null;
+        }
+        return {row, col};
+    }
+
     isClosed(): boolean {
         return this.workbook.isMonthClosed(this._month?.label.title);
     }
 
-    /** Attach edit listeners only while active and not closed. */
     private syncWindowListeners(): void {
         if (this._active && !this.isClosed()) {
             this.attachWindowListeners();
