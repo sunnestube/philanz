@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {PackMonthBlock, PackReportService} from './pack-report.service';
 import {WorkbookService} from './workbook.service';
@@ -65,12 +65,11 @@ describe('PackReportService multi-year totals', () => {
             expect(report!.summaryRows[0].byColumn[col.key]).toBeGreaterThan(0);
         }
 
-        // YoY compare present for overlapping calendar months
         expect(report!.compares.length).toBeGreaterThan(0);
         const months = report!.months as PackMonthBlock[];
         const jan = months.find((block) => block.year === '2025' && block.monthKey === 'Jan');
         expect(jan?.compare).toBeTruthy();
-        expect(jan!.compare!.total).toBeCloseTo(120, 5); // (200+60) - (100+40)
+        expect(jan!.compare!.total).toBeCloseTo(120, 5);
     });
 
     it('converts pack Set totals when display currency switches', () => {
@@ -83,6 +82,19 @@ describe('PackReportService multi-year totals', () => {
 
         workbook.fx.setDisplayCurrency('EUR');
         pack.refresh();
-        expect(pack.report()!.yearExpense).toBeCloseTo(200, 5); // 95/0.95 * 2
+        expect(pack.report()!.yearExpense).toBeCloseTo(200, 5);
+    });
+
+    it('opening Total/Graf refresh stays finite and does not save the archive', () => {
+        // Hang scenario 22.09: collect() called archive.save(), years() retriggered the effect.
+        archive.save('2024', yearCsv('10,00', '1,00'));
+        archive.save('2025', yearCsv('20,00', '2,00'));
+        const save = vi.spyOn(archive, 'save');
+        for (let i = 0; i < 8; i++) {
+            pack.refresh();
+        }
+        expect(save).not.toHaveBeenCalled();
+        expect(pack.report()).toBeTruthy();
+        expect(pack.charts()).toBeTruthy();
     });
 });
