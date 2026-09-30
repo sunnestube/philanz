@@ -20,7 +20,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         this.refPickMode = false;
         this.liveEdit = false;
         const row = this.monthOf()?.rows[rowIndex];
-        // Select binds ngModel to cell.value — baseline must match that, not stale raw.
         const baselineRaw = cell.type.id.indexOf('select') !== -1
             ? (cell.value ?? cell.raw ?? '')
             : (cell.raw ?? '');
@@ -47,7 +46,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         const month = this.monthOf();
         if (changed && month) {
             const history = this.workbook.history;
-            // liveEdit / formula bar already mutate cell.raw — restore pre-edit for before.
             const beforeColors = history.captureColors(month, [row]);
             cell.raw = next;
             history.push({
@@ -116,7 +114,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         if (!options.includes(cell.value)) {
             cell.value = '';
         }
-        // Keep raw in sync with value so history patches restore the select correctly.
         cell.raw = cell.value ?? '';
         if (cell.type.id === CELL_TYPE.select_person) {
             row.color = (cell.value || '').toLowerCase();
@@ -131,7 +128,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         const origin = this.formulaService.pasteSource(tsv);
         const coords: Array<{row: number; col: number}> = [];
         const colorRows: number[] = [];
-        // Same adjust path as single pasteFormula: origin + adjustFormula, else leave raw.
         this.workbook.history.record(month, coords, colorRows, () => {
             grid.forEach((line, rowOffset) => {
                 const rowIndex = startRow + rowOffset;
@@ -145,7 +141,6 @@ export class MonthTableEdit extends MonthTableEditCore {
                     if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
                         return;
                     }
-                    // Note coord *before* write so record() snapshots pre-state.
                     coords.push({row: rowIndex, col: colIndex});
                     if (this.formulaService.isFormula(value) && origin) {
                         target.raw = this.formulaService.adjustFormula(
@@ -175,10 +170,57 @@ export class MonthTableEdit extends MonthTableEditCore {
         queueMicrotask(() => { this.suppressCommit = false; });
     }
     /**
-     * App undo/redo when not typing in an input/formula field.
-     * While the cell input or formula-bar has focus, Ctrl/Cmd+Z uses native field undo.
-     * Redo: Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z (both supported).
+     * Excel-style fill from the active cell to an inclusive rectangle.
+     * Values copy; formulas adjust relative to the source cell ($ stays absolute).
+     * One history entry covers the whole fill.
      */
+    fillRange(fromRow: number, fromCol: number, toRow: number, toCol: number): void {
+        if (this.isClosed()) {
+            return;
+        }
+        const month = this.monthOf();
+        const source = month?.rows[fromRow]?.cells[fromCol];
+        if (!month || !source || source.type.id === CELL_TYPE.index || source.type.id === CELL_TYPE.none) {
+            return;
+        }
+        const raw = source.raw ?? '';
+        const r0 = Math.min(fromRow, toRow);
+        const r1 = Math.max(fromRow, toRow);
+        const c0 = Math.min(fromCol, toCol);
+        const c1 = Math.max(fromCol, toCol);
+        const coords: Array<{row: number; col: number}> = [];
+        const colorRows: number[] = [];
+        this.workbook.history.record(month, coords, colorRows, () => {
+            for (let rowIndex = r0; rowIndex <= r1; rowIndex++) {
+                while (month.rows.length <= rowIndex) {
+                    this.appendEmptyRow(month);
+                }
+                colorRows.push(rowIndex);
+                for (let colIndex = c0; colIndex <= c1; colIndex++) {
+                    if (rowIndex === fromRow && colIndex === fromCol) {
+                        continue;
+                    }
+                    const target = month.rows[rowIndex]?.cells[colIndex];
+                    if (!target || target.type.id === CELL_TYPE.none || target.type.id === CELL_TYPE.index) {
+                        continue;
+                    }
+                    coords.push({row: rowIndex, col: colIndex});
+                    const next = this.formulaService.isFormula(raw)
+                        ? this.formulaService.adjustFormula(raw, fromCol, fromRow, colIndex, rowIndex)
+                        : raw;
+                    target.raw = next;
+                    if (target.type.id.indexOf('select') !== -1) {
+                        target.value = next.trim().toUpperCase();
+                        this.applySelectSideEffects(target, month.rows[rowIndex], [target.value, '']);
+                    }
+                }
+            }
+        });
+        this.suppressCommit = true;
+        this.formulaService.recalculateAll();
+        this.workbook.touch();
+        queueMicrotask(() => { this.suppressCommit = false; });
+    }
     protected handleHistoryKeys(event: KeyboardEvent): boolean {
         if (this.isClosed()) {
             return false;
@@ -186,7 +228,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         if (!(event.ctrlKey || event.metaKey)) {
             return false;
         }
-        // While caret is in an input/textarea, never steal Ctrl/Cmd+Z from native undo.
         if (event.target instanceof HTMLInputElement
             || event.target instanceof HTMLTextAreaElement) {
             return false;
@@ -206,7 +247,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         }
         return true;
     }
-    /** Select change after ngModel update — uses selectBaseline from selectCell. */
     recordSelectChange(cell: MonthCell, row: MonthRow, rowIndex: number, colIndex: number): void {
         if (this.isClosed()) {
             return;
@@ -216,7 +256,6 @@ export class MonthTableEdit extends MonthTableEditCore {
         if (!month || !baseline || baseline.row !== rowIndex || baseline.col !== colIndex) {
             return;
         }
-        // Prefer value (ngModel); applySelectSideEffects already synced raw.
         const afterRaw = cell.value ?? cell.raw ?? '';
         cell.raw = afterRaw;
         const afterColor = row.color ?? '';
