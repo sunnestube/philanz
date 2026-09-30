@@ -31,3 +31,41 @@ bal-month-table.month-closed .data-table td.readonly select:disabled {
     background: transparent;
     cursor: default;
 }
+
+.data-table td.index,
+.data-table th.index {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 3;
+}
+.data-table thead tr.letter-row th.index,
+.data-table thead tr.title-row th.index {
+    left: 0;
+    z-index: 8;
+    background: #f2f2f2;
+}
+.data-table tfoot td.index {
+    left: 0;
+    z-index: 8;
+    background: #e2e8f0;
+}
+td.fill-anchor { position: relative; }
+.fill-handle {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 7px;
+    height: 7px;
+    background: #2563eb;
+    border: 1px solid #fff;
+    cursor: crosshair;
+    z-index: 5;
+    touch-action: none;
+}
+@media (prefers-color-scheme: dark) {
+    .data-table td.index,
+    .data-table th.index { background: #f3f3f3; }
+    .data-table thead tr.letter-row th.index,
+    .data-table thead tr.title-row th.index { background: #e4e4e4; }
+}
