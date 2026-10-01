@@ -50,7 +50,11 @@ export class YearArchiveService {
         return localStorage.getItem(this.csvKey(id));
     }
 
-    save(name: string, csv: string): YearMeta {
+    /**
+     * Persist one year CSV + index/active/legacy. Does not rewrite the full pack
+     * (issue #31 autosave; pack rewrite stays on save()/export per #23).
+     */
+    saveYear(name: string, csv: string): YearMeta {
         const id = this.normalize(name);
         const list = this.years().filter((item) => item.id !== id);
         const meta: YearMeta = {id, name: id, updated: Date.now()};
@@ -62,6 +66,12 @@ export class YearArchiveService {
         this.writeIndex(list);
         this.years.set(list);
         this.activeId.set(id);
+        return meta;
+    }
+
+    /** Year write plus full pack rewrite (explicit save / import paths). */
+    save(name: string, csv: string): YearMeta {
+        const meta = this.saveYear(name, csv);
         this.rewritePack();
         return meta;
     }
