@@ -25,8 +25,12 @@ export class YearSetComponent {
         const active = this.archive.activeId();
         if (csv && active) {
             this.archive.save(active, csv);
-        } else {
-            this.archive.rewritePack();
+        }
+        this.archive.rewritePack();
+        const err = this.archive.storageError();
+        if (err) {
+            this.saveMessage = err;
+            return;
         }
         this.saveMessage = `Set mit ${this.archive.years().length} Jahr(en) im Browser gespeichert.`;
     }
