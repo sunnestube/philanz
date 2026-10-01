@@ -333,7 +333,7 @@ export class MonthTableEditX extends MonthTableEdit {
             }
         });
         this.draft = '';
-        this.refresh();
+        this.refresh(coords.length ? coords : undefined);
         queueMicrotask(() => { this.suppressCommit = false; });
     }
 }
