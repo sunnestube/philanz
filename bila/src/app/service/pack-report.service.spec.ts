@@ -16,6 +16,24 @@ function yearCsv(expense: string, income: string): string {
     ].join('\n');
 }
 
+/** ~36 data rows (12 months × 3) for multi-year refresh timing. */
+function fatYearCsv(expense: string, income: string): string {
+    const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const rows: string[] = [
+        '#persons:P',
+        '#accounts:B',
+        'Month::none;Line::index;Person::select_person;Text::text;Miete_A::number;Lohn_E::number'
+    ];
+    let line = 0;
+    for (const month of months) {
+        for (let r = 0; r < 3; r++) {
+            rows.push(`${month};${line};P;Zeile${line};${expense};${income}`);
+            line++;
+        }
+    }
+    return rows.join('\n');
+}
+
 describe('PackReportService multi-year totals', () => {
     let pack: PackReportService;
     let workbook: WorkbookService;
@@ -96,5 +114,63 @@ describe('PackReportService multi-year totals', () => {
         expect(save).not.toHaveBeenCalled();
         expect(pack.report()).toBeTruthy();
         expect(pack.charts()).toBeTruthy();
+    });
+
+    it('refresh leaves live workbook CSV, view and selectedMonth unchanged', () => {
+        archive.save('2024', yearCsv('100,00', '40,00'));
+        archive.save('2025', yearCsv('200,00', '60,00'));
+        workbook.applyCsv(yearCsv('200,00', '60,00'));
+        workbook.setView('total');
+        const monthTitle = workbook.selectedMonth()?.label.title;
+        const beforeCsv = workbook.toCsv();
+        const beforeView = workbook.view();
+        const applySpy = vi.spyOn(workbook, 'applyCsv');
+
+        pack.refresh();
+
+        expect(workbook.toCsv()).toBe(beforeCsv);
+        expect(workbook.view()).toBe(beforeView);
+        expect(workbook.selectedMonth()?.label.title).toBe(monthTitle);
+        expect(applySpy).not.toHaveBeenCalled();
+        expect(pack.report()).toBeTruthy();
+    });
+
+    it('cache stamp misses when two years share CSV length but differ in content', () => {
+        const a = yearCsv('100,00', '40,00');
+        const b = yearCsv('100,00', '41,00');
+        expect(a.length).toBe(b.length);
+
+        archive.save('2024', a);
+        archive.save('2025', yearCsv('200,00', '60,00'));
+        workbook.applyCsv(yearCsv('200,00', '60,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+        pack.refresh();
+        const firstIncome = pack.report()!.yearIncome;
+        const firstTotal = pack.report()!.summaryRows[0].total;
+
+        archive.save('2024', b);
+        pack.refresh();
+        const secondIncome = pack.report()!.yearIncome;
+        const secondTotal = pack.report()!.summaryRows[0].total;
+
+        expect(secondIncome).not.toBeCloseTo(firstIncome, 5);
+        expect(secondIncome).toBeCloseTo(firstIncome + 1, 5);
+        expect(secondTotal).toBeCloseTo(firstTotal + 1, 5);
+    });
+
+    it('refresh of 5 fat years finishes under 500ms', () => {
+        for (let year = 2020; year < 2025; year++) {
+            archive.save(String(year), fatYearCsv('10,00', '5,00'));
+        }
+        workbook.applyCsv(fatYearCsv('10,00', '5,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+
+        const t0 = performance.now();
+        pack.refresh();
+        const elapsed = performance.now() - t0;
+
+        expect(pack.report()).toBeTruthy();
+        expect(pack.report()!.months.length).toBeGreaterThanOrEqual(60);
+        expect(elapsed).toBeLessThan(500);
     });
 });
