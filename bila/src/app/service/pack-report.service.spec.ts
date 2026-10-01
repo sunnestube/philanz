@@ -97,4 +97,27 @@ describe('PackReportService multi-year totals', () => {
         expect(pack.report()).toBeTruthy();
         expect(pack.charts()).toBeTruthy();
     });
+
+    /**
+     * Timeout smoke (#26): second refresh must hit the stamp cache (≤ 50 ms)
+     * and must not rewrite the live workbook CSV.
+     * Artificial 2 s delay inside refresh() would fail this bound (red).
+     */
+    it('second PackReport.refresh is ≤50ms (cache) and live CSV unchanged', () => {
+        archive.save('2024', yearCsv('100,00', '40,00'));
+        archive.save('2025', yearCsv('200,00', '60,00'));
+        workbook.applyCsv(yearCsv('200,00', '60,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+        const liveBefore = workbook.toCsv();
+
+        pack.refresh();
+        expect(pack.report()).toBeTruthy();
+        expect(workbook.toCsv()).toBe(liveBefore);
+
+        const t0 = performance.now();
+        pack.refresh();
+        const elapsed = performance.now() - t0;
+        expect(elapsed).toBeLessThanOrEqual(50);
+        expect(workbook.toCsv()).toBe(liveBefore);
+    });
 });
