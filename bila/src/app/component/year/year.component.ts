@@ -96,9 +96,11 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     protected selectTab(month: Month): void {
-        this.ensureMonth(month);
         this.workbook.selectMonth(month);
         this.workbook.setView('month');
+        this.ensureMonth(month);
+        this.pruneMonthsToWindow();
+        this.scheduleWarm();
     }
 
     protected openView(view: YearView): void {
@@ -196,6 +198,7 @@ export class YearComponent implements OnInit, OnDestroy {
             this.ensureMonth(current);
         }
         this.ensureView(this.workbook.view());
+        this.pruneMonthsToWindow();
         this.scheduleWarm();
     }
 
@@ -226,6 +229,45 @@ export class YearComponent implements OnInit, OnDestroy {
         this.warmGen++;
     }
 
+    /** Keep at most active month ±1 mounted in the DOM. */
+    private monthWindowKeys(): Set<string> {
+        const months = this.workbook.months();
+        const selected = this.workbook.selectedMonth();
+        const keys = new Set<string>();
+        if (!selected) {
+            return keys;
+        }
+        const idx = months.indexOf(selected);
+        if (idx < 0) {
+            return keys;
+        }
+        keys.add(months[idx].label.title);
+        if (idx > 0) {
+            keys.add(months[idx - 1].label.title);
+        }
+        if (idx + 1 < months.length) {
+            keys.add(months[idx + 1].label.title);
+        }
+        return keys;
+    }
+
+    private pruneMonthsToWindow(): void {
+        const keep = this.monthWindowKeys();
+        if (!keep.size) {
+            return;
+        }
+        let removed = false;
+        for (const key of [...this.warmedMonths]) {
+            if (!keep.has(key)) {
+                this.warmedMonths.delete(key);
+                removed = true;
+            }
+        }
+        if (removed) {
+            this.warmGen++;
+        }
+    }
+
     private scheduleWarm(): void {
         if (this.warmTimer) {
             return;
@@ -240,6 +282,7 @@ export class YearComponent implements OnInit, OnDestroy {
         const months = this.workbook.months();
         const selected = this.workbook.selectedMonth();
         const selectedIdx = selected ? months.indexOf(selected) : -1;
+        // Only pre-warm neighbors (±1). Far months mount lazily on tab click.
         const order: Month[] = [];
         if (selectedIdx >= 0) {
             if (months[selectedIdx + 1]) {
@@ -248,17 +291,11 @@ export class YearComponent implements OnInit, OnDestroy {
             if (selectedIdx > 0) {
                 order.push(months[selectedIdx - 1]);
             }
-            months.forEach((month, index) => {
-                if (index !== selectedIdx && index !== selectedIdx + 1 && index !== selectedIdx - 1) {
-                    order.push(month);
-                }
-            });
-        } else {
-            order.push(...months);
         }
         const pending = order.find((month) => !this.warmedMonths.has(month.label.title));
         if (pending) {
             this.ensureMonth(pending);
+            this.pruneMonthsToWindow();
             this.scheduleWarm();
             return;
         }
