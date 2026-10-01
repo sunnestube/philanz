@@ -47,6 +47,25 @@ export class YearSetComponent {
         URL.revokeObjectURL(url);
     }
 
+    restorePrevPack(): void {
+        if (!this.archive.hasPrevPack()) {
+            this.saveMessage = 'Kein vorheriges Set vorhanden.';
+            return;
+        }
+        const parts = this.archive.restorePrevPack();
+        if (!parts.length) {
+            this.saveMessage = 'Vorheriges Set konnte nicht wiederhergestellt werden.';
+            return;
+        }
+        const first = parts[0];
+        const months = this.workbook.applyCsv(first.csv);
+        this.workbook.setMonths(months);
+        this.saveMessage = `Letztes Set wiederhergestellt (${parts.length} Jahr(e)).`;
+        if (first.id) {
+            void this.router.navigate(['/year', first.id]);
+        }
+    }
+
     imported(months: Month[]): void {
         this.workbook.setMonths(months);
         const id = this.archive.activeId();
