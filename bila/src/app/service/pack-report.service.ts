@@ -1,6 +1,10 @@
 import {Injectable, inject, signal} from '@angular/core';
-import {WorkbookService, YearView} from './workbook.service';
+import {WorkbookService} from './workbook.service';
 import {YearArchiveService} from './year-archive.service';
+import {FormulaService} from './formula.service';
+import {TableHistoryService} from './table-history.service';
+import {CurrencyFxService} from './currency-fx.service';
+import {BASE_CURRENCY} from '../model/CurrencyFx';
 import {buildYearTotalReport} from '../component/yearTotal/year-total.report';
 
 const CALENDAR_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
@@ -46,6 +50,8 @@ export class PackReportService {
     private readonly archive = inject(YearArchiveService);
     private busy = false;
     private stamp = '';
+    /** Isolated workbook for archive years — never touches the live singleton. */
+    private scratch: WorkbookService | null = null;
 
     readonly report = signal<PackTotalReport | null>(null);
     readonly charts = signal<{personStack: BarChart; categoryStack: BarChart; incomeExpense: BarChart} | null>(null);
@@ -56,7 +62,7 @@ export class PackReportService {
     refresh(): void {
         const currency = this.workbook.fx.displayCurrency();
         const stamp = this.archive.years()
-            .map((item) => `${item.id}:${(this.archive.csvOf(item.id) || '').length}`)
+            .map((item) => `${item.id}:${contentStamp(this.archive.csvOf(item.id) || '')}`)
             .join('|') + `@${currency}|${this.workbook.months().length}`;
         if (this.busy || stamp === this.stamp) {
             return;
@@ -82,54 +88,79 @@ export class PackReportService {
     }
 
     private snapshot(): PackYearSlice[] {
-        const live = this.workbook.toCsv();
-        const view = this.workbook.view();
-        const monthTitle = this.workbook.selectedMonth()?.label.title;
         const slices: PackYearSlice[] = [];
         const years = this.archive.years();
         if (!years.length && this.workbook.months().length) {
-            slices.push(this.sliceOf(this.archive.suggestedName(), this.archive.suggestedName()));
+            slices.push(this.sliceOf(this.workbook, this.archive.suggestedName(), this.archive.suggestedName()));
             return slices;
         }
+        const scratch = this.borrowScratch();
         years.forEach((item) => {
             const csv = this.archive.csvOf(item.id);
             if (!csv?.trim()) {
                 return;
             }
             try {
-                this.workbook.applyCsv(csv);
-                // If CSV has no calendar year, derive from archive id so FX dayIndex matches that year.
-                const yearNum = parseInt(item.id, 10);
-                if (Number.isFinite(yearNum) && this.workbook.fx.calendarYear() !== yearNum) {
-                    const hasFxMeta = /(?:^|\n)#fx:/.test(csv) || /calendarYear/.test(csv);
-                    if (!hasFxMeta) {
-                        this.workbook.fx.setCalendarYear(yearNum);
-                    }
-                }
-                slices.push(this.sliceOf(item.id, item.name));
+                this.loadYear(scratch, csv, item.id);
+                slices.push(this.sliceOf(scratch, item.id, item.name));
             } catch {
                 // skip broken year
             }
         });
         slices.sort((a, b) => a.id.localeCompare(b.id, 'de'));
-        if (live) {
-            try {
-                this.workbook.applyCsv(live);
-                this.restoreView(view, monthTitle);
-            } catch {
-                // keep whatever is loaded
-            }
-        }
         return slices;
     }
 
-    private sliceOf(id: string, title: string): PackYearSlice {
+    /** Lazy scratch workbook with persistence disabled so applyCsv cannot clobber live settings. */
+    private borrowScratch(): WorkbookService {
+        if (!this.scratch) {
+            const fx = new CurrencyFxService();
+            const wb = new WorkbookService(new FormulaService(), new TableHistoryService(), fx);
+            (wb as unknown as {persistSettings: () => void}).persistSettings = () => undefined;
+            this.scratch = wb;
+        }
+        return this.scratch;
+    }
+
+    /** Apply archive CSV on scratch; seed live FX so display-currency conversion matches UI. */
+    private loadYear(scratch: WorkbookService, csv: string, yearId: string): void {
+        this.seedLiveFx(scratch);
+        scratch.applyCsv(csv);
+        this.preferLiveDisplay(scratch);
+        const yearNum = parseInt(yearId, 10);
+        if (Number.isFinite(yearNum) && scratch.fx.calendarYear() !== yearNum) {
+            const hasFxMeta = /(?:^|\n)#fx:/.test(csv) || /calendarYear/.test(csv);
+            if (!hasFxMeta) {
+                scratch.fx.setCalendarYear(yearNum);
+            }
+        }
+    }
+
+    private seedLiveFx(scratch: WorkbookService): void {
+        const live = this.workbook.fx;
+        scratch.fx.load(live.snapshot(), live.calendarYear());
+        scratch.fx.setDisplayCurrency(live.displayCurrency());
+    }
+
+    private preferLiveDisplay(scratch: WorkbookService): void {
+        const live = this.workbook.fx;
+        const code = live.displayCurrency();
+        if (code !== BASE_CURRENCY && !scratch.fx.currencies().some((item) => item.code === code)) {
+            const series = live.snapshot().find((item) => item.code === code);
+            if (series) {
+                scratch.fx.load([...scratch.fx.snapshot(), series], scratch.fx.calendarYear());
+            }
+        }
+        scratch.fx.setDisplayCurrency(code);
+    }
+
+    private sliceOf(wb: WorkbookService, id: string, title: string): PackYearSlice {
         return {
             id,
             title,
-            report: buildYearTotalReport(this.workbook),
-            charts: this.workbook.yearCharts(),
-            trend: this.workbook.currencyTrendCharts()
+            report: buildYearTotalReport(wb),
+            charts: wb.yearCharts(),
+            trend: wb.currencyTrendCharts()
         };
     }
 
@@ -141,7 +172,6 @@ export class PackReportService {
         const persons = new Set<string>();
         slices.forEach((slice) => {
             (slice.report.columns || []).forEach((col) => {
-                // Prefer section::index::title from year-total; legacy title:index still accepted.
                 const key = col.key || `${col.section || 'A'}::${col.index}::${col.title}`;
                 if (!columns.has(key)) {
                     columns.set(key, {...col, key});
@@ -300,7 +330,6 @@ export class PackReportService {
         return datasets.length ? {labels: income.labels, datasets} : null;
     }
 
-    /** Jan–Dez als gemeinsame Achse, jedes Jahr eine Serie — Vorjahresmonat steht neben dem aktuellen. */
     private overlayBars(parts: Array<{title: string; chart: BarChart}>): BarChart {
         const seen = new Set<string>();
         parts.forEach((part) => {
@@ -326,18 +355,15 @@ export class PackReportService {
         });
         return {labels, datasets: [...datasets.values()]};
     }
+}
 
-    private restoreView(view: YearView, monthTitle?: string): void {
-        if (monthTitle) {
-            const month = this.workbook.months().find((item) => item.label.title === monthTitle);
-            if (month) {
-                this.workbook.selectMonth(month);
-            }
-        }
-        if (view && view !== 'csv') {
-            this.workbook.setView(view);
-        }
+function contentStamp(csv: string): string {
+    let hash = 2166136261;
+    for (let i = 0; i < csv.length; i++) {
+        hash ^= csv.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
     }
+    return `${(hash >>> 0).toString(36)}:${csv.length}`;
 }
 
 function calendarKey(label: string): string {
