@@ -243,3 +243,14 @@
     .close-toggle.is-closed { background: #52525b; }
     .closed-badge { background: #475569; color: #f8fafc; border-color: #64748b; }
 }
+
+.year-load-error {
+    flex: 0 0 auto;
+    margin: 8px 12px 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-weight: 600;
+}
