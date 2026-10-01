@@ -8,6 +8,13 @@ export class MonthCell {
     raw: string;
     display: string = '';
     error: string | null = null;
+    /**
+     * FX display-string cache (issue #30).
+     * Key = displayCurrency | (display||raw) | dayIndex | rate@day
+     * (not workbook.revision — see MonthTable.cellDisplay).
+     */
+    fxDisplayKey: string | null = null;
+    fxDisplayText: string | null = null;
 
     constructor(rowIndex: number, columnIndex: number, columnTitle: string, type: CellType, value: string) {
         this.rowIndex = rowIndex;

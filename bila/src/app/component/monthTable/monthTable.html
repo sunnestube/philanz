@@ -1,4 +1,5 @@
 @if (month) {
+    @let saldoCols = saldoHeader();
     <div class="month-fx-bar">
         <bal-currency-select/>
         @if (currencyRev() !== 'CHF') {
@@ -34,7 +35,7 @@
         <table class="data-table">
             <thead balMonthHeader
                    [columns]="columnViews()"
-                   [saldos]="saldoHeader()"
+                   [saldos]="saldoCols"
                    [showSaldo]="showSaldo()"
                    [showTotal]="workbook.saldoTotalVisible()"
                    [totalTitle]="workbook.saldoTotalTitle()"
@@ -79,7 +80,7 @@
                                 (paste)="edit.onPaste($event, rowIndex, colIndex, cell)"></td>
                         }
                         @if (showSaldo()) {
-                            @for (item of saldo.rowSaldos(saldoHeader(), rowIndex); track item.key) {
+                            @for (item of saldo.rowSaldos(saldoCols, rowIndex); track item.key) {
                                 <td balSaldoCell [vm]="item"></td>
                             }
                             @if (saldo.rowTotal(rowIndex); as total) {
@@ -98,7 +99,7 @@
                 </tr>
             </tbody>
             <tfoot balMonthFooter
-                   [rows]="saldo.footerViews(columnViews(), saldoHeader())"
+                   [rows]="saldo.footerViews(columnViews(), saldoCols)"
                    [showSaldo]="showSaldo()"
                    [showTotal]="workbook.saldoTotalVisible()"></tfoot>
         </table>

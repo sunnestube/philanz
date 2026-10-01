@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
@@ -39,18 +40,24 @@ export class YearComponent implements OnInit, OnDestroy {
     readonly archive = inject(YearArchiveService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
     saveMessage = '';
     yearName = '';
+    /** Visible when applyCsv/fillRows fails for a year switch. */
+    readonly loadError = signal('');
     warmGen = 0;
     private readonly warmedMonths = new Set<string>();
     private readonly warmedViews = new Set<YearView>();
     private warmTimer = 0;
+    /** Reentrancy guard for singleton workbook applyCsv. */
+    private yearLoadBusy = false;
+    private pendingYearId: string | null = null;
 
     ngOnInit(): void {
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.syncCalendarYear();
-        this.route.paramMap.subscribe((params) => {
+        this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const id = params.get('id');
             if (!id) {
                 const active = this.archive.activeId();
@@ -59,19 +66,16 @@ export class YearComponent implements OnInit, OnDestroy {
                     return;
                 }
                 if (this.workbook.months().length) {
-                    this.fillRows();
+                    try {
+                        this.fillRows();
+                    } catch {
+                        this.loadError.set('Jahr nicht lesbar');
+                    }
                 }
                 return;
             }
             this.persistActive();
-            this.yearName = this.archive.normalize(id);
-            this.archive.ensure(this.yearName);
-            this.syncCalendarYear();
-            const csv = this.archive.open(this.yearName);
-            if (csv) {
-                this.workbook.applyCsv(csv);
-                this.fillRows();
-            }
+            this.loadYear(this.archive.normalize(id));
         });
     }
 
@@ -96,9 +100,11 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     protected selectTab(month: Month): void {
-        this.ensureMonth(month);
         this.workbook.selectMonth(month);
         this.workbook.setView('month');
+        this.ensureMonth(month);
+        this.pruneMonthsToWindow();
+        this.scheduleWarm();
     }
 
     protected openView(view: YearView): void {
@@ -133,14 +139,8 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     protected openYear(id: string): void {
-        const csv = this.archive.open(id);
-        this.yearName = id;
-        this.syncCalendarYear();
-        if (csv) {
-            this.workbook.applyCsv(csv);
-            this.fillRows();
-        }
-        void this.router.navigate(['/year', id]);
+        this.persistActive();
+        void this.router.navigate(['/year', this.archive.normalize(id)]);
     }
 
     protected deleteYear(id: string): void {
@@ -154,6 +154,71 @@ export class YearComponent implements OnInit, OnDestroy {
                 this.openYear(next);
             }
         }
+    }
+
+    /**
+     * Load archive CSV for `id` into the singleton workbook.
+     * Concurrent calls queue the latest id and run after the current finish (no overlapping applyCsv).
+     */
+    private loadYear(id: string): void {
+        if (this.yearLoadBusy) {
+            this.pendingYearId = id;
+            return;
+        }
+        this.yearLoadBusy = true;
+        try {
+            for (;;) {
+                this.applyYearCsv(id);
+                if (this.pendingYearId == null) {
+                    break;
+                }
+                id = this.pendingYearId;
+                this.pendingYearId = null;
+            }
+        } finally {
+            this.yearLoadBusy = false;
+        }
+    }
+
+    private applyYearCsv(id: string): void {
+        this.archive.ensure(id);
+        const previousId = this.yearName || this.archive.activeId();
+        const previousCsv = this.workbook.months().length ? this.workbook.toCsv() : '';
+        this.yearName = id;
+        this.syncCalendarYear();
+        const csv = this.archive.open(id);
+        if (!csv) {
+            this.loadError.set('');
+            return;
+        }
+        try {
+            this.workbook.applyCsv(csv);
+            this.fillRows();
+            this.loadError.set('');
+        } catch {
+            this.restoreAfterLoadError(id, previousId, previousCsv);
+        }
+    }
+
+    private restoreAfterLoadError(failedId: string, previousId: string, previousCsv: string): void {
+        try {
+            if (previousCsv) {
+                this.workbook.applyCsv(previousCsv);
+                this.fillRows();
+            } else {
+                this.workbook.setMonths([]);
+            }
+        } catch {
+            this.workbook.setMonths([]);
+        }
+        if (previousId && previousId !== failedId) {
+            this.yearName = previousId;
+            this.syncCalendarYear();
+            if (this.archive.csvOf(previousId) != null) {
+                this.archive.open(previousId);
+            }
+        }
+        this.loadError.set(`Jahr ${failedId} nicht lesbar`);
     }
 
     private syncCalendarYear(): void {
@@ -196,6 +261,7 @@ export class YearComponent implements OnInit, OnDestroy {
             this.ensureMonth(current);
         }
         this.ensureView(this.workbook.view());
+        this.pruneMonthsToWindow();
         this.scheduleWarm();
     }
 
@@ -226,6 +292,45 @@ export class YearComponent implements OnInit, OnDestroy {
         this.warmGen++;
     }
 
+    /** Keep at most active month ±1 mounted in the DOM. */
+    private monthWindowKeys(): Set<string> {
+        const months = this.workbook.months();
+        const selected = this.workbook.selectedMonth();
+        const keys = new Set<string>();
+        if (!selected) {
+            return keys;
+        }
+        const idx = months.indexOf(selected);
+        if (idx < 0) {
+            return keys;
+        }
+        keys.add(months[idx].label.title);
+        if (idx > 0) {
+            keys.add(months[idx - 1].label.title);
+        }
+        if (idx + 1 < months.length) {
+            keys.add(months[idx + 1].label.title);
+        }
+        return keys;
+    }
+
+    private pruneMonthsToWindow(): void {
+        const keep = this.monthWindowKeys();
+        if (!keep.size) {
+            return;
+        }
+        let removed = false;
+        for (const key of [...this.warmedMonths]) {
+            if (!keep.has(key)) {
+                this.warmedMonths.delete(key);
+                removed = true;
+            }
+        }
+        if (removed) {
+            this.warmGen++;
+        }
+    }
+
     private scheduleWarm(): void {
         if (this.warmTimer) {
             return;
@@ -240,6 +345,7 @@ export class YearComponent implements OnInit, OnDestroy {
         const months = this.workbook.months();
         const selected = this.workbook.selectedMonth();
         const selectedIdx = selected ? months.indexOf(selected) : -1;
+        // Only pre-warm neighbors (±1). Far months mount lazily on tab click.
         const order: Month[] = [];
         if (selectedIdx >= 0) {
             if (months[selectedIdx + 1]) {
@@ -248,17 +354,11 @@ export class YearComponent implements OnInit, OnDestroy {
             if (selectedIdx > 0) {
                 order.push(months[selectedIdx - 1]);
             }
-            months.forEach((month, index) => {
-                if (index !== selectedIdx && index !== selectedIdx + 1 && index !== selectedIdx - 1) {
-                    order.push(month);
-                }
-            });
-        } else {
-            order.push(...months);
         }
         const pending = order.find((month) => !this.warmedMonths.has(month.label.title));
         if (pending) {
             this.ensureMonth(pending);
+            this.pruneMonthsToWindow();
             this.scheduleWarm();
             return;
         }
