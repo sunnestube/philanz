@@ -17,6 +17,7 @@ import {columnViews, cssTypeOf, saldoColViews} from './month-table.vm';
 import {MonthTableEditX as MonthTableEdit} from './month-table-edit-x';
 import {MonthTablePointer} from './month-table-pointer';
 import {MonthTableSaldo} from './month-table-saldo';
+import {MonthTableFillDrag} from './month-table-fill-drag';
 
 /** Must match `.data-table tbody tr { height }` in monthTable.css — prior virt used 20 and drifted. */
 const ROW_HEIGHT = 18;
@@ -50,6 +51,7 @@ export class MonthTable implements OnDestroy {
     private accountOptions: string[] = [''];
     private optionRev = -1;
     viewStart = 0;
+    private readonly fillDrag!: MonthTableFillDrag;
     private scrollTick = 0;
     private navHook: ((monthTitle: string, row: number, col: number) => void) | null = null;
     @ViewChild(FormulaBarComponent) formulaBar?: FormulaBarComponent;
@@ -75,6 +77,16 @@ export class MonthTable implements OnDestroy {
             () => this.edit.refPickMode || this.edit.formulaMode
         );
         this.saldo = new MonthTableSaldo(workbook, formulaService, () => this._month);
+        this.fillDrag = new MonthTableFillDrag(
+            workbook,
+            zone,
+            cdr,
+            this.edit,
+            () => this.scroller,
+            () => this._month,
+            (row) => this.ensureRowVisible(row),
+            (force) => this.syncViewFromScroll(force)
+        );
         this.edit.range.beforeFocus = (row) => this.ensureRowVisible(row);
         this.edit.onRangeMutated = () => {
             this.zone.run(() => this.cdr.markForCheck());
@@ -122,22 +134,22 @@ export class MonthTable implements OnDestroy {
         document.removeEventListener('pointerup', this.onWindowPanEnd);
         document.removeEventListener('pointercancel', this.onWindowPanEnd);
         document.removeEventListener('keydown', this.onWindowEscape);
+        if (this.fillDrag?.active) {
+            this.fillDrag.abort();
+        }
     }
 
-    private fillActive = false;
-    private fillFrom: {row: number; col: number} | null = null;
-    private fillTo: {row: number; col: number} | null = null;
 
     private readonly onWindowPanMove = (event: PointerEvent) => {
-        if (this.fillActive) {
-            this.onFillMove(event);
+        if (this.fillDrag.active) {
+            this.fillDrag.move(event);
             return;
         }
         this.pointer.onPanMove(event);
     };
     private readonly onWindowPanEnd = () => {
-        if (this.fillActive) {
-            this.commitFill();
+        if (this.fillDrag.active) {
+            this.fillDrag.commit();
         }
         this.pointer.onPanEnd();
         this.edit.endDrag();
@@ -212,65 +224,7 @@ export class MonthTable implements OnDestroy {
         if (this.isClosed()) {
             return;
         }
-        event.preventDefault();
-        event.stopPropagation();
-        this.fillActive = true;
-        this.fillFrom = {row: rowIndex, col: colIndex};
-        this.fillTo = {row: rowIndex, col: colIndex};
-        this.edit.range.reset(rowIndex, colIndex);
-        this.edit.range.dragging = true;
-        this.cdr.markForCheck();
-    }
-
-    private onFillMove(event: PointerEvent): void {
-        const hit = this.hitCell(event);
-        if (!hit || !this.fillFrom) {
-            return;
-        }
-        if (this.fillTo && this.fillTo.row === hit.row && this.fillTo.col === hit.col) {
-            return;
-        }
-        this.fillTo = hit;
-        this.zone.run(() => {
-            this.edit.range.anchorRow = this.fillFrom!.row;
-            this.edit.range.anchorCol = this.fillFrom!.col;
-            this.edit.range.extend(hit.row, hit.col);
-            this.edit.range.dragging = true;
-            this.ensureRowVisible(hit.row);
-            this.cdr.markForCheck();
-        });
-    }
-
-    private commitFill(): void {
-        const from = this.fillFrom;
-        const to = this.fillTo;
-        this.fillActive = false;
-        this.fillFrom = null;
-        this.fillTo = null;
-        this.edit.range.dragging = false;
-        if (!from || !to || (from.row === to.row && from.col === to.col)) {
-            this.cdr.markForCheck();
-            return;
-        }
-        this.zone.run(() => {
-            this.edit.fillRange(from.row, from.col, to.row, to.col);
-            this.edit.range.reset(from.row, from.col);
-            this.cdr.markForCheck();
-        });
-    }
-
-    private hitCell(event: PointerEvent): {row: number; col: number} | null {
-        const el = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
-        const td = el?.closest?.('td[data-row]') as HTMLElement | null;
-        if (!td?.dataset?.['row'] || td.dataset['col'] == null) {
-            return null;
-        }
-        const row = Number(td.dataset['row']);
-        const col = Number(td.dataset['col']);
-        if (!Number.isFinite(row) || !Number.isFinite(col)) {
-            return null;
-        }
-        return {row, col};
+        this.fillDrag.start(event, rowIndex, colIndex);
     }
 
     isClosed(): boolean {
@@ -287,6 +241,7 @@ export class MonthTable implements OnDestroy {
 
     ngOnDestroy(): void {
         this.detachWindowListeners();
+        this.fillDrag.destroy();
         if (TableNavigationService.beforeFocus === this.navHook) {
             TableNavigationService.beforeFocus = null;
         }
