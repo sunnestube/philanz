@@ -7,7 +7,7 @@
       "projectType": "application",
       "schematics": {},
       "root": "",
-      "sourcePrefix": "src",
+      "sourceRoot": "src",
       "prefix": "bal",
       "architect": {
         "build": {
