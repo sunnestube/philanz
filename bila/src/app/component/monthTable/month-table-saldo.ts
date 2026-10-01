@@ -17,6 +17,10 @@ export class MonthTableSaldo {
     private cachedFooterRev = -1;
     private cachedFooterTitle = '';
     private cachedFooter: FooterRowView[] | null = null;
+    /** Per-row SaldoCellView cache — cleared when rev/currency/header change (issue #30). */
+    private cachedViewsKey = '';
+    private cachedRowSaldoViews = new Map<number, SaldoCellView[]>();
+    private cachedRowTotalViews = new Map<number, SaldoCellView | null>();
 
     constructor(
         private readonly workbook: WorkbookService,
@@ -30,6 +34,9 @@ export class MonthTableSaldo {
         this.cachedRev = -1;
         this.cachedFooterRev = -1;
         this.cachedFooter = null;
+        this.cachedViewsKey = '';
+        this.cachedRowSaldoViews.clear();
+        this.cachedRowTotalViews.clear();
     }
 
     combos(): SaldoCombo[] {
@@ -78,27 +85,65 @@ export class MonthTableSaldo {
         return current - this.saldoTotal(rowIndex - 1);
     }
 
+    /**
+     * Cache key for row saldo views (issue #30):
+     *   workbook.revision | monthTitle | displayCurrency | comboKeys | totalVisible
+     * On hit, template CD reuses SaldoCellView[] (no toDisplay/format).
+     * Measure: ~80 visible × 6 saldo cols EUR — rebuild only on miss.
+     */
+    private rowViewsCacheKey(): string {
+        const rev = this.workbook.revision();
+        const title = this.monthOf()?.label.title ?? '';
+        const currency = this.workbook.fx.displayCurrency();
+        const keys = this.combos().map((combo) => combo.key).join(',');
+        const total = this.workbook.saldoTotalVisible() ? '1' : '0';
+        return `${rev}|${title}|${currency}|${keys}|${total}`;
+    }
+
+    private ensureRowViewsFresh(): void {
+        const key = this.rowViewsCacheKey();
+        if (this.cachedViewsKey === key) {
+            return;
+        }
+        this.cachedViewsKey = key;
+        this.cachedRowSaldoViews.clear();
+        this.cachedRowTotalViews.clear();
+    }
+
     rowSaldos(header: SaldoColView[], rowIndex: number): SaldoCellView[] {
+        this.ensureRowViewsFresh();
+        const hit = this.cachedRowSaldoViews.get(rowIndex);
+        if (hit) {
+            return hit;
+        }
         const day = this.rowDay(rowIndex);
-        return header.map((col) => saldoCellView(
+        const views = header.map((col) => saldoCellView(
             col,
             this.workbook.fx.toDisplay(this.saldoAt(rowIndex, col.key), day),
             this.workbook.fx.toDisplay(this.saldoDelta(rowIndex, col.key), day),
             this.formatAmount
         ));
+        this.cachedRowSaldoViews.set(rowIndex, views);
+        return views;
     }
 
     rowTotal(rowIndex: number): SaldoCellView | null {
         if (!this.workbook.saldoTotalVisible() || !this.combos().length) {
             return null;
         }
+        this.ensureRowViewsFresh();
+        if (this.cachedRowTotalViews.has(rowIndex)) {
+            return this.cachedRowTotalViews.get(rowIndex) ?? null;
+        }
         const day = this.rowDay(rowIndex);
-        return saldoCellView(
+        const view = saldoCellView(
             {key: 'total', person: '', personClass: 'total-col', title: this.workbook.saldoTotalTitle(), first: false},
             this.workbook.fx.toDisplay(this.saldoTotal(rowIndex), day),
             this.workbook.fx.toDisplay(this.saldoTotalDelta(rowIndex), day),
             this.formatAmount
         );
+        this.cachedRowTotalViews.set(rowIndex, view);
+        return view;
     }
 
     private rowDay(rowIndex: number): number {

@@ -366,6 +366,16 @@ export class MonthTable implements OnDestroy {
         return this.workbook.fx.displayCurrency();
     }
 
+    /**
+     * Visible cell text. FX format cache (issue #30):
+     *   key = displayCurrency | (display||raw) | dayIndex | rate@day
+     * Intentionally NOT workbook.revision(): an edit that leaves this cell's
+     * value/currency/day-rate unchanged keeps a cache hit (only the edited
+     * cell + row saldos rebuild). Currency switch / rate change / value
+     * change → miss. Pure scroll CD → hit.
+     * Measure note: ~80 visible rows × 6 saldo cols, EUR display — skip
+     * toDisplay+formatAmount on hit (target <16ms format/FX after dirty recalc).
+     */
     cellDisplay(cell: MonthCell, rowIndex: number, colIndex: number): string {
         if (this.isEditing(rowIndex, colIndex)) {
             return this.edit.draft;
@@ -378,14 +388,25 @@ export class MonthTable implements OnDestroy {
             return CellFormatPipe.formatDate(value, this.month?.label.title ?? '');
         }
         if (cell.type.id === CELL_TYPE.number && !this.workbook.fx.isBase() && value && !String(value).trim().startsWith('=')) {
-            const amount = this.formulaService.toNumber(value);
-            if (amount == null) {
-                return value;
-            }
             const row = this.month?.rows[rowIndex];
             const day = this.workbook.fx.dayIndexForRow(this.month, row);
+            const currency = this.workbook.fx.displayCurrency();
+            const rate = this.workbook.fx.rate(day);
+            const key = `${currency}|${value}|${day}|${rate}`;
+            if (cell.fxDisplayKey === key && cell.fxDisplayText != null) {
+                return cell.fxDisplayText;
+            }
+            const amount = this.formulaService.toNumber(value);
+            if (amount == null) {
+                cell.fxDisplayKey = key;
+                cell.fxDisplayText = value;
+                return value;
+            }
             const converted = this.workbook.fx.toDisplay(amount, day);
-            return this.workbook.fx.formatAmount(converted);
+            const text = this.workbook.fx.formatAmount(converted);
+            cell.fxDisplayKey = key;
+            cell.fxDisplayText = text;
+            return text;
         }
         return value;
     }
