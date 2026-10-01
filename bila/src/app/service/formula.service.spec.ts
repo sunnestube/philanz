@@ -1,5 +1,27 @@
-import {describe, it, expect, beforeEach} from 'vitest';
+import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {FormulaService} from './formula.service';
+import {Month} from '../model/Month';
+import {MonthLabel, MonthKey} from '../model/MonthLabel';
+import {MonthColumn} from '../model/MonthColumn';
+import {MonthRow} from '../model/MonthRow';
+import {CELL_TYPE} from '../model/CellType';
+import {SECTION} from '../model/Section';
+
+function buildMonth(key: MonthKey, rows = 3): Month {
+    const columns = [
+        new MonthColumn('#', CELL_TYPE.index, SECTION.DEFAULT),
+        new MonthColumn('A', CELL_TYPE.number, SECTION.AUSGANG),
+        new MonthColumn('B', CELL_TYPE.number, SECTION.AUSGANG),
+        new MonthColumn('C', CELL_TYPE.number, SECTION.AUSGANG)
+    ];
+    const month = new Month(new MonthLabel(key), columns);
+    for (let i = 0; i < rows; i++) {
+        const row = new MonthRow(i, columns);
+        row.cells[0].raw = String(i);
+        month.rows.push(row);
+    }
+    return month;
+}
 
 describe('FormulaService', () => {
     let service: FormulaService;
@@ -130,4 +152,77 @@ describe('FormulaService', () => {
             expect(service.pasteFormula(2, 2)).toBe('=D2');
         });
     });
+
+    describe('recalculateDirty', () => {
+        it('updates local dependents without sweeping unrelated cells', () => {
+            const jan = buildMonth(MonthKey.JAN);
+            jan.rows[0].cells[1].raw = '10';
+            jan.rows[0].cells[2].raw = '=A1';
+            jan.rows[0].cells[3].raw = '99';
+            service.setMonths([jan]);
+            expect(jan.rows[0].cells[2].display).toBe("10.00");
+            expect(jan.rows[0].cells[3].display).toBe("99.00");
+
+            const untouched = jan.rows[0].cells[3];
+            const sentinel = untouched.display;
+            const spy = vi.spyOn(service, 'evaluateCell');
+
+            jan.rows[0].cells[1].raw = '25';
+            service.recalculateDirty([{monthTitle: 'Jan', col: 1, row: 0}]);
+
+            expect(jan.rows[0].cells[2].display).toBe("25.00");
+            expect(untouched.display).toBe(sentinel);
+            const evaluated = spy.mock.calls.map(
+                ([, cell]) => `${cell.columnIndex}:${cell.rowIndex}`
+            );
+            expect(evaluated).toContain('1:0');
+            expect(evaluated).toContain('2:0');
+            expect(evaluated).not.toContain('3:0');
+            spy.mockRestore();
+        });
+
+        it('updates cross-month refs and leaves Dez cells without formulas alone', () => {
+            const jan = buildMonth(MonthKey.JAN);
+            const dez = buildMonth(MonthKey.DEZ);
+            jan.rows[1].cells[2].raw = '7';
+            dez.rows[1].cells[2].raw = '42';
+            dez.rows[1].cells[3].raw = '=Jan!B2';
+            service.setMonths([jan, dez]);
+            expect(dez.rows[1].cells[3].display).toBe("7.00");
+            expect(dez.rows[1].cells[2].display).toBe("42.00");
+
+            const plainDez = dez.rows[1].cells[2];
+            const sentinel = plainDez.display;
+            const spy = vi.spyOn(service, 'evaluateCell');
+
+            jan.rows[1].cells[2].raw = '15';
+            service.recalculateDirty([{monthTitle: 'Jan', col: 2, row: 1}]);
+
+            expect(dez.rows[1].cells[3].display).toBe("15.00");
+            expect(plainDez.display).toBe(sentinel);
+            const evaluated = spy.mock.calls.map(
+                ([month, cell]) => `${month.label.title}:${cell.columnIndex}:${cell.rowIndex}`
+            );
+            expect(evaluated).toContain('Jan:2:1');
+            expect(evaluated).toContain('Dez:3:1');
+            expect(evaluated).not.toContain('Dez:2:1');
+            spy.mockRestore();
+        });
+
+        it('keeps #ZYKLUS! and #BEZUG! on dirty path', () => {
+            const jan = buildMonth(MonthKey.JAN);
+            // Self-ref is the reliable cycle (mutual A↔B can surface as #WERT!).
+            jan.rows[0].cells[1].raw = '=A1';
+            service.setMonths([jan]);
+            expect(jan.rows[0].cells[1].display).toBe('#ZYKLUS!');
+
+            service.recalculateDirty([{monthTitle: 'Jan', col: 1, row: 0}]);
+            expect(jan.rows[0].cells[1].display).toBe('#ZYKLUS!');
+
+            jan.rows[0].cells[3].raw = '=Xxx!A1';
+            service.recalculateDirty([{monthTitle: 'Jan', col: 3, row: 0}]);
+            expect(jan.rows[0].cells[3].display).toBe('#BEZUG!');
+        });
+    });
+
 });
