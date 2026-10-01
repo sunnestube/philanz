@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
 import {Month} from '../../model/Month';
@@ -39,18 +40,24 @@ export class YearComponent implements OnInit, OnDestroy {
     readonly archive = inject(YearArchiveService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
     saveMessage = '';
     yearName = '';
+    /** Visible when applyCsv/fillRows fails for a year switch. */
+    readonly loadError = signal('');
     warmGen = 0;
     private readonly warmedMonths = new Set<string>();
     private readonly warmedViews = new Set<YearView>();
     private warmTimer = 0;
+    /** Reentrancy guard for singleton workbook applyCsv. */
+    private yearLoadBusy = false;
+    private pendingYearId: string | null = null;
 
     ngOnInit(): void {
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.syncCalendarYear();
-        this.route.paramMap.subscribe((params) => {
+        this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const id = params.get('id');
             if (!id) {
                 const active = this.archive.activeId();
@@ -59,19 +66,16 @@ export class YearComponent implements OnInit, OnDestroy {
                     return;
                 }
                 if (this.workbook.months().length) {
-                    this.fillRows();
+                    try {
+                        this.fillRows();
+                    } catch {
+                        this.loadError.set('Jahr nicht lesbar');
+                    }
                 }
                 return;
             }
             this.persistActive();
-            this.yearName = this.archive.normalize(id);
-            this.archive.ensure(this.yearName);
-            this.syncCalendarYear();
-            const csv = this.archive.open(this.yearName);
-            if (csv) {
-                this.workbook.applyCsv(csv);
-                this.fillRows();
-            }
+            this.loadYear(this.archive.normalize(id));
         });
     }
 
@@ -133,14 +137,8 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     protected openYear(id: string): void {
-        const csv = this.archive.open(id);
-        this.yearName = id;
-        this.syncCalendarYear();
-        if (csv) {
-            this.workbook.applyCsv(csv);
-            this.fillRows();
-        }
-        void this.router.navigate(['/year', id]);
+        this.persistActive();
+        void this.router.navigate(['/year', this.archive.normalize(id)]);
     }
 
     protected deleteYear(id: string): void {
@@ -154,6 +152,71 @@ export class YearComponent implements OnInit, OnDestroy {
                 this.openYear(next);
             }
         }
+    }
+
+    /**
+     * Load archive CSV for `id` into the singleton workbook.
+     * Concurrent calls queue the latest id and run after the current finish (no overlapping applyCsv).
+     */
+    private loadYear(id: string): void {
+        if (this.yearLoadBusy) {
+            this.pendingYearId = id;
+            return;
+        }
+        this.yearLoadBusy = true;
+        try {
+            for (;;) {
+                this.applyYearCsv(id);
+                if (this.pendingYearId == null) {
+                    break;
+                }
+                id = this.pendingYearId;
+                this.pendingYearId = null;
+            }
+        } finally {
+            this.yearLoadBusy = false;
+        }
+    }
+
+    private applyYearCsv(id: string): void {
+        this.archive.ensure(id);
+        const previousId = this.yearName || this.archive.activeId();
+        const previousCsv = this.workbook.months().length ? this.workbook.toCsv() : '';
+        this.yearName = id;
+        this.syncCalendarYear();
+        const csv = this.archive.open(id);
+        if (!csv) {
+            this.loadError.set('');
+            return;
+        }
+        try {
+            this.workbook.applyCsv(csv);
+            this.fillRows();
+            this.loadError.set('');
+        } catch {
+            this.restoreAfterLoadError(id, previousId, previousCsv);
+        }
+    }
+
+    private restoreAfterLoadError(failedId: string, previousId: string, previousCsv: string): void {
+        try {
+            if (previousCsv) {
+                this.workbook.applyCsv(previousCsv);
+                this.fillRows();
+            } else {
+                this.workbook.setMonths([]);
+            }
+        } catch {
+            this.workbook.setMonths([]);
+        }
+        if (previousId && previousId !== failedId) {
+            this.yearName = previousId;
+            this.syncCalendarYear();
+            if (this.archive.csvOf(previousId) != null) {
+                this.archive.open(previousId);
+            }
+        }
+        this.loadError.set(`Jahr ${failedId} nicht lesbar`);
     }
 
     private syncCalendarYear(): void {

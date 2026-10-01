@@ -1,4 +1,7 @@
 <div class="year-shell" [class.panel-open]="workbook.saldoPanelOpen()">
+    @if (loadError()) {
+        <div class="year-load-error" role="alert">{{ loadError() }}</div>
+    }
     <div class="year-body">
         <div class="tab-container">
             @if (needsImport()) {
