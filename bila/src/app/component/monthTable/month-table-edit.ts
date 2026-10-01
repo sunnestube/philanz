@@ -62,8 +62,7 @@ export class MonthTableEdit extends MonthTableEditCore {
         this.formulaMode = false;
         this.refPickMode = false;
         if (changed) {
-            this.formulaService.recalculateAll();
-            this.workbook.touch();
+            this.refresh([{col, row}]);
         }
     }
     onPaste(event: ClipboardEvent, rowIndex: number, colIndex: number, cell: MonthCell): void {
@@ -100,8 +99,7 @@ export class MonthTableEdit extends MonthTableEditCore {
         this.editingCol = colIndex;
         this.liveEdit = false;
         this.activeAddress = this.formulaService.addressFor(colIndex, rowIndex);
-        this.formulaService.recalculateAll();
-        this.workbook.touch();
+        this.refresh([{col: colIndex, row: rowIndex}]);
         if (this.formulaMode) {
             this.refPickMode = true;
             queueMicrotask(() => this.focusBar());
@@ -165,8 +163,7 @@ export class MonthTableEdit extends MonthTableEditCore {
         this.refPickMode = false;
         this.liveEdit = false;
         this.draft = '';
-        this.formulaService.recalculateAll();
-        this.workbook.touch();
+        this.refresh(coords.length ? coords : undefined);
         queueMicrotask(() => { this.suppressCommit = false; });
     }
     /**
@@ -217,8 +214,8 @@ export class MonthTableEdit extends MonthTableEditCore {
             }
         });
         this.suppressCommit = true;
-        this.formulaService.recalculateAll();
-        this.workbook.touch();
+        const seeds = [{col: fromCol, row: fromRow}, ...coords];
+        this.refresh(seeds);
         queueMicrotask(() => { this.suppressCommit = false; });
     }
     protected handleHistoryKeys(event: KeyboardEvent): boolean {
@@ -252,10 +249,10 @@ export class MonthTableEdit extends MonthTableEditCore {
             return;
         }
         const month = this.monthOf();
-        const baseline = this.selectBaseline;
-        if (!month || !baseline || baseline.row !== rowIndex || baseline.col !== colIndex) {
+        if (!month || !this.selectBaseline || this.selectBaseline.row !== rowIndex || this.selectBaseline.col !== colIndex) {
             return;
         }
+        const baseline = this.selectBaseline;
         const afterRaw = cell.value ?? cell.raw ?? '';
         cell.raw = afterRaw;
         const afterColor = row.color ?? '';
