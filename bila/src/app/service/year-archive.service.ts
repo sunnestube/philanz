@@ -66,11 +66,11 @@ export class YearArchiveService {
     }
 
     /**
-     * Persist one year. Skips writes when `csv` matches the stored value.
-     * Does not sync-rewrite `philanz-pack` — that happens on export, remove,
-     * import, explicit `rewritePack()`, or idle after a dirty save.
+     * Persist one year CSV + index/active. Does not rewrite or schedule pack
+     * (issue #31 autosave). Pack stays on save()/export/idle per #23.
+     * Skips writes when `csv` matches the stored value; quota-safe.
      */
-    save(name: string, csv: string): YearMeta {
+    saveYear(name: string, csv: string): YearMeta {
         this.clearStorageError();
         const id = this.normalize(name);
         const existing = this.years().find((item) => item.id === id);
@@ -95,7 +95,22 @@ export class YearArchiveService {
         }
         this.years.set(list);
         this.setActive(id);
-        this.schedulePackRewrite();
+        return meta;
+    }
+
+    /**
+     * Persist one year. Skips writes when `csv` matches the stored value.
+     * Does not sync-rewrite `philanz-pack` — that happens on export, remove,
+     * import, explicit `rewritePack()`, or idle after a dirty save.
+     */
+    save(name: string, csv: string): YearMeta {
+        const id = this.normalize(name);
+        const prevCsv = this.csvOf(id);
+        const meta = this.saveYear(name, csv);
+        // Schedule pack only after an actual dirty write (aligns with #23).
+        if (prevCsv !== csv && this.csvOf(id) === csv) {
+            this.schedulePackRewrite();
+        }
         return meta;
     }
 
