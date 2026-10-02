@@ -9,3 +9,9 @@ import {EventEmitter} from 'node:events';
 if (EventEmitter.defaultMaxListeners < 32) {
     EventEmitter.defaultMaxListeners = 32;
 }
+
+import {beforeEach} from 'vitest';
+
+beforeEach(() => {
+    localStorage.clear();
+});
