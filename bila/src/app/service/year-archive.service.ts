@@ -11,6 +11,8 @@ const INDEX_KEY = 'philanz-years';
 const ACTIVE_KEY = 'philanz-active-year';
 const LEGACY_KEY = 'year';
 const PACK_KEY = 'philanz-pack';
+const PACK_PREV_KEY = 'philanz-pack-prev';
+const YEAR_KEY_PREFIX = 'philanz-year:';
 
 const QUOTA_HINT =
     'Browser-Speicher voll. Exportiere das Set oder lösche alte Jahre.';
@@ -22,7 +24,6 @@ const SAVE_FAIL_HINT = 'Speichern fehlgeschlagen.';
 export class YearArchiveService {
     readonly years = signal<YearMeta[]>([]);
     readonly activeId = signal('');
-    /** Non-empty when the last storage write failed (quota or other). */
     readonly storageError = signal('');
 
     private packIdleHandle: number | null = null;
@@ -33,43 +34,48 @@ export class YearArchiveService {
     }
 
     hydrate(): void {
-        const index = this.readIndex();
-        const pack = localStorage.getItem(PACK_KEY);
-        if (pack && !index.length) {
-            this.importPack(pack);
-            return;
+        let index = this.readIndex();
+        if (!index.length) {
+            index = this.rebuildIndexFromYearKeys();
+            if (index.length) {
+                this.writeIndex(index);
+            }
         }
-        const legacy = localStorage.getItem(LEGACY_KEY);
-        if (legacy && !index.length) {
-            const id = String(new Date().getFullYear());
-            const created: YearMeta = {id, name: id, updated: Date.now()};
-            if (!this.setItem(this.csvKey(id), legacy)) {
+        if (!index.length) {
+            const pack = localStorage.getItem(PACK_KEY);
+            if (pack) {
+                this.importPack(pack);
                 return;
             }
-            if (!this.writeIndex([created])) {
+            const legacy = localStorage.getItem(LEGACY_KEY);
+            if (legacy) {
+                const id = String(new Date().getFullYear());
+                const created: YearMeta = {id, name: id, updated: Date.now()};
+                if (!this.setItem(this.csvKey(id), legacy)) {
+                    return;
+                }
+                if (!this.writeIndex([created])) {
+                    return;
+                }
+                this.setItem(ACTIVE_KEY, id);
+                this.years.set([created]);
+                this.activeId.set(id);
+                this.schedulePackRewrite();
                 return;
             }
-            this.setItem(ACTIVE_KEY, id);
-            this.years.set([created]);
-            this.activeId.set(id);
-            // One-time migration write; pack can wait for idle/export.
-            this.schedulePackRewrite();
-            return;
         }
         this.years.set(index);
         const active = localStorage.getItem(ACTIVE_KEY) || index[0]?.id || '';
         this.activeId.set(active);
+        if (index.length && !localStorage.getItem(PACK_KEY)) {
+            this.rewritePack();
+        }
     }
 
     csvOf(id: string): string | null {
         return localStorage.getItem(this.csvKey(id));
     }
 
-    /**
-     * Persist one year CSV + index/active. Does not rewrite or schedule pack
-     * (issue #31 autosave). Pack stays on save()/export/idle per #23.
-     * Skips writes when `csv` matches the stored value; quota-safe.
-     */
     saveYear(name: string, csv: string): YearMeta {
         this.clearStorageError();
         const id = this.normalize(name);
@@ -81,12 +87,10 @@ export class YearArchiveService {
             }
             return existing;
         }
-
         const meta: YearMeta = {id, name: id, updated: Date.now()};
         if (!this.setItem(this.csvKey(id), csv)) {
             return existing ?? meta;
         }
-
         const list = this.years().filter((item) => item.id !== id);
         list.unshift(meta);
         list.sort((a, b) => b.name.localeCompare(a.name, 'de'));
@@ -98,16 +102,10 @@ export class YearArchiveService {
         return meta;
     }
 
-    /**
-     * Persist one year. Skips writes when `csv` matches the stored value.
-     * Does not sync-rewrite `philanz-pack` — that happens on export, remove,
-     * import, explicit `rewritePack()`, or idle after a dirty save.
-     */
     save(name: string, csv: string): YearMeta {
         const id = this.normalize(name);
         const prevCsv = this.csvOf(id);
         const meta = this.saveYear(name, csv);
-        // Schedule pack only after an actual dirty write (aligns with #23).
         if (prevCsv !== csv && this.csvOf(id) === csv) {
             this.schedulePackRewrite();
         }
@@ -178,24 +176,31 @@ export class YearArchiveService {
         if (!parts.length) {
             return [];
         }
-        parts.forEach((part) => {
-            const id = this.normalize(part.id || this.suggestedName());
-            if (!this.setItem(this.csvKey(id), part.csv)) {
-                return;
-            }
-            const list = this.years().filter((item) => item.id !== id);
-            list.unshift({id, name: id, updated: Date.now()});
-            list.sort((a, b) => b.name.localeCompare(a.name, 'de'));
-            this.writeIndex(list);
-            this.years.set(list);
-        });
-        const first = this.normalize(parts[0].id || this.suggestedName());
-        this.setActive(first);
-        this.rewritePack();
+        this.snapshotCurrentPack();
+        this.applyPackParts(parts);
         return parts;
     }
 
-    /** Explicit pack sync (export / “Set speichern” / structural changes). */
+    hasPrevPack(): boolean {
+        return !!localStorage.getItem(PACK_PREV_KEY)?.trim();
+    }
+
+    restorePrevPack(): YearPackPart[] {
+        this.clearStorageError();
+        const prev = localStorage.getItem(PACK_PREV_KEY);
+        if (!prev?.trim()) {
+            return [];
+        }
+        const parts = splitYearPack(prev).filter((part) => part.csv.trim());
+        if (!parts.length) {
+            return [];
+        }
+        this.snapshotCurrentPack();
+        this.clearStoredYears();
+        this.applyPackParts(parts);
+        return parts;
+    }
+
     rewritePack(): void {
         this.cancelPackIdle();
         const pack = this.buildPack();
@@ -216,6 +221,66 @@ export class YearArchiveService {
         }
     }
 
+    private snapshotCurrentPack(): void {
+        const current = this.packOf() || this.buildPack();
+        if (current?.trim()) {
+            this.setItem(PACK_PREV_KEY, current);
+        }
+    }
+
+    private applyPackParts(parts: YearPackPart[]): void {
+        parts.forEach((part) => {
+            const id = this.normalize(part.id || this.suggestedName());
+            if (!this.setItem(this.csvKey(id), part.csv)) {
+                return;
+            }
+            const list = this.years().filter((item) => item.id !== id);
+            list.unshift({id, name: id, updated: Date.now()});
+            list.sort((a, b) => b.name.localeCompare(a.name, 'de'));
+            this.writeIndex(list);
+            this.years.set(list);
+        });
+        const first = this.normalize(parts[0].id || this.suggestedName());
+        this.setActive(first);
+        this.rewritePack();
+    }
+
+    private clearStoredYears(): void {
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(YEAR_KEY_PREFIX)) {
+                keys.push(key);
+            }
+        }
+        keys.forEach((key) => localStorage.removeItem(key));
+        this.writeIndex([]);
+        this.years.set([]);
+        localStorage.removeItem(ACTIVE_KEY);
+        this.activeId.set('');
+    }
+
+    private rebuildIndexFromYearKeys(): YearMeta[] {
+        const list: YearMeta[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key?.startsWith(YEAR_KEY_PREFIX)) {
+                continue;
+            }
+            const id = key.slice(YEAR_KEY_PREFIX.length);
+            if (!id) {
+                continue;
+            }
+            const csv = localStorage.getItem(key);
+            if (!csv?.trim()) {
+                continue;
+            }
+            list.push({id, name: id, updated: Date.now()});
+        }
+        list.sort((a, b) => b.name.localeCompare(a.name, 'de'));
+        return list;
+    }
+
     private setActive(id: string): void {
         this.activeId.set(id);
         this.setItem(ACTIVE_KEY, id);
@@ -229,7 +294,7 @@ export class YearArchiveService {
     }
 
     private csvKey(id: string): string {
-        return `philanz-year:${id}`;
+        return `${YEAR_KEY_PREFIX}${id}`;
     }
 
     private readIndex(): YearMeta[] {
@@ -246,10 +311,6 @@ export class YearArchiveService {
         return this.setItem(INDEX_KEY, JSON.stringify(list));
     }
 
-    /**
-     * Safe localStorage write. Never throws into UI callers.
-     * Sets `storageError` on quota / other failures.
-     */
     private setItem(key: string, value: string): boolean {
         try {
             localStorage.setItem(key, value);
@@ -260,7 +321,6 @@ export class YearArchiveService {
         }
     }
 
-    /** Defer pack rewrite so tab switches without edits never touch philanz-pack. */
     private schedulePackRewrite(): void {
         if (this.packIdleHandle != null) {
             return;
@@ -308,7 +368,6 @@ function isQuotaExceeded(err: unknown): boolean {
     if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
         return true;
     }
-    // Legacy DOMException codes (Chrome 22, Firefox 1014).
     if (e.code === 22 || e.code === 1014) {
         return true;
     }
