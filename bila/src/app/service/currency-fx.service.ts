@@ -238,13 +238,23 @@ export class CurrencyFxService {
                 code,
                 name: (source.name || '').trim(),
                 rates: resizeRates(Array.isArray(source.rates) ? source.rates : [], year),
-                fractionDigits: source.fractionDigits || 2
+                fractionDigits: clampFractionDigits(source.fractionDigits ?? 2)
             });
         });
         this.currencies.set(list);
         if (!this.codes().includes(this.displayCurrency())) {
             this.displayCurrency.set(BASE_CURRENCY);
         }
+    }
+
+    /** Display fraction digits for a currency (CHF fixed at 2; FX from series, default 2). */
+    fractionDigits(code = this.displayCurrency()): number {
+        const normalized = normalizeCurrencyCode(code) || BASE_CURRENCY;
+        if (normalized === BASE_CURRENCY) {
+            return 2;
+        }
+        const series = this.currencies().find((item) => item.code === normalized);
+        return clampFractionDigits(series?.fractionDigits ?? 2);
     }
 
     setFractionDigits(code: string, digits: number): void {
@@ -256,11 +266,7 @@ export class CurrencyFxService {
 
     /** Format a value using the currency's configured fraction digits (CHF fixed at 2). */
     formatAmount(value: number | null | undefined, code = this.displayCurrency()): string {
-        const normalized = normalizeCurrencyCode(code) || BASE_CURRENCY;
-        const digits = normalized === BASE_CURRENCY
-            ? 2
-            : (this.currencies().find((item) => item.code === normalized)?.fractionDigits ?? 2);
-        return formatFxAmount(value, digits);
+        return formatFxAmount(value, this.fractionDigits(code));
     }
 }
 
