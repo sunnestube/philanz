@@ -2,7 +2,7 @@ import {Component, effect, inject, untracked} from '@angular/core';
 import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
 import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService} from '../../service/year-archive.service';
-import {PackMonthBlock, PackReportService} from '../../service/pack-report.service';
+import {PackMonthBlock, PackReportService, PackSkippedYear} from '../../service/pack-report.service';
 
 @Component({
     selector: 'bal-pack-total',
@@ -48,6 +48,28 @@ import {PackMonthBlock, PackReportService} from '../../service/pack-report.servi
             .down { color: #fda4af; }
             tr.yoy td, tr.yoy th { background: #1e293b; color: #e2e8f0; }
         }
+        .pack-skip-banner {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .pack-skip-banner span + span::before {
+            content: ' · ';
+            font-weight: 400;
+        }
+        @media (prefers-color-scheme: dark) {
+            .pack-skip-banner {
+                background: #422006;
+                color: #fde68a;
+                border-color: #a16207;
+            }
+        }
     `]
 })
 export class PackTotalComponent {
@@ -69,6 +91,14 @@ export class PackTotalComponent {
 
     error() {
         return this.pack.error();
+    }
+
+    skipped(): PackSkippedYear[] {
+        return this.pack.skipped();
+    }
+
+    skipLabel(item: PackSkippedYear): string {
+        return item.reason ? `${item.id} übersprungen (${item.reason})` : `${item.id} übersprungen`;
     }
 
     format(value: number): string {
