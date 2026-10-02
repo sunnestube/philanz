@@ -199,3 +199,38 @@ describe('CurrencyFxService', () => {
         expect(fx.currencies()[0].rates[7]).toBeCloseTo(0.90);
     });
 });
+
+describe('CurrencyFxService fractionDigits + formatAmount', () => {
+    let fx: CurrencyFxService;
+
+    beforeEach(() => {
+        fx = new CurrencyFxService();
+        fx.setCalendarYear(2025);
+    });
+
+    it('persists and applies per-currency fractionDigits', () => {
+        fx.addCurrency('BTC', 'Bitcoin');
+        fx.setFractionDigits('BTC', 8);
+        expect(fx.fractionDigits('BTC')).toBe(8);
+        expect(fx.formatAmount(0.123456789, 'BTC')).toMatch(/0[.,]12345679/);
+        const snap = fx.snapshot();
+        expect(snap[0].fractionDigits).toBe(8);
+        const other = new CurrencyFxService();
+        other.load(snap, 2025);
+        expect(other.fractionDigits('BTC')).toBe(8);
+        expect(other.formatAmount(1.5, 'BTC')).toMatch(/1[.,]50000000/);
+    });
+
+    it('clampFractionDigits rejects out-of-range values', () => {
+        fx.addCurrency('EUR');
+        fx.setFractionDigits('EUR', 99);
+        expect(fx.fractionDigits('EUR')).toBe(8);
+        fx.setFractionDigits('EUR', -3);
+        expect(fx.fractionDigits('EUR')).toBe(0);
+    });
+
+    it('CHF fractionDigits stay at 2', () => {
+        expect(fx.fractionDigits(BASE_CURRENCY)).toBe(2);
+        expect(fx.formatAmount(12.3, BASE_CURRENCY)).toMatch(/12[.,]30/);
+    });
+});
