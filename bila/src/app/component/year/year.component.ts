@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, DestroyRef, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, effect, inject, OnDestroy, OnInit, signal, untracked} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MonthComponent} from '../month/month.component';
@@ -16,6 +16,7 @@ import {YearTotalComponent} from '../yearTotal/year-total.component';
 import {YearGrafComponent} from '../yearGraf/year-graf.component';
 import {YearTabsComponent} from './year-tabs.component';
 import {FxTabComponent} from '../fxTab/fx-tab.component';
+import {YearAutosave} from './year-autosave';
 
 const MIN_ROWS = 36;
 
@@ -52,11 +53,26 @@ export class YearComponent implements OnInit, OnDestroy {
     /** Reentrancy guard for singleton workbook applyCsv. */
     private yearLoadBusy = false;
     private pendingYearId: string | null = null;
+    /** Revision last written to archive (issue #31 dirty check). */
+    private savedRevision = 0;
+    private detachAutosave: (() => void) | null = null;
+    private readonly autosave = new YearAutosave({
+        isDirty: () => this.isDirty(),
+        persistDirty: () => this.persistDirtyYear()
+    });
+
+    constructor() {
+        effect(() => {
+            this.workbook.revision();
+            untracked(() => this.autosave.schedule());
+        });
+    }
 
     ngOnInit(): void {
         this.ensureSaldoColumns();
         this.yearName = this.archive.suggestedName();
         this.syncCalendarYear();
+        this.detachAutosave = this.autosave.attachDocument();
         this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const id = params.get('id');
             if (!id) {
@@ -95,6 +111,7 @@ export class YearComponent implements OnInit, OnDestroy {
         const id = this.archive.activeId() || this.yearName;
         if (id && this.workbook.toCsv()) {
             this.archive.save(id, this.workbook.toCsv());
+            this.markClean();
             void this.router.navigate(['/year', id], {replaceUrl: true});
         }
     }
@@ -123,6 +140,11 @@ export class YearComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        // Cancel debounce; pagehide/visibility already flushed year-key if needed.
+        // Full save (incl. pack) only when still dirty — Angular teardown / year leave.
+        this.autosave.cancel();
+        this.detachAutosave?.();
+        this.detachAutosave = null;
         this.persistActive();
         if (this.warmTimer) {
             clearTimeout(this.warmTimer);
@@ -130,11 +152,35 @@ export class YearComponent implements OnInit, OnDestroy {
         }
     }
 
+    private isDirty(): boolean {
+        return this.workbook.revision() !== this.savedRevision;
+    }
+
+    private markClean(): void {
+        this.savedRevision = this.workbook.revision();
+        this.autosave.cancel();
+    }
+
+    /** Debounced / pagehide path: year key only, no pack rewrite. */
+    private persistDirtyYear(): void {
+        const csv = this.workbook.toCsv();
+        const id = this.yearName || this.archive.activeId();
+        if (!csv || !id || !this.isDirty()) {
+            return;
+        }
+        this.archive.saveYear(id, csv);
+        this.markClean();
+    }
+
     private persistActive(): void {
+        if (!this.isDirty()) {
+            return;
+        }
         const csv = this.workbook.toCsv();
         const id = this.yearName || this.archive.activeId();
         if (csv && id) {
             this.archive.save(id, csv);
+            this.markClean();
         }
     }
 
@@ -252,6 +298,7 @@ export class YearComponent implements OnInit, OnDestroy {
         });
         applyColumnFills(this.workbook);
         this.workbook.touch();
+        this.markClean();
         this.afterDataReady();
     }
 
