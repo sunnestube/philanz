@@ -3,7 +3,7 @@ import {ChartModule} from 'primeng/chart';
 import {CurrencySelectComponent} from '../currencySelect/currency-select.component';
 import {WorkbookService} from '../../service/workbook.service';
 import {YearArchiveService} from '../../service/year-archive.service';
-import {PackReportService} from '../../service/pack-report.service';
+import {PackReportService, PackSkippedYear} from '../../service/pack-report.service';
 import {splitCurrencyCharts} from '../yearGraf/currency-bars';
 import {grafChartOptions} from '../yearGraf/graf-options';
 import 'chart.js/auto';
@@ -21,6 +21,28 @@ import 'chart.js/auto';
             box-sizing: border-box;
             overflow: auto;
             min-height: 100%;
+        }
+        .pack-skip-banner {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .pack-skip-banner span + span::before {
+            content: ' · ';
+            font-weight: 400;
+        }
+        @media (prefers-color-scheme: dark) {
+            .pack-skip-banner {
+                background: #422006;
+                color: #fde68a;
+                border-color: #a16207;
+            }
         }
     `]
 })
@@ -65,6 +87,14 @@ export class PackGrafComponent {
 
     error() {
         return this.pack.error();
+    }
+
+    skipped(): PackSkippedYear[] {
+        return this.pack.skipped();
+    }
+
+    skipLabel(item: PackSkippedYear): string {
+        return item.reason ? `${item.id} übersprungen (${item.reason})` : `${item.id} übersprungen`;
     }
 
     readonly groupedOptions = grafChartOptions('bar');
