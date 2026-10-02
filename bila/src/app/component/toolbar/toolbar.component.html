@@ -4,8 +4,22 @@
             <span class="brand-mark">Φ</span>
             <span class="brand-name">{{ title }}</span>
         </a>
-        <nav class="nav">
-            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
+
+        <button #burgerBtn
+                type="button"
+                class="burger-btn"
+                [attr.aria-expanded]="menuOpen()"
+                aria-controls="toolbar-nav-menu"
+                aria-label="Navigation öffnen"
+                (click)="toggleMenu()">
+            <span class="burger-icon" aria-hidden="true"></span>
+        </button>
+
+        <nav class="nav" aria-label="Hauptnavigation">
+            <a class="nav-link"
+               routerLink="/"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{exact: true}">Home</a>
             <div class="year-group">
                 <a routerLink="/year" routerLinkActive="active">Jahresübersicht</a>
                 <select class="year-select"
@@ -18,14 +32,15 @@
                 </select>
                 <button type="button" class="year-add" (click)="newYear()" title="Neues Jahr">+</button>
             </div>
-            <a routerLink="/pack/total" routerLinkActive="active">Total</a>
-            <a routerLink="/pack/graf" routerLinkActive="active">Graf</a>
-            <a routerLink="/set" routerLinkActive="active">Set</a>
+            <a class="nav-link" routerLink="/pack/total" routerLinkActive="active">Total</a>
+            <a class="nav-link" routerLink="/pack/graf" routerLinkActive="active">Graf</a>
+            <a class="nav-link" routerLink="/set" routerLinkActive="active">Set</a>
             <!--
             <a routerLink="/biltanz" routerLinkActive="active">Biltanz</a>
             <a routerLink="/about" routerLinkActive="active">Über uns</a>
             -->
         </nav>
+
         <div class="tools">
             @if (onYear()) {
                 <button type="button"
@@ -43,4 +58,38 @@
         </div>
     </div>
 </p-toolbar>
+
+@if (menuOpen()) {
+    <div class="nav-backdrop" (click)="closeMenu(true)" aria-hidden="true"></div>
+    <nav id="toolbar-nav-menu"
+         class="nav-menu"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Navigation">
+        <div class="nav-menu-header">
+            <span class="nav-menu-title">Menü</span>
+            <button type="button"
+                    class="menu-close"
+                    (click)="closeMenu(true)"
+                    aria-label="Menü schließen">×</button>
+        </div>
+        <a routerLink="/"
+           routerLinkActive="active"
+           [routerLinkActiveOptions]="{exact: true}"
+           (click)="onMenuNav()">Home</a>
+        <a routerLink="/year"
+           routerLinkActive="active"
+           (click)="onMenuNav()">Jahresübersicht</a>
+        <a routerLink="/pack/total"
+           routerLinkActive="active"
+           (click)="onMenuNav()">Total</a>
+        <a routerLink="/pack/graf"
+           routerLinkActive="active"
+           (click)="onMenuNav()">Graf</a>
+        <a routerLink="/set"
+           routerLinkActive="active"
+           (click)="onMenuNav()">Set</a>
+    </nav>
+}
+
 <bal-settings-dialog/>
