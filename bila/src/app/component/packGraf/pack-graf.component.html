@@ -9,6 +9,13 @@
         </div>
         <bal-currency-select/>
     </div>
+    @if (skipped().length) {
+        <div class="pack-skip-banner" role="status">
+            @for (item of skipped(); track item.id) {
+                <span>{{ skipLabel(item) }}</span>
+            }
+        </div>
+    }
     @if (charts(); as data) {
         <div class="grid">
             <figure>

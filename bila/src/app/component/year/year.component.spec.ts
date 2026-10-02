@@ -30,10 +30,10 @@ describe('YearComponent applyCsv teardown (#27)', () => {
     let workbook: WorkbookService;
     let archive: YearArchiveService;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         localStorage.clear();
         paramMap$ = new BehaviorSubject<ParamMap>(convertToParamMap({id: '2024'}));
-        TestBed.configureTestingModule({
+        await TestBed.configureTestingModule({
             imports: [YearComponent],
             providers: [
                 provideRouter([]),
@@ -50,7 +50,7 @@ describe('YearComponent applyCsv teardown (#27)', () => {
                 template: `<div class="probe">{{ loadError() }}</div>`,
                 styles: []
             }
-        });
+        }).compileComponents();
         workbook = TestBed.inject(WorkbookService);
         archive = TestBed.inject(YearArchiveService);
     });

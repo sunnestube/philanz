@@ -173,4 +173,88 @@ describe('PackReportService multi-year totals', () => {
         expect(pack.report()!.months.length).toBeGreaterThanOrEqual(60);
         expect(elapsed).toBeLessThan(500);
     });
+
+    it('one broken of three years yields two-year report and visible skip', () => {
+        archive.save('2022', yearCsv('100,00', '10,00'));
+        // Intentionally invalid: meta only, no month rows → loadYear throws "kein Monat".
+        archive.save('2023', '#persons:P\n#accounts:B\n');
+        archive.save('2024', yearCsv('200,00', '20,00'));
+        workbook.applyCsv(yearCsv('200,00', '20,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+
+        pack.refresh();
+
+        const report = pack.report();
+        expect(report).toBeTruthy();
+        expect(report!.yearExpense).toBeCloseTo(300, 5);
+        expect(report!.yearIncome).toBeCloseTo(30, 5);
+        const years = new Set((report!.months as PackMonthBlock[]).map((block) => block.year));
+        expect(years.has('2022')).toBe(true);
+        expect(years.has('2024')).toBe(true);
+        expect(years.has('2023')).toBe(false);
+        expect(pack.skipped()).toEqual([{id: '2023', reason: 'kein Monat'}]);
+        expect(pack.error()).toBe('');
+    });
+
+    it('records skip when applyCsv throws for one archive CSV', () => {
+        archive.save('2022', yearCsv('10,00', '1,00'));
+        archive.save('2023', 'BROKEN_MARKER');
+        archive.save('2024', yearCsv('20,00', '2,00'));
+        const orig = WorkbookService.prototype.applyCsv;
+        vi.spyOn(WorkbookService.prototype, 'applyCsv').mockImplementation(function (
+            this: WorkbookService,
+            csv: string
+        ) {
+            if (csv.includes('BROKEN_MARKER')) {
+                throw new Error('CSV ungültig');
+            }
+            return orig.call(this, csv);
+        });
+        workbook.applyCsv(yearCsv('20,00', '2,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+
+        pack.refresh();
+
+        expect(pack.report()!.yearExpense).toBeCloseTo(30, 5);
+        expect(pack.skipped()).toEqual([{id: '2023', reason: 'CSV ungültig'}]);
+        expect(pack.error()).toBe('');
+    });
+
+    it('hard failure during refresh clears report and sets error', () => {
+        archive.save('2024', yearCsv('10,00', '1,00'));
+        workbook.applyCsv(yearCsv('10,00', '1,00'));
+        vi.spyOn(pack as unknown as {snapshot: () => unknown}, 'snapshot').mockImplementation(() => {
+            throw new Error('Live-CSV wiederherstellen fehlgeschlagen.');
+        });
+
+        pack.refresh();
+
+        expect(pack.error()).toBe('Live-CSV wiederherstellen fehlgeschlagen.');
+        expect(pack.report()).toBeNull();
+        expect(pack.charts()).toBeNull();
+        expect(pack.skipped()).toEqual([]);
+    });
+
+    /**
+     * Timeout smoke (#26): second refresh must hit the stamp cache (≤ 50 ms)
+     * and must not rewrite the live workbook CSV.
+     * Artificial 2 s delay inside refresh() would fail this bound (red).
+     */
+    it('second PackReport.refresh is ≤50ms (cache) and live CSV unchanged', () => {
+        archive.save('2024', yearCsv('100,00', '40,00'));
+        archive.save('2025', yearCsv('200,00', '60,00'));
+        workbook.applyCsv(yearCsv('200,00', '60,00'));
+        workbook.fx.setDisplayCurrency('CHF');
+        const liveBefore = workbook.toCsv();
+
+        pack.refresh();
+        expect(pack.report()).toBeTruthy();
+        expect(workbook.toCsv()).toBe(liveBefore);
+
+        const t0 = performance.now();
+        pack.refresh();
+        const elapsed = performance.now() - t0;
+        expect(elapsed).toBeLessThanOrEqual(50);
+        expect(workbook.toCsv()).toBe(liveBefore);
+    });
 });

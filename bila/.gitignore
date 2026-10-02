@@ -41,5 +41,5 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Assembled from _wb_parts/ via scripts/assemble-workbook.cjs
+# Assembled from _wb_parts/ via scripts/assemble-workbook.cjs (CI runs assemble before check)
 src/app/service/workbook.service.ts
