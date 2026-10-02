@@ -18,6 +18,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: bila/package-lock.json
+      - name: Assemble from _wb_parts
+        run: node scripts/assemble-workbook.cjs
       - name: Assemble drift guard
         run: node scripts/check-assemble.cjs
       - name: Install
