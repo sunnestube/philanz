@@ -52,7 +52,6 @@
                     <th>#</th>
                     <th>Datum</th>
                     <th>Kurs (CHF / 1 {{ series.code }})</th>
-                    <th>Effektiv</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -69,7 +68,6 @@
                                    (change)="onRate(day.index, $event)"
                                    placeholder="—"/>
                         </td>
-                        <td class="eff">{{ effectiveText(day.index) }}</td>
                     </tr>
                 }
                 </tbody>

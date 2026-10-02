@@ -4,7 +4,7 @@
             <h2>Graf über alle Jahre</h2>
             <p>
                 Gleiche Monate nebeneinander (Jan 2024 neben Jan 2025).
-                Währungen sind getrennte Diagramme, damit die Säulen lesbar bleiben.
+                Währungen sind getrennte Diagramme mit eigener Y-Skala.
             </p>
         </div>
         <bal-currency-select/>
@@ -22,30 +22,30 @@
                 <figcaption>Personen · {{ displayCode() }}</figcaption>
                 <p-chart type="bar" [data]="data.person.display" [options]="groupedOptions"/>
             </figure>
-            @if (data.person.fx; as fx) {
+            @for (item of data.person.fxCharts; track item.code) {
                 <figure>
-                    <figcaption>Personen · andere Währungen</figcaption>
-                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                    <figcaption>Personen · {{ item.code }}</figcaption>
+                    <p-chart type="bar" [data]="item.chart" [options]="groupedOptions"/>
                 </figure>
             }
             <figure>
                 <figcaption>Kategorien · {{ displayCode() }}</figcaption>
                 <p-chart type="bar" [data]="data.category.display" [options]="groupedOptions"/>
             </figure>
-            @if (data.category.fx; as fx) {
+            @for (item of data.category.fxCharts; track item.code) {
                 <figure>
-                    <figcaption>Kategorien · andere Währungen</figcaption>
-                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                    <figcaption>Kategorien · {{ item.code }}</figcaption>
+                    <p-chart type="bar" [data]="item.chart" [options]="groupedOptions"/>
                 </figure>
             }
             <figure class="wide">
                 <figcaption>Einnahmen vs. Ausgaben · {{ displayCode() }}</figcaption>
                 <p-chart type="bar" [data]="data.incomeExpense.display" [options]="groupedOptions"/>
             </figure>
-            @if (data.incomeExpense.fx; as fx) {
+            @for (item of data.incomeExpense.fxCharts; track item.code) {
                 <figure class="wide">
-                    <figcaption>Einnahmen vs. Ausgaben · andere Währungen</figcaption>
-                    <p-chart type="bar" [data]="fx" [options]="groupedOptions"/>
+                    <figcaption>Einnahmen vs. Ausgaben · {{ item.code }}</figcaption>
+                    <p-chart type="bar" [data]="item.chart" [options]="groupedOptions"/>
                 </figure>
             }
             @if (yoy(); as delta) {

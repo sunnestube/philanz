@@ -1,8 +1,7 @@
 import {Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {WorkbookService} from '../../service/workbook.service';
-import {fillForwardRate, formatFxAmount, parseFxPasteRates} from '../../model/CurrencyFx';
-
+import {parseFxPasteRates} from '../../model/CurrencyFx';
 
 @Component({
     selector: 'bal-fx-tab',
@@ -121,14 +120,6 @@ export class FxTabComponent {
         this.workbook.persistFx();
     }
 
-    effective(dayIndex: number): number {
-        const series = this.selected();
-        if (!series) {
-            return 1;
-        }
-        return fillForwardRate(series.rates, dayIndex);
-    }
-
     rateText(dayIndex: number): string {
         const series = this.selected();
         const value = series?.rates[dayIndex];
@@ -143,14 +134,6 @@ export class FxTabComponent {
         const value = Number((event.target as HTMLInputElement).value);
         this.workbook.fx.setFractionDigits(series.code, value);
         this.workbook.persistFx();
-    }
-
-    effectiveText(dayIndex: number): string {
-        const series = this.selected();
-        if (!series) {
-            return '';
-        }
-        return formatFxAmount(this.effective(dayIndex), series.fractionDigits);
     }
 
 }
