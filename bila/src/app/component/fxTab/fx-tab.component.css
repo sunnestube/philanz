@@ -30,7 +30,6 @@ p { margin: 0; color: #475569; font-size: 12px; max-width: 640px; }
 .fx-table th, .fx-table td { border-bottom: 1px solid #e2e8f0; padding: 4px 8px; text-align: left; }
 .fx-table th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
 .fx-table .idx { color: #94a3b8; width: 48px; }
-.fx-table .eff { font-variant-numeric: tabular-nums; color: #334155; }
 .fx-table tr.sparse { background: #fafafa; }
 .rate-input {
     width: 120px; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 6px;
