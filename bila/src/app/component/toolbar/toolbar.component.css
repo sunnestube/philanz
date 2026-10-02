@@ -34,6 +34,34 @@
     font-weight: 700;
     color: #312e81;
 }
+
+/* Burger: hidden on wide; shown at ≤640px (see media query below) */
+.burger-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 8px;
+    background: #e0e7ff;
+    color: #312e81;
+    cursor: pointer;
+}
+.burger-btn:hover,
+.burger-btn[aria-expanded="true"] {
+    background: #c7d2fe;
+}
+.burger-icon {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: currentColor;
+    box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor;
+    border-radius: 1px;
+}
+
 .nav {
     display: flex;
     align-items: center;
@@ -42,7 +70,8 @@
     flex: 1 1 auto;
     overflow-x: auto;
 }
-.nav a {
+.nav a,
+.nav-menu a {
     padding: 4px 8px;
     border-radius: 999px;
     color: #334155;
@@ -51,7 +80,9 @@
     white-space: nowrap;
 }
 .nav a.active,
-.nav a:hover {
+.nav a:hover,
+.nav-menu a.active,
+.nav-menu a:hover {
     background: #e0e7ff;
     color: #3730a3;
 }
@@ -63,6 +94,7 @@
     border: 1px solid #c7d2fe;
     border-radius: 999px;
     background: #eef2ff;
+    flex-shrink: 0;
 }
 .year-group a { padding: 2px 8px; }
 .year-select {
@@ -85,7 +117,14 @@
     cursor: pointer;
     line-height: 22px;
 }
-.tools { display: flex; gap: 4px; margin-left: auto; }
+.tools {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
 .icon-btn {
     width: 28px;
     height: 28px;
@@ -97,3 +136,77 @@
 }
 .icon-btn:hover,
 .icon-btn.on { background: #e0e7ff; color: #4338ca; }
+
+/* Mobile overlay menu */
+.nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(15, 23, 42, 0.35);
+}
+.nav-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: min(280px, 86vw);
+    height: 100%;
+    padding: 12px;
+    background: #fff;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+}
+.nav-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 4px 4px 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.nav-menu-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #312e81;
+}
+.menu-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #312e81;
+    font-size: 22px;
+    line-height: 32px;
+    cursor: pointer;
+}
+.nav-menu a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 15px;
+}
+
+/*
+ * Breakpoint strategy (documented for #46):
+ * ≤640px → burger + hide .nav-link; year-group and tools stay in the bar.
+ * >640px → full desktop nav, no burger (unchanged).
+ */
+@media (max-width: 640px) {
+    .burger-btn {
+        display: inline-flex;
+    }
+    .nav > .nav-link {
+        display: none;
+    }
+    .nav {
+        overflow-x: visible;
+        flex: 0 1 auto;
+    }
+    .brand-name {
+        display: none;
+    }
+}
