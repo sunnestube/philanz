@@ -6,6 +6,9 @@
             <h3>Set im Browser</h3>
             <p>Schreibt das aktuelle Jahr ins Set und speichert alle Jahre lokal.</p>
             <button type="button" class="csv-btn" (click)="savePack()">Set speichern</button>
+            @if (archive.hasPrevPack()) {
+                <button type="button" class="csv-btn secondary" (click)="restorePrevPack()">Letztes Set wiederherstellen</button>
+            }
             @if (saveMessage) {
                 <span class="csv-status">{{ saveMessage }}</span>
             }
