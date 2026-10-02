@@ -44,6 +44,12 @@ export interface PackYearSlice {
     trend: ReturnType<WorkbookService['currencyTrendCharts']>;
 }
 
+/** Archive year that could not be loaded into the pack report. */
+export type PackSkippedYear = {
+    id: string;
+    reason: string;
+};
+
 @Injectable({providedIn: 'root'})
 export class PackReportService {
     private readonly workbook = inject(WorkbookService);
@@ -58,6 +64,8 @@ export class PackReportService {
     readonly trend = signal<BarChart | null>(null);
     readonly yoy = signal<BarChart | null>(null);
     readonly error = signal('');
+    /** Years skipped during the last refresh (broken CSV / load failure). */
+    readonly skipped = signal<PackSkippedYear[]>([]);
 
     refresh(): void {
         const currency = this.workbook.fx.displayCurrency();
@@ -69,15 +77,26 @@ export class PackReportService {
         }
         this.busy = true;
         try {
-            const slices = this.snapshot();
+            const {slices, skipped} = this.snapshot();
+            this.skipped.set(skipped);
             this.report.set(this.mergeReport(slices));
             this.charts.set(this.mergeCharts(slices));
             this.trend.set(this.mergeTrend(slices));
             this.yoy.set(this.mergeYoy(slices));
-            this.error.set(slices.length ? '' : 'Noch kein Set im Browser. Unter Set eine Datei importieren.');
+            if (!slices.length) {
+                this.error.set(
+                    skipped.length
+                        ? skipped.map(formatSkipBanner).join(' · ')
+                        : 'Noch kein Set im Browser. Unter Set eine Datei importieren.'
+                );
+            } else {
+                this.error.set('');
+            }
             this.stamp = stamp;
         } catch (err) {
+            // Hard failure — do not leave a partial report looking complete.
             this.error.set(err instanceof Error ? err.message : 'Set-Auswertung fehlgeschlagen.');
+            this.skipped.set([]);
             this.report.set(null);
             this.charts.set(null);
             this.trend.set(null);
@@ -87,12 +106,13 @@ export class PackReportService {
         }
     }
 
-    private snapshot(): PackYearSlice[] {
+    private snapshot(): {slices: PackYearSlice[]; skipped: PackSkippedYear[]} {
         const slices: PackYearSlice[] = [];
+        const skipped: PackSkippedYear[] = [];
         const years = this.archive.years();
         if (!years.length && this.workbook.months().length) {
             slices.push(this.sliceOf(this.workbook, this.archive.suggestedName(), this.archive.suggestedName()));
-            return slices;
+            return {slices, skipped};
         }
         const scratch = this.borrowScratch();
         years.forEach((item) => {
@@ -103,12 +123,12 @@ export class PackReportService {
             try {
                 this.loadYear(scratch, csv, item.id);
                 slices.push(this.sliceOf(scratch, item.id, item.name));
-            } catch {
-                // skip broken year
+            } catch (err) {
+                skipped.push({id: item.id, reason: shortSkipReason(err)});
             }
         });
         slices.sort((a, b) => a.id.localeCompare(b.id, 'de'));
-        return slices;
+        return {slices, skipped};
     }
 
     /** Lazy scratch workbook with persistence disabled so applyCsv cannot clobber live settings. */
@@ -126,6 +146,9 @@ export class PackReportService {
     private loadYear(scratch: WorkbookService, csv: string, yearId: string): void {
         this.seedLiveFx(scratch);
         scratch.applyCsv(csv);
+        if (!scratch.months().length) {
+            throw new Error('kein Monat');
+        }
         this.preferLiveDisplay(scratch);
         const yearNum = parseInt(yearId, 10);
         if (Number.isFinite(yearNum) && scratch.fx.calendarYear() !== yearNum) {
@@ -355,6 +378,20 @@ export class PackReportService {
         });
         return {labels, datasets: [...datasets.values()]};
     }
+}
+
+function formatSkipBanner(item: PackSkippedYear): string {
+    return item.reason ? `${item.id} übersprungen (${item.reason})` : `${item.id} übersprungen`;
+}
+
+function shortSkipReason(err: unknown): string {
+    if (err instanceof Error) {
+        const msg = err.message.replace(/\s+/g, ' ').trim();
+        if (msg) {
+            return msg.length > 60 ? `${msg.slice(0, 57)}…` : msg;
+        }
+    }
+    return 'CSV ungültig';
 }
 
 function contentStamp(csv: string): string {
