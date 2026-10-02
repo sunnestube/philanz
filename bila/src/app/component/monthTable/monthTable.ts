@@ -368,11 +368,13 @@ export class MonthTable implements OnDestroy {
 
     /**
      * Visible cell text. FX format cache (issue #30):
-     *   key = displayCurrency | (display||raw) | dayIndex | rate@day
+     *   key = displayCurrency | (display||raw) | dayIndex | rate@day | fractionDigits
      * Intentionally NOT workbook.revision(): an edit that leaves this cell's
-     * value/currency/day-rate unchanged keeps a cache hit (only the edited
+     * value/currency/day-rate/digits unchanged keeps a cache hit (only the edited
      * cell + row saldos rebuild). Currency switch / rate change / value
-     * change → miss. Pure scroll CD → hit.
+     * change / Nachkommastellen change → miss. Pure scroll CD → hit.
+     * Always formats number cells via fx.formatAmount so month tabs respect
+     * per-currency digits (BTC 8, etc.), not formula's hard-coded 2.
      * Measure note: ~80 visible rows × 6 saldo cols, EUR display — skip
      * toDisplay+formatAmount on hit (target <16ms format/FX after dirty recalc).
      */
@@ -387,12 +389,13 @@ export class MonthTable implements OnDestroy {
         if (cell.type.id === CELL_TYPE.date && value && !value.trim().startsWith('=')) {
             return CellFormatPipe.formatDate(value, this.month?.label.title ?? '');
         }
-        if (cell.type.id === CELL_TYPE.number && !this.workbook.fx.isBase() && value && !String(value).trim().startsWith('=')) {
+        if (cell.type.id === CELL_TYPE.number && value && !String(value).trim().startsWith('=')) {
             const row = this.month?.rows[rowIndex];
             const day = this.workbook.fx.dayIndexForRow(this.month, row);
             const currency = this.workbook.fx.displayCurrency();
             const rate = this.workbook.fx.rate(day);
-            const key = `${currency}|${value}|${day}|${rate}`;
+            const digits = this.workbook.fx.fractionDigits(currency);
+            const key = `${currency}|${value}|${day}|${rate}|${digits}`;
             if (cell.fxDisplayKey === key && cell.fxDisplayText != null) {
                 return cell.fxDisplayText;
             }
@@ -403,7 +406,7 @@ export class MonthTable implements OnDestroy {
                 return value;
             }
             const converted = this.workbook.fx.toDisplay(amount, day);
-            const text = this.workbook.fx.formatAmount(converted);
+            const text = this.workbook.fx.formatAmount(converted, currency);
             cell.fxDisplayKey = key;
             cell.fxDisplayText = text;
             return text;
